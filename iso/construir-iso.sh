@@ -47,14 +47,14 @@ sed -i -E \
   "$PERFIL/profiledef.sh"
 sed -i 's/^file_permissions=(/file_permissions=(\n  ["\/usr\/local\/bin\/lumen-live-setup"]="0:0:755"\n  ["\/usr\/local\/bin\/lumen-primeiro-login"]="0:0:755"\n  ["\/etc\/sudoers.d\/10-lumen-live"]="0:0:440"\n  ["\/usr\/share\/lumen\/install.sh"]="0:0:755"\n  ["\/usr\/share\/lumen\/restaurar.sh"]="0:0:755"\n  ["\/usr\/local\/bin\/lumen-marca"]="0:0:755"\n  ["\/usr\/local\/bin\/lumen-instalar"]="0:0:755"\n  ["\/usr\/share\/lumen\/sistema\/limpeza-alvo.sh"]="0:0:755"\n  ["\/usr\/share\/lumen\/sistema\/lumen-marca"]="0:0:755"/' "$PERFIL/profiledef.sh"
 
-echo "==> Menu de boot (nome e resolução para o Hyper-V)"
+echo "==> Menu de boot (nome e parâmetros de boot)"
 for pasta in efiboot syslinux grub; do
   [[ -d "$PERFIL/$pasta" ]] || continue
   find "$PERFIL/$pasta" -type f \( -name '*.conf' -o -name '*.cfg' \) -print0 | while IFS= read -r -d '' arq; do
     sed -i -E \
       -e 's/Arch Linux install medium/Lumen OS (ao vivo e instalador)/g' \
       -e 's/Arch Linux/Lumen OS/g' \
-      -e '/^[[:space:]]*(options|APPEND|linux) .*archisobasedir/ s/$/ video=1920x1080 cow_spacesize=4G copytoram=n quiet/' \
+      -e '/^[[:space:]]*(options|APPEND|linux) .*archisobasedir/ s/$/ cow_spacesize=4G copytoram=n/' \
       "$arq"
   done
 done
