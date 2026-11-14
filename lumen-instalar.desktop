@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Instalar o Lúmen OS
+Comment=Instala o Lúmen OS no disco do computador
+Exec=/usr/local/bin/lumen-instalar
+Icon=lumen
+Terminal=false
+Categories=System;
+Keywords=instalar;installer;calamares;

@@ -1,0 +1,2 @@
+# Sessão ao vivo: o usuário lumen usa sudo sem senha.
+%wheel ALL=(ALL:ALL) NOPASSWD: ALL

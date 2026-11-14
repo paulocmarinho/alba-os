@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Instalador do Lúmen OS
+Exec=sh -c "sleep 15; /usr/local/bin/lumen-instalar"
+OnlyShowIn=KDE;
+NoDisplay=true

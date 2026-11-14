@@ -1,0 +1,12 @@
+[Unit]
+Description=Prepara a sessão ao vivo do Lumen
+Before=display-manager.service systemd-user-sessions.service
+After=systemd-sysusers.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/lumen-live-setup
+
+[Install]
+WantedBy=multi-user.target

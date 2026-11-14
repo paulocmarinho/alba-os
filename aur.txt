@@ -1,0 +1,5 @@
+# AUR (instalados com paru ou yay)
+heroic-games-launcher-bin
+protonup-qt
+papirus-folders
+kwin-effect-rounded-corners-git

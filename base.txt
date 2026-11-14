@@ -1,0 +1,23 @@
+# Base do Lumen (repositórios oficiais / CachyOS)
+kvantum
+qt6ct
+papirus-icon-theme
+inter-font
+noto-fonts
+noto-fonts-emoji
+noto-fonts-cjk
+ttf-jetbrains-mono
+flatpak
+firefox
+firefox-i18n-pt-br
+dolphin
+dolphin-plugins
+ffmpegthumbs
+kdegraphics-thumbnailers
+konsole
+ark
+gwenview
+spectacle
+xdg-desktop-portal-kde
+plasma-browser-integration
+python

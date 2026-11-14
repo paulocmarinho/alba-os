@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Identidade do Lúmen no sistema (roda como root; é chamado pelo gancho do pacman).
+# - nome e logo do sistema (os-release, "Sobre este sistema")
+# - relógio grande nas telas de bloqueio e de login, com a data em cima
+# Pode rodar quantas vezes quiser: só mexe no que ainda não foi alterado.
+set -u
+
+ORIGEM="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+for base in /usr/share/lumen "$ORIGEM/.."; do
+  if [[ -f "$base/sistema/relogio.qml.inc" ]]; then LUMEN_BASE="$(cd "$base" && pwd)"; break; fi
+done
+LUMEN_BASE="${LUMEN_BASE:-/usr/share/lumen}"
+TRECHO="$LUMEN_BASE/sistema/relogio.qml.inc"
+
+log() { echo "lumen-marca: $*"; }
+
+# 1. Logo e nome do sistema
+if [[ -f "$LUMEN_BASE/theme/icons/lumen-marca.svg" ]]; then
+  install -Dm644 "$LUMEN_BASE/theme/icons/lumen-marca.svg" /usr/share/icons/hicolor/scalable/apps/lumen.svg
+  install -Dm644 "$LUMEN_BASE/theme/icons/lumen-marca.svg" /usr/share/pixmaps/lumen.svg
+fi
+if ! grep -q '^NAME="Lúmen OS"' /etc/os-release 2>/dev/null; then
+  rm -f /etc/os-release
+  cat > /etc/os-release <<'OS'
+NAME="Lúmen OS"
+PRETTY_NAME="Lúmen OS"
+ID=lumen
+ID_LIKE=arch
+VERSION_ID="0.1"
+BUILD_ID=rolling
+ANSI_COLOR="38;2;47;140;128"
+LOGO=lumen
+OS
+  log "identidade do sistema aplicada"
+fi
+mkdir -p /etc/xdg
+cat > /etc/xdg/kcm-about-distrorc <<'KCM'
+[General]
+LogoPath=/usr/share/icons/hicolor/scalable/apps/lumen.svg
+Variant=Aurora
+KCM
+
+# 2. Relógio grande (tela de bloqueio do Plasma 6 e tela de login SDDM/Breeze)
+aplicar_relogio() {
+  local arquivo="$1" linha anterior
+  [[ -f "$arquivo" && -f "$TRECHO" ]] || return 0
+  grep -q "lumen-relogio" "$arquivo" && return 0
+
+  linha="$(grep -nE '^[[:space:]]*id:[[:space:]]*clock[[:space:]]*$' "$arquivo" | head -n1 | cut -d: -f1)"
+  [[ -n "$linha" ]] || { log "relógio não encontrado em $arquivo"; return 0; }
+  anterior="$(sed -n "$((linha > 3 ? linha - 3 : 1)),$((linha - 1))p" "$arquivo")"
+  if ! grep -qE 'Clock[[:space:]]*\{' <<<"$anterior"; then
+    log "estrutura inesperada em $arquivo; mantendo o padrão"
+    return 0
+  fi
+  if sed -n "${linha},$((linha + 40))p" "$arquivo" | grep -q "Component.onCompleted"; then
+    log "o relógio de $arquivo já tem código próprio; mantendo o padrão"
+    return 0
+  fi
+  cp -f "$arquivo" "$arquivo.lumen-original"
+  sed -i "${linha}r $TRECHO" "$arquivo"
+  log "relógio do Lúmen aplicado em $arquivo"
+}
+
+aplicar_relogio /usr/share/plasma/shells/org.kde.plasma.desktop/contents/lockscreen/LockScreenUi.qml
+aplicar_relogio /usr/share/plasma/look-and-feel/org.kde.breeze.desktop/contents/lockscreen/LockScreenUi.qml
+aplicar_relogio /usr/share/sddm/themes/breeze/Main.qml
+
+# 3. Fundo da tela de login
+if [[ -d /usr/share/sddm/themes/breeze && -f "$LUMEN_BASE/theme/wallpapers/lumen-aurora-3840x2160.png" ]]; then
+  install -Dm644 "$LUMEN_BASE/theme/wallpapers/lumen-aurora-3840x2160.png" /usr/share/wallpapers/Lumen/contents/images/3840x2160.png
+  printf '[General]\nbackground=/usr/share/wallpapers/Lumen/contents/images/3840x2160.png\n' \
+    > /usr/share/sddm/themes/breeze/theme.conf.user
+fi
+exit 0

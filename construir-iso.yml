@@ -1,0 +1,48 @@
+name: Construir ISO do Lumen
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Liberar espaço no runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
+
+      - name: Baixar o projeto
+        uses: actions/checkout@v4
+
+      - name: Compilar o instalador e montar a ISO num contêiner Arch Linux
+        run: |
+          docker run --rm --privileged \
+            -v "$PWD:/lumen" -w /lumen \
+            archlinux:latest \
+            bash -c '
+              set -e
+              pacman -Syu --noconfirm --needed archiso curl base-devel git sudo
+              bash ./iso/construir-aur.sh /lumen/repo-local
+              bash ./iso/construir-iso.sh /lumen/saida
+              chown -R '"$(id -u):$(id -g)"' /lumen/saida
+            '
+          ls -lh saida
+
+      - name: Gerar soma SHA-256
+        run: cd saida && sha256sum *.iso > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Disponibilizar a ISO para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumen-os-iso
+          path: |
+            saida/*.iso
+            saida/SHA256SUMS.txt
+          compression-level: 0
+          retention-days: 14

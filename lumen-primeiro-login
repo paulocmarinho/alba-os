@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Aplica o visual do Lumen no primeiro login de cada usuário (barra, dock, vidro, cores).
+set -u
+
+marca="$HOME/.config/lumen/visual-aplicado"
+[[ -f "$marca" ]] && exit 0
+
+# Espera o Plasma ficar pronto para receber o layout.
+for _ in $(seq 1 60); do
+  qdbus6 org.kde.plasmashell /PlasmaShell >/dev/null 2>&1 && break
+  sleep 1
+done
+sleep 3
+
+export LUMEN_DIR=/usr/share/lumen
+export LUMEN_LOG="$HOME/.cache/lumen/primeiro-login.log"
+# shellcheck source=/dev/null
+source "$LUMEN_DIR/lib/common.sh"
+# shellcheck source=/dev/null
+source "$LUMEN_DIR/modules/40-tema.sh"
+# shellcheck source=/dev/null
+source "$LUMEN_DIR/modules/50-plasma.sh"
+
+mkdir -p "$(dirname "$marca")"
+mkdir -p "$HOME/.config/MangoHud"
+cp -f "$LUMEN_DIR/theme/mangohud/MangoHud.conf" "$HOME/.config/MangoHud/MangoHud.conf" 2>/dev/null || true
+
+modulo_tema
+modulo_plasma
+touch "$marca"
+
+command -v notify-send >/dev/null && notify-send -a "Lumen" -i lumen-prisma "Bem-vindo ao Lumen" "Visual aplicado." || true
