@@ -48,12 +48,21 @@ aplicar_relogio() {
 
   linha="$(grep -nE '^[[:space:]]*id:[[:space:]]*clock[[:space:]]*$' "$arquivo" | head -n1 | cut -d: -f1)"
   [[ -n "$linha" ]] || { log "relógio não encontrado em $arquivo"; return 0; }
-  anterior="$(sed -n "$((linha > 3 ? linha - 3 : 1)),$((linha - 1))p" "$arquivo")"
-  if ! grep -qE 'Clock[[:space:]]*\{' <<<"$anterior"; then
+  # A linha "Clock {" precisa estar logo acima do "id: clock".
+  local linha_clock recuo fim
+  linha_clock="$(awk -v l="$linha" 'NR >= l - 3 && NR < l && /Clock[[:space:]]*\{/ { n = NR } END { print n }' "$arquivo")"
+  if [[ -z "$linha_clock" ]]; then
     log "estrutura inesperada em $arquivo; mantendo o padrão"
     return 0
   fi
-  if sed -n "${linha},$((linha + 40))p" "$arquivo" | grep -q "Component.onCompleted"; then
+  # Fim do bloco do relógio: a primeira "}" com o mesmo recuo (ou menor) que "Clock {".
+  recuo="$(sed -n "${linha_clock}p" "$arquivo" | sed -E 's/^([[:space:]]*).*/\1/' | awk '{ print length }')"
+  fim="$(awk -v ini="$linha" -v rec="${recuo:-0}" 'NR > ini && /^[[:space:]]*\}[[:space:]]*$/ { m = $0; sub(/\}.*/, "", m); if (length(m) <= rec) { print NR; exit } }' "$arquivo")"
+  if [[ -z "$fim" ]]; then
+    log "não achei o fim do relógio em $arquivo; mantendo o padrão"
+    return 0
+  fi
+  if sed -n "${linha},${fim}p" "$arquivo" | grep -q "Component.onCompleted"; then
     log "o relógio de $arquivo já tem código próprio; mantendo o padrão"
     return 0
   fi
