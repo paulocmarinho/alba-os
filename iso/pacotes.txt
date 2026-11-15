@@ -1,85 +1,36 @@
-# Pacotes adicionados à base "releng" do archiso para montar a ISO do Lumen.
+# Pacotes do Lúmen OS, somados à base "releng" do archiso.
+# Não há área de trabalho tradicional: a interface é toda do Lúmen.
 
-# Área de trabalho
-plasma-desktop
-plasma-workspace
-plasma-nm
-plasma-pa
-powerdevil
-kscreen
-bluedevil
-kde-gtk-config
-breeze-gtk
-systemsettings
-kinfocenter
-plasma-systemmonitor
-xdg-desktop-portal-kde
-plasma-browser-integration
-qt6-wayland
-xorg-server
-xorg-xwayland
-sddm
-sddm-kcm
-kwin
+# Sessão gráfica: compositor mínimo + motor de navegador em modo quiosque
+cage
+chromium
+mesa
+vulkan-swrast
 
-# Apps
-dolphin
-dolphin-plugins
-ffmpegthumbs
-kdegraphics-thumbnailers
-konsole
-ark
-gwenview
-spectacle
-kate
-discover
-packagekit-qt6
-flatpak
-firefox
-firefox-i18n-pt-br
-libnotify
+# Servidor do sistema
+python
 
-# Visual
-kvantum
-papirus-icon-theme
-inter-font
+# Fontes
 noto-fonts
 noto-fonts-emoji
 ttf-jetbrains-mono
-python
 
-# Som, rede e sistema
+# Rede, som e energia
+networkmanager
 pipewire
 pipewire-pulse
 pipewire-alsa
-pipewire-jack
 wireplumber
-networkmanager
+polkit
 sudo
 hyperv
 
-# Vídeo por software (máquina virtual) e jogos
-mesa
-vulkan-swrast
-lib32-vulkan-swrast
-steam
-gamemode
-lib32-gamemode
-mangohud
-lib32-mangohud
-gamescope
-
-# Instalador (Calamares vem do repositório local montado por construir-aur.sh)
-calamares
-ckbcomp
-kpmcore
-python-yaml
-python-jsonschema
+# Instalador
+squashfs-tools
+arch-install-scripts
+gptfdisk
+parted
+dosfstools
+e2fsprogs
 grub
 efibootmgr
-os-prober
-dosfstools
-mtools
-btrfs-progs
-squashfs-tools
-rsync

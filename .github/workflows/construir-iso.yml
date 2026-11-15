@@ -1,4 +1,4 @@
-name: Construir ISO do Lumen
+name: Construir ISO do Lúmen
 
 on:
   workflow_dispatch:
@@ -20,15 +20,32 @@ jobs:
       - name: Baixar o projeto
         uses: actions/checkout@v4
 
-      - name: Compilar o instalador e montar a ISO num contêiner Arch Linux
+      - name: Preparar o Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Montar a interface
+        working-directory: web
+        run: |
+          mkdir -p public/fonts
+          curl -fsSL --retry 3 -o public/fonts/DMSans.ttf \
+            "https://github.com/google/fonts/raw/main/ofl/dmsans/DMSans%5Bopsz%2Cwght%5D.ttf" || echo "Sem DM Sans; a interface usa a fonte padrão."
+          npm install --no-audit --no-fund
+          npm run build
+          ls -la dist dist/fonts || true
+
+      - name: Testar o servidor do sistema
+        run: python3 -m py_compile servidor/lumen_servidor.py servidor/pam.py
+
+      - name: Montar a ISO num contêiner Arch Linux
         run: |
           docker run --rm --privileged \
             -v "$PWD:/lumen" -w /lumen \
             archlinux:latest \
             bash -c '
               set -e
-              pacman -Syu --noconfirm --needed archiso curl base-devel git sudo
-              bash ./iso/construir-aur.sh /lumen/repo-local
+              pacman -Syu --noconfirm --needed archiso
               bash ./iso/construir-iso.sh /lumen/saida
               chown -R '"$(id -u):$(id -g)"' /lumen/saida
             '

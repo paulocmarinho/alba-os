@@ -1,7 +1,6 @@
 [Unit]
-Description=Prepara a sessão ao vivo do Lumen
-Before=display-manager.service systemd-user-sessions.service
-After=systemd-sysusers.service
+Description=Prepara a sessão ao vivo do Lúmen OS
+Before=getty@tty1.service systemd-user-sessions.service
 
 [Service]
 Type=oneshot

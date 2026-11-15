@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Lumen: aplicar visual
-Exec=/usr/local/bin/lumen-primeiro-login
-OnlyShowIn=KDE;
-NoDisplay=true
-X-KDE-autostart-phase=2

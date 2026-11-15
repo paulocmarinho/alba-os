@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = filesystem
+
+[Action]
+Description = Aplicando a identidade do Lúmen OS...
+When = PostTransaction
+Exec = /usr/local/bin/lumen-identidade

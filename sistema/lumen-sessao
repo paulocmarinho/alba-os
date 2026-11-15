@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Sessão gráfica do Lúmen OS.
+# Roda no login do tty1: liga o servidor do sistema e abre a interface do Lúmen
+# em tela cheia (cage + Chromium em modo quiosque). Se a interface fechar, ela volta.
+set -u
+
+LUMEN=/usr/share/lumen
+PORTA=7070
+CACHE="$HOME/.cache/lumen"
+mkdir -p "$CACHE"
+exec >"$CACHE/sessao.log" 2>&1
+
+TOKEN="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 40)"
+MODO=()
+[[ -d /run/archiso ]] && MODO=(--live)
+
+python3 "$LUMEN/servidor/lumen_servidor.py" --porta "$PORTA" --token "$TOKEN" --web "$LUMEN/web" "${MODO[@]}" \
+  >"$CACHE/servidor.log" 2>&1 &
+SERVIDOR=$!
+trap 'kill "$SERVIDOR" 2>/dev/null' EXIT
+
+for _ in $(seq 1 100); do
+  (exec 3<>"/dev/tcp/127.0.0.1/$PORTA") 2>/dev/null && break
+  sleep 0.1
+done
+
+# Teclado escolhido nos Ajustes (ou na instalação).
+teclado="$(cat "$HOME/.config/lumen/teclado" 2>/dev/null || cat /etc/lumen/teclado 2>/dev/null || echo br)"
+case "$teclado" in
+  br) export XKB_DEFAULT_LAYOUT=br XKB_DEFAULT_MODEL=abnt2 ;;
+  us) export XKB_DEFAULT_LAYOUT=us ;;
+  us-intl) export XKB_DEFAULT_LAYOUT=us XKB_DEFAULT_VARIANT=intl ;;
+  pt) export XKB_DEFAULT_LAYOUT=pt ;;
+  es) export XKB_DEFAULT_LAYOUT=es ;;
+  gb) export XKB_DEFAULT_LAYOUT=gb ;;
+esac
+
+NAVEGADOR="$(command -v chromium || command -v chromium-browser || command -v google-chrome-stable)"
+URL="http://127.0.0.1:$PORTA/?t=$TOKEN"
+
+for tentativa in $(seq 1 20); do
+  cage -s -d -- "$NAVEGADOR" \
+    --kiosk "$URL" \
+    --ozone-platform=wayland \
+    --user-data-dir="$CACHE/navegador" \
+    --no-first-run --no-default-browser-check --noerrdialogs --disable-infobars \
+    --disable-session-crashed-bubble --disable-translate --password-store=basic \
+    --disable-features=Translate,MediaRouter,HardwareMediaKeyHandling \
+    --overscroll-history-navigation=0 --disable-pinch \
+    --lang=pt-BR
+  echo "Interface fechou (tentativa $tentativa); abrindo de novo."
+  sleep 1
+done

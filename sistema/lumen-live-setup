@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Sessão ao vivo do Lúmen: cria o usuário "lumen" (sem senha) antes do login automático.
+set -u
+ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
+if ! id lumen >/dev/null 2>&1; then
+  useradd -m -G wheel,audio,video,input -s /bin/bash -c "Lúmen" lumen
+  passwd -d lumen >/dev/null
+fi
+mkdir -p /home/lumen/.config/lumen
+[[ -f /home/lumen/.config/lumen/teclado ]] || echo br >/home/lumen/.config/lumen/teclado
+chown -R lumen:lumen /home/lumen/.config
+exit 0

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Nome e logo do sistema (chamado por um gancho do pacman sempre que o pacote filesystem muda).
+if ! grep -q '^NAME="Lúmen OS"' /etc/os-release 2>/dev/null; then
+  rm -f /etc/os-release
+  cat >/etc/os-release <<'OS'
+NAME="Lúmen OS"
+PRETTY_NAME="Lúmen OS"
+ID=lumen
+ID_LIKE=arch
+VERSION_ID="0.1"
+BUILD_ID=rolling
+ANSI_COLOR="38;2;47;140;128"
+LOGO=lumen
+OS
+fi
+exit 0

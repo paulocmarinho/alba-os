@@ -1,0 +1,355 @@
+import { type CSSProperties, useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { api, type Item, type Local, tamanhoLegivel } from "../api";
+import { iniciais, useLumen } from "../contexto";
+import { Icone, type NomeIcone } from "../componentes/Icone";
+
+const CORES: Record<string, string> = {
+  pasta: "#8ee8cf",
+  imagem: "#a9b7ff",
+  video: "#c7b3ff",
+  audio: "#ffb4b4",
+  texto: "#ffe09b",
+  pdf: "#ffc2a1",
+  compactado: "#d6dcc4",
+  arquivo: "#d8e6e2",
+};
+
+const ICONES: Record<string, NomeIcone> = {
+  pasta: "folder",
+  imagem: "image",
+  video: "video",
+  audio: "music",
+  texto: "note",
+  pdf: "file",
+  compactado: "archive",
+  arquivo: "file",
+};
+
+function iconePasta(nome: string): NomeIcone {
+  const mapa: Record<string, NomeIcone> = { Downloads: "download", Imagens: "image", Músicas: "music", Vídeos: "video", Documentos: "file" };
+  return mapa[nome] || "folder";
+}
+
+export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: number }) {
+  const { sistema, config, abrir, aviso, confirmar, perguntar, renomearJanela } = useLumen();
+  const [locais, setLocais] = useState<Local[]>([]);
+  const [caminho, setCaminho] = useState(inicial || sistema.casa);
+  const [historico, setHistorico] = useState<string[]>([]);
+  const [itens, setItens] = useState<Item[]>([]);
+  const [gravavel, setGravavel] = useState(true);
+  const [pai, setPai] = useState<string | null>(null);
+  const [visao, setVisao] = useState<"grade" | "lista">("grade");
+  const [busca, setBusca] = useState("");
+  const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ item: Item; x: number; y: number } | null>(null);
+  const [erro, setErro] = useState("");
+  const naLixeira = caminho === "lixeira";
+
+  const carregar = useCallback(async () => {
+    setErro("");
+    try {
+      if (naLixeira) {
+        const r = await api.lixeira();
+        setItens(r.itens);
+        setGravavel(false);
+        setPai(null);
+        renomearJanela(idJanela, "Lixeira");
+      } else {
+        const r = await api.pasta(caminho);
+        setItens(r.itens);
+        setGravavel(r.gravavel);
+        setPai(r.pai);
+        renomearJanela(idJanela, r.caminho === sistema.casa ? "Início" : r.caminho.split("/").pop() || "/");
+      }
+    } catch (e: any) {
+      setErro(e.message);
+      setItens([]);
+    }
+  }, [caminho, naLixeira, idJanela, renomearJanela, sistema.casa]);
+
+  useEffect(() => {
+    api.locais().then((r) => setLocais(r.locais)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    carregar();
+    setSelecionado(null);
+    setBusca("");
+  }, [carregar]);
+
+  useEffect(() => {
+    if (!menu) return;
+    const fechar = () => setMenu(null);
+    window.addEventListener("pointerdown", fechar);
+    return () => window.removeEventListener("pointerdown", fechar);
+  }, [menu]);
+
+  function ir(destino: string) {
+    if (destino === caminho) return;
+    setHistorico((h) => [...h, caminho]);
+    setCaminho(destino);
+  }
+
+  function voltar() {
+    const anterior = historico[historico.length - 1];
+    if (!anterior) return;
+    setHistorico((h) => h.slice(0, -1));
+    setCaminho(anterior);
+  }
+
+  function abrirItem(item: Item) {
+    if (naLixeira) return;
+    if (item.tipo === "pasta") return ir(item.caminho);
+    if (item.categoria === "imagem") return abrir("visualizador", { caminho: item.caminho });
+    if (item.categoria === "texto" || (item.tamanho ?? 0) < 512 * 1024) return abrir("notas", { caminho: item.caminho });
+    aviso("O Lúmen ainda não tem um app para abrir este tipo de arquivo.");
+  }
+
+  async function novaPasta() {
+    const nome = await perguntar({ titulo: "Nova pasta", texto: "Nome da pasta:", valor: "Nova pasta", ok: "Criar" });
+    if (!nome) return;
+    try {
+      await api.novaPasta(caminho, nome);
+      carregar();
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
+  async function renomear(item: Item) {
+    const nome = await perguntar({ titulo: "Renomear", texto: `Novo nome para “${item.nome}”:`, valor: item.nome, ok: "Renomear" });
+    if (!nome || nome === item.nome) return;
+    try {
+      await api.renomear(item.caminho, nome);
+      carregar();
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
+  async function lixeira(item: Item) {
+    try {
+      await api.paraLixeira(item.caminho);
+      aviso(`“${item.nome}” foi para a lixeira.`);
+      carregar();
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
+  async function restaurar(item: Item) {
+    try {
+      await api.restaurar(item.caminho);
+      aviso(`“${item.nome}” foi restaurado.`);
+      carregar();
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
+  async function esvaziar() {
+    const ok = await confirmar({
+      titulo: "Esvaziar a lixeira?",
+      texto: "Os itens serão apagados para sempre. Isso não pode ser desfeito.",
+      ok: "Esvaziar",
+      perigo: true,
+    });
+    if (!ok) return;
+    await api.esvaziarLixeira().catch((e) => aviso(e.message));
+    carregar();
+  }
+
+  const visiveis = itens.filter((i) => !busca || i.nome.toLowerCase().includes(busca.toLowerCase()));
+  const pastas = visiveis.filter((i) => i.tipo === "pasta");
+  const arquivos = visiveis.filter((i) => i.tipo !== "pasta");
+  const usado = sistema.disco_total ? Math.round((sistema.disco_usado / sistema.disco_total) * 100) : 0;
+  const titulo = naLixeira ? "Lixeira" : caminho === sistema.casa ? "Seu espaço" : caminho.split("/").pop() || "Este computador";
+  const subtitulo = naLixeira ? "Itens apagados" : caminho === sistema.casa ? `Olá, ${sistema.nome.split(" ")[0]}` : caminho;
+
+  const cartao = (item: Item) => (
+    <button
+      key={item.caminho}
+      className={`folder-card ${selecionado === item.caminho ? "selecionado" : ""}`}
+      onClick={() => setSelecionado(item.caminho)}
+      onDoubleClick={() => abrirItem(item)}
+      onKeyDown={(e) => e.key === "Enter" && abrirItem(item)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setSelecionado(item.caminho);
+        setMenu({ item, x: e.clientX, y: e.clientY });
+      }}
+    >
+      <span className="folder-icon" style={{ "--folder": CORES[item.categoria] || CORES.arquivo } as CSSProperties}>
+        <Icone name={item.tipo === "pasta" ? iconePasta(item.nome) : ICONES[item.categoria] || "file"} size={25} strokeWidth={1.6} />
+      </span>
+      <span className="folder-copy">
+        <strong title={item.nome}>{item.nome}</strong>
+        <small>
+          {naLixeira ? item.original : item.tipo === "pasta" ? "Pasta" : tamanhoLegivel(item.tamanho)}
+          {!naLixeira && item.modificado ? ` · ${new Date(item.modificado * 1000).toLocaleDateString("pt-BR")}` : ""}
+        </small>
+      </span>
+      <span
+        className="mais-opcoes"
+        role="button"
+        tabIndex={-1}
+        aria-label={`Opções de ${item.nome}`}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelecionado(item.caminho);
+          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          setMenu({ item, x: r.left, y: r.bottom + 4 });
+        }}
+      >
+        <Icone name="more" size={17} />
+      </span>
+    </button>
+  );
+
+  return (
+    <div className="window-body app-arquivos">
+      <aside className="sidebar">
+        <div className="profile">
+          <div className="avatar">{iniciais(sistema.nome)}</div>
+          <div>
+            <strong>{sistema.nome}</strong>
+            <span>{sistema.usuario}@{sistema.maquina}</span>
+          </div>
+        </div>
+        <p className="eyebrow">Locais</p>
+        {locais.map((l) => (
+          <button key={l.caminho} className={caminho === l.caminho ? "active" : ""} onClick={() => ir(l.caminho)}>
+            <Icone name={l.icone as NomeIcone} size={18} />
+            <span>{l.nome}</span>
+          </button>
+        ))}
+        <button className={naLixeira ? "active" : ""} onClick={() => ir("lixeira")}>
+          <Icone name="trash" size={18} />
+          <span>Lixeira</span>
+        </button>
+        <div className="storage">
+          <div className="storage-label">
+            <span>Armazenamento</span>
+            <span>{usado}%</span>
+          </div>
+          <div className="storage-bar">
+            <span style={{ width: `${usado}%` }} />
+          </div>
+          <small>
+            {tamanhoLegivel(sistema.disco_usado)} de {tamanhoLegivel(sistema.disco_total)}
+          </small>
+        </div>
+      </aside>
+
+      <div className="file-content">
+        <div className="barra-navegacao">
+          <button onClick={voltar} disabled={!historico.length} aria-label="Voltar">
+            <Icone name="back" size={17} />
+          </button>
+          <button onClick={() => pai && ir(pai)} disabled={!pai} aria-label="Pasta acima">
+            <Icone name="up" size={17} />
+          </button>
+          <div className="window-actions">
+            <button className={visao === "grade" ? "selected" : ""} onClick={() => setVisao("grade")} aria-label="Grade">
+              <Icone name="grid" size={17} />
+            </button>
+            <button className={visao === "lista" ? "selected" : ""} onClick={() => setVisao("lista")} aria-label="Lista">
+              <Icone name="list" size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div className="content-heading">
+          <div>
+            <p className="eyebrow">{subtitulo}</p>
+            <h1>{titulo}</h1>
+          </div>
+          <label className="file-search">
+            <Icone name="search" size={17} />
+            <input aria-label="Buscar nesta pasta" placeholder="Buscar" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          </label>
+        </div>
+
+        {erro && <p className="aviso-erro">{erro}</p>}
+
+        <section className="folder-section">
+          <div className="section-title">
+            <h2>{naLixeira ? `${visiveis.length} itens` : "Pastas"}</h2>
+            {naLixeira ? (
+              <button className="new-folder" onClick={esvaziar} disabled={!itens.length}>
+                <Icone name="trash" size={15} /> Esvaziar
+              </button>
+            ) : (
+              gravavel && (
+                <button className="new-folder" onClick={novaPasta}>
+                  <Icone name="plus" size={15} /> Nova pasta
+                </button>
+              )
+            )}
+          </div>
+          {naLixeira ? (
+            <div className={`folder-grid ${visao === "lista" ? "list" : ""}`}>{visiveis.map(cartao)}</div>
+          ) : (
+            <>
+              <div className={`folder-grid ${visao === "lista" ? "list" : ""}`}>{pastas.map(cartao)}</div>
+              {arquivos.length > 0 && (
+                <>
+                  <div className="section-title arquivos-titulo">
+                    <h2>Arquivos</h2>
+                  </div>
+                  <div className={`folder-grid ${visao === "lista" ? "list" : ""}`}>{arquivos.map(cartao)}</div>
+                </>
+              )}
+            </>
+          )}
+          {!erro && visiveis.length === 0 && (
+            <p className="vazio">{busca ? "Nada encontrado." : naLixeira ? "A lixeira está vazia." : "Esta pasta está vazia."}</p>
+          )}
+        </section>
+
+        <footer className="system-footer">
+          <span>
+            <i className="status-dot" /> {sistema.sistema}
+          </span>
+          <span>
+            <Icone name="shield" size={15} /> Linux {sistema.kernel.split("-")[0]}
+          </span>
+        </footer>
+      </div>
+
+      {menu &&
+        createPortal(
+        <div
+          className={`menu-contexto ${config.tema === "escuro" ? "escuro" : ""}`}
+          style={{ left: Math.min(menu.x, window.innerWidth - 250), top: Math.min(menu.y, window.innerHeight - 140) }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {naLixeira ? (
+            <button onClick={() => (setMenu(null), restaurar(menu.item))}>
+              <Icone name="restore" size={16} /> Restaurar
+            </button>
+          ) : (
+            <>
+              <button onClick={() => (setMenu(null), abrirItem(menu.item))}>
+                <Icone name="chevron" size={16} /> Abrir
+              </button>
+              {gravavel && (
+                <>
+                  <button onClick={() => (setMenu(null), renomear(menu.item))}>
+                    <Icone name="edit" size={16} /> Renomear
+                  </button>
+                  <button className="perigo" onClick={() => (setMenu(null), lixeira(menu.item))}>
+                    <Icone name="trash" size={16} /> Mover para a lixeira
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
+}

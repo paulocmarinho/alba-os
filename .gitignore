@@ -1,2 +1,4 @@
-repo-local/
+web/node_modules/
+web/dist/
+web/public/fonts/
 saida/
