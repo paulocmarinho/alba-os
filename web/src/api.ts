@@ -1,4 +1,4 @@
-// Comunicação com o servidor do sistema Lúmen (127.0.0.1, autenticado por cookie de sessão).
+// Comunicação com o servidor do sistema Alba (127.0.0.1, autenticado por cookie de sessão).
 
 export type Sistema = {
   usuario: string;
@@ -22,6 +22,7 @@ export type Config = {
   tema: "claro" | "escuro";
   destaque: string;
   papel: string;
+  escala: number;
   teclado: string;
   relogio24h: boolean;
 };
@@ -48,7 +49,7 @@ export type Rede = {
 };
 export type Som = { disponivel: boolean; volume: number; mudo: boolean };
 
-export class ErroLumen extends Error {}
+export class ErroAlba extends Error {}
 
 async function pedir<T>(metodo: "GET" | "POST", rota: string, corpo?: unknown): Promise<T> {
   const resp = await fetch(rota, {
@@ -63,7 +64,7 @@ async function pedir<T>(metodo: "GET" | "POST", rota: string, corpo?: unknown): 
   } catch {
     // resposta vazia
   }
-  if (!resp.ok) throw new ErroLumen(dados.erro || `Erro ${resp.status}`);
+  if (!resp.ok) throw new ErroAlba(dados.erro || `Erro ${resp.status}`);
   return dados as T;
 }
 
@@ -93,6 +94,7 @@ export const api = {
   energia: (acao: "desligar" | "reiniciar") => pedir("POST", "/api/energia", { acao }),
   discos: () => pedir<{ discos: Disco[] }>("GET", "/api/discos"),
   fusos: () => pedir<{ fusos: string[]; padrao: string; teclados: Teclado[] }>("GET", "/api/fusos"),
+  recarregar: () => pedir<{ ok: boolean }>("POST", "/api/recarregar", {}),
   urlArquivo: (caminho: string) => `/api/arquivo?caminho=${q(caminho)}`,
 };
 

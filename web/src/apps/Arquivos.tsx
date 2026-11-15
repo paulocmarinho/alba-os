@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, type Item, type Local, tamanhoLegivel } from "../api";
-import { iniciais, useLumen } from "../contexto";
+import { iniciais, useAlba } from "../contexto";
 import { Icone, type NomeIcone } from "../componentes/Icone";
 
 const CORES: Record<string, string> = {
@@ -31,8 +31,81 @@ function iconePasta(nome: string): NomeIcone {
   return mapa[nome] || "folder";
 }
 
+const COR_PASTA: Record<string, string> = {
+  Documentos: "#5c9ff0",
+  Downloads: "#3fb7cb",
+  Imagens: "#e483b6",
+  Músicas: "#9b78de",
+  Vídeos: "#ef9a55",
+  Área: "#5c9ff0",
+};
+
+function corPasta(nome: string) {
+  return COR_PASTA[nome] || "#7d8ff0";
+}
+
+const ROTULO: Record<string, string> = {
+  imagem: "IMG",
+  video: "VÍDEO",
+  audio: "ÁUDIO",
+  texto: "TXT",
+  pdf: "PDF",
+  compactado: "ZIP",
+};
+
+const COR_ARQUIVO: Record<string, string> = {
+  imagem: "#e483b6",
+  video: "#9b78de",
+  audio: "#ef7f7f",
+  texto: "#5c9ff0",
+  pdf: "#ef6a5a",
+  compactado: "#9aa5b5",
+  arquivo: "#9aa5b5",
+};
+
+/** Pasta grande e colorida, desenhada pelo próprio Alba (com emblema das pastas do sistema). */
+function ArtePasta({ nome }: { nome: string }) {
+  const cor = corPasta(nome);
+  const emblema = iconePasta(nome);
+  return (
+    <span className="arte-pasta" style={{ "--cor": cor } as CSSProperties}>
+      <svg viewBox="0 0 80 64" aria-hidden="true">
+        <path className="fundo" d="M6 10a6 6 0 0 1 6-6h17.5a6 6 0 0 1 4.6 2.2L38 11h30a6 6 0 0 1 6 6v37a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6Z" />
+        <path className="frente" d="M6 22a6 6 0 0 1 6-6h56a6 6 0 0 1 6 6v32a6 6 0 0 1-6 6H12a6 6 0 0 1-6-6Z" />
+      </svg>
+      {emblema !== "folder" && (
+        <span className="emblema">
+          <Icone name={emblema} size={20} strokeWidth={2} />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Folha com dobra e etiqueta do tipo; imagens mostram a própria miniatura. */
+function ArteArquivo({ item }: { item: Item }) {
+  const ext = item.nome.includes(".") ? item.nome.split(".").pop()!.slice(0, 5).toUpperCase() : "";
+  const rotulo = ROTULO[item.categoria] || ext || "ARQ";
+  if (item.categoria === "imagem" && item.tamanho < 25 * 1024 * 1024) {
+    return (
+      <span className="arte-miniatura">
+        <img src={api.urlArquivo(item.caminho)} alt="" loading="lazy" draggable={false} />
+      </span>
+    );
+  }
+  return (
+    <span className="arte-arquivo" style={{ "--cor": COR_ARQUIVO[item.categoria] || COR_ARQUIVO.arquivo } as CSSProperties}>
+      <svg viewBox="0 0 56 68" aria-hidden="true">
+        <path className="folha" d="M6 4h30l14 14v42a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" />
+        <path className="dobra" d="M36 4v10a4 4 0 0 0 4 4h10" />
+      </svg>
+      <span className="etiqueta">{rotulo}</span>
+    </span>
+  );
+}
+
 export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: number }) {
-  const { sistema, config, abrir, aviso, confirmar, perguntar, renomearJanela } = useLumen();
+  const { sistema, config, abrir, aviso, confirmar, perguntar, renomearJanela } = useAlba();
   const [locais, setLocais] = useState<Local[]>([]);
   const [caminho, setCaminho] = useState(inicial || sistema.casa);
   const [historico, setHistorico] = useState<string[]>([]);
@@ -103,7 +176,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
     if (item.tipo === "pasta") return ir(item.caminho);
     if (item.categoria === "imagem") return abrir("visualizador", { caminho: item.caminho });
     if (item.categoria === "texto" || (item.tamanho ?? 0) < 512 * 1024) return abrir("notas", { caminho: item.caminho });
-    aviso("O Lúmen ainda não tem um app para abrir este tipo de arquivo.");
+    aviso("O Alba OS ainda não tem um app para abrir este tipo de arquivo.");
   }
 
   async function novaPasta() {
@@ -170,7 +243,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
   const cartao = (item: Item) => (
     <button
       key={item.caminho}
-      className={`folder-card ${selecionado === item.caminho ? "selecionado" : ""}`}
+      className={`folder-card ${visao === "grade" ? "tile" : ""} ${selecionado === item.caminho ? "selecionado" : ""}`}
       onClick={() => setSelecionado(item.caminho)}
       onDoubleClick={() => abrirItem(item)}
       onKeyDown={(e) => e.key === "Enter" && abrirItem(item)}
@@ -180,9 +253,13 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
         setMenu({ item, x: e.clientX, y: e.clientY });
       }}
     >
-      <span className="folder-icon" style={{ "--folder": CORES[item.categoria] || CORES.arquivo } as CSSProperties}>
-        <Icone name={item.tipo === "pasta" ? iconePasta(item.nome) : ICONES[item.categoria] || "file"} size={25} strokeWidth={1.6} />
-      </span>
+      {visao === "grade" ? (
+        item.tipo === "pasta" ? <ArtePasta nome={item.nome} /> : <ArteArquivo item={item} />
+      ) : (
+        <span className="folder-icon" style={{ "--folder": item.tipo === "pasta" ? corPasta(item.nome) : COR_ARQUIVO[item.categoria] || CORES.arquivo } as CSSProperties}>
+          <Icone name={item.tipo === "pasta" ? iconePasta(item.nome) : ICONES[item.categoria] || "file"} size={20} strokeWidth={1.7} />
+        </span>
+      )}
       <span className="folder-copy">
         <strong title={item.nome}>{item.nome}</strong>
         <small>
@@ -309,13 +386,12 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
           )}
         </section>
 
-        <footer className="system-footer">
+        <footer className="system-footer barra-status">
           <span>
-            <i className="status-dot" /> {sistema.sistema}
+            {visiveis.length} {visiveis.length === 1 ? "item" : "itens"}
           </span>
-          <span>
-            <Icone name="shield" size={15} /> Linux {sistema.kernel.split("-")[0]}
-          </span>
+          <span>•</span>
+          <span>{tamanhoLegivel(Math.max(0, sistema.disco_total - sistema.disco_usado))} disponíveis</span>
         </footer>
       </div>
 

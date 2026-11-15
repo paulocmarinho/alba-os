@@ -1,4 +1,4 @@
-name: Construir ISO do Lúmen
+name: Construir ISO do Alba
 
 on:
   workflow_dispatch:
@@ -36,18 +36,18 @@ jobs:
           ls -la dist dist/fonts || true
 
       - name: Testar o servidor do sistema
-        run: python3 -m py_compile servidor/lumen_servidor.py servidor/pam.py
+        run: python3 -m py_compile servidor/alba_servidor.py servidor/pam.py
 
       - name: Montar a ISO num contêiner Arch Linux
         run: |
           docker run --rm --privileged \
-            -v "$PWD:/lumen" -w /lumen \
+            -v "$PWD:/alba" -w /alba \
             archlinux:latest \
             bash -c '
               set -e
               pacman -Syu --noconfirm --needed archiso
-              bash ./iso/construir-iso.sh /lumen/saida
-              chown -R '"$(id -u):$(id -g)"' /lumen/saida
+              bash ./iso/construir-iso.sh /alba/saida
+              chown -R '"$(id -u):$(id -g)"' /alba/saida
             '
           ls -lh saida
 
@@ -57,7 +57,7 @@ jobs:
       - name: Disponibilizar a ISO para download
         uses: actions/upload-artifact@v4
         with:
-          name: lumen-os-iso
+          name: alba-os-iso
           path: |
             saida/*.iso
             saida/SHA256SUMS.txt

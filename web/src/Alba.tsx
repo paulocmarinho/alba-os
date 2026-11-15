@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Config, type Sistema } from "./api";
-import { APPS, CtxLumen, type Contexto, type IdApp, type Janela as DadosJanela } from "./contexto";
+import { APPS, CtxAlba, type Contexto, type IdApp, type Janela as DadosJanela } from "./contexto";
 import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
 import { Instalador } from "./apps/Instalador";
@@ -19,9 +19,10 @@ type Dialogo =
 function Papel() {
   return (
     <div className="wallpaper" aria-hidden="true">
-      <span className="orb orb-one" />
-      <span className="orb orb-two" />
-      <span className="orb orb-three" />
+      <span className="forma forma-1" />
+      <span className="forma forma-2" />
+      <span className="forma forma-3" />
+      <span className="brilho" />
       <span className="grain" />
     </div>
   );
@@ -76,7 +77,7 @@ function CaixaDialogo({ d, fechar }: { d: Dialogo; fechar: () => void }) {
   );
 }
 
-export function Lumen() {
+export function Alba() {
   const [sistema, setSistema] = useState<Sistema | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
   const [erro, setErro] = useState("");
@@ -222,7 +223,7 @@ export function Lumen() {
         <Papel />
         <div className="falha-inicio">
           <Icone name="logo" size={48} />
-          <h1>O Lúmen não conseguiu iniciar</h1>
+          <h1>O Alba OS não conseguiu iniciar</h1>
           <p>{erro}</p>
           <button onClick={() => location.reload()}>Tentar de novo</button>
         </div>
@@ -260,7 +261,7 @@ export function Lumen() {
   }
 
   return (
-    <CtxLumen.Provider value={ctx}>
+    <CtxAlba.Provider value={ctx}>
       <main
         className={`desktop ${config.tema === "escuro" ? "dark" : ""}`}
         style={{ "--destaque": config.destaque } as React.CSSProperties}
@@ -302,6 +303,6 @@ export function Lumen() {
         </div>
         {dialogo && <CaixaDialogo d={dialogo} fechar={() => setDialogo(null)} />}
       </main>
-    </CtxLumen.Provider>
+    </CtxAlba.Provider>
   );
 }

@@ -5,6 +5,6 @@ Type = Package
 Target = filesystem
 
 [Action]
-Description = Aplicando a identidade do Lúmen OS...
+Description = Aplicando a identidade do Alba OS...
 When = PostTransaction
-Exec = /usr/local/bin/lumen-identidade
+Exec = /usr/local/bin/alba-identidade

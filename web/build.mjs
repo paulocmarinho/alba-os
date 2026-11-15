@@ -1,4 +1,4 @@
-// Monta a interface do Lúmen em web/dist (usado pela ISO e pelo servidor).
+// Monta a interface do Alba em web/dist (usado pela ISO e pelo servidor).
 import { build } from "esbuild";
 import { cpSync, mkdirSync, rmSync } from "node:fs";
 

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Sessão gráfica do Alba OS.
+# Roda no login do tty1: liga o servidor do sistema e abre a interface do Alba
+# em tela cheia. O motor de exibição (Chromium em modo quiosque, com tudo de
+# navegador desligado por política em /etc/chromium/policies/managed/alba.json)
+# fica invisível: só a interface do Alba aparece. Se a interface fechar, ela volta.
+set -u
+
+ALBA=/usr/share/alba
+PORTA=7070
+CACHE="$HOME/.cache/alba"
+mkdir -p "$CACHE"
+exec >"$CACHE/sessao.log" 2>&1
+
+TOKEN="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 40)"
+MODO=()
+[[ -d /run/archiso ]] && MODO=(--live)
+
+python3 "$ALBA/servidor/alba_servidor.py" --porta "$PORTA" --token "$TOKEN" --web "$ALBA/web" "${MODO[@]}" \
+  >"$CACHE/servidor.log" 2>&1 &
+SERVIDOR=$!
+trap 'kill "$SERVIDOR" 2>/dev/null' EXIT
+
+for _ in $(seq 1 100); do
+  (exec 3<>"/dev/tcp/127.0.0.1/$PORTA") 2>/dev/null && break
+  sleep 0.1
+done
+
+# Teclado escolhido nos Ajustes (ou na instalação).
+teclado="$(cat "$HOME/.config/alba/teclado" 2>/dev/null || cat /etc/alba/teclado 2>/dev/null || echo br)"
+case "$teclado" in
+  br) export XKB_DEFAULT_LAYOUT=br XKB_DEFAULT_MODEL=abnt2 ;;
+  us) export XKB_DEFAULT_LAYOUT=us ;;
+  us-intl) export XKB_DEFAULT_LAYOUT=us XKB_DEFAULT_VARIANT=intl ;;
+  pt) export XKB_DEFAULT_LAYOUT=pt ;;
+  es) export XKB_DEFAULT_LAYOUT=es ;;
+  gb) export XKB_DEFAULT_LAYOUT=gb ;;
+esac
+
+MOTOR="$(command -v chromium || command -v chromium-browser)"
+URL="http://127.0.0.1:$PORTA/?t=$TOKEN"
+PERFIL="$CACHE/motor"
+
+escala() {
+  python3 - "$HOME/.config/alba/config.json" <<'PY' 2>/dev/null || echo 1.25
+import json, sys
+try:
+    v = float(json.load(open(sys.argv[1])).get("escala", 1.25))
+except Exception:
+    v = 1.25
+print(v if v in (1.0, 1.25, 1.5) else 1.25)
+PY
+}
+
+falhas=0
+while true; do
+  rm -f "$CACHE/recarregar"
+  # Perfil do motor descartável: nada de histórico, senhas ou estado de navegador.
+  rm -rf "$PERFIL"
+  inicio=$(date +%s)
+  cage -s -d -- "$MOTOR" \
+    --kiosk "$URL" \
+    --ozone-platform=wayland \
+    --user-data-dir="$PERFIL" \
+    --force-device-scale-factor="$(escala)" \
+    --no-first-run --no-default-browser-check --noerrdialogs --disable-infobars \
+    --disable-session-crashed-bubble --disable-translate --password-store=basic \
+    --disable-sync --disable-extensions --disable-default-apps --disable-component-update \
+    --disable-background-networking --disable-client-side-phishing-detection \
+    --disable-spell-checking --disable-print-preview --disable-notifications \
+    --disable-features=Translate,MediaRouter,HardwareMediaKeyHandling,PasswordManagerOnboarding,AutofillServerCommunication,DownloadBubble,GlobalMediaControls,TabHoverCards,PrivacySandboxSettings4 \
+    --enable-features=OverlayScrollbar \
+    --autoplay-policy=no-user-gesture-required \
+    --overscroll-history-navigation=0 --disable-pinch \
+    --lang=pt-BR &
+  CAGE=$!
+  while kill -0 "$CAGE" 2>/dev/null; do
+    if [[ -f "$CACHE/recarregar" ]]; then
+      kill "$CAGE" 2>/dev/null
+      break
+    fi
+    sleep 0.4
+  done
+  wait "$CAGE" 2>/dev/null
+  if (( $(date +%s) - inicio < 5 )); then
+    falhas=$((falhas + 1))
+    echo "Interface fechou rápido demais ($falhas)."
+    sleep $(( falhas > 5 ? 5 : 1 ))
+  else
+    falhas=0
+  fi
+done

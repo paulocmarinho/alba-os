@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Instalador do Lúmen OS (roda como root, chamado pela interface na sessão ao vivo).
+# Instalador do Alba OS (roda como root, chamado pela interface na sessão ao vivo).
 # Recebe a configuração em JSON pela entrada padrão:
 #   {"disco","nome","usuario","senha","maquina","fuso","teclado"}
 # Escreve "PROGRESSO <0-100> <texto>" para a interface acompanhar.
 set -euo pipefail
 
-ALVO=/mnt/lumen
+ALVO=/mnt/alba
 SFS=/run/archiso/bootmnt/arch/x86_64/airootfs.sfs
 KERNEL=/run/archiso/bootmnt/arch/boot/x86_64/vmlinuz-linux
 
@@ -32,12 +32,12 @@ TECLADO="$(ler teclado)"
 # Conferências antes de apagar qualquer coisa
 [[ -b "$DISCO" ]] || falhar "o disco $DISCO não existe."
 [[ "$(lsblk -dno TYPE "$DISCO")" == "disk" ]] || falhar "$DISCO não é um disco inteiro."
-[[ "$USUARIO" =~ ^[a-z_][a-z0-9_-]{0,31}$ && "$USUARIO" != "root" && "$USUARIO" != "lumen" ]] || falhar "nome de usuário inválido."
+[[ "$USUARIO" =~ ^[a-z_][a-z0-9_-]{0,31}$ && "$USUARIO" != "root" && "$USUARIO" != "alba" ]] || falhar "nome de usuário inválido."
 [[ "$MAQUINA" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$ ]] || falhar "nome do computador inválido."
 [[ ${#SENHA} -ge 4 ]] || falhar "a senha precisa de pelo menos 4 caracteres."
 [[ -f "/usr/share/zoneinfo/$FUSO" ]] || FUSO="America/Sao_Paulo"
 case "$TECLADO" in br | us | us-intl | pt | es | gb) ;; *) TECLADO=br ;; esac
-[[ -f "$SFS" ]] || falhar "não achei o sistema da ISO ($SFS). Inicie pelo menu 'Lumen OS' da ISO."
+[[ -f "$SFS" ]] || falhar "não achei o sistema da ISO ($SFS). Inicie pelo menu 'Alba OS' da ISO."
 [[ -f "$KERNEL" ]] || falhar "não achei o kernel da ISO ($KERNEL)."
 grep -q "^$DISCO" <(findmnt -rno SOURCE /run/archiso/bootmnt 2>/dev/null || true) && falhar "esse é o disco da própria ISO."
 
@@ -53,7 +53,7 @@ wipefs -af "$DISCO"
 sgdisk --zap-all "$DISCO"
 sgdisk -n1:0:+1M -t1:ef02 -c1:BIOS \
        -n2:0:+512M -t2:ef00 -c2:EFI \
-       -n3:0:0 -t3:8304 -c3:Lumen "$DISCO"
+       -n3:0:0 -t3:8304 -c3:Alba "$DISCO"
 partprobe "$DISCO" 2>/dev/null || partx -u "$DISCO" || true
 udevadm settle
 sleep 1
@@ -62,7 +62,7 @@ RAIZ="$(parte 3)"
 
 progresso 8 "Formatando"
 mkfs.fat -F 32 -n EFI "$EFI"
-mkfs.ext4 -F -q -L Lumen "$RAIZ"
+mkfs.ext4 -F -q -L Alba "$RAIZ"
 mkdir -p "$ALVO"
 mount "$RAIZ" "$ALVO"
 mkdir -p "$ALVO/boot/efi"
@@ -91,10 +91,10 @@ set -euo pipefail
 USUARIO="$1"; NOME="$2"; MAQUINA="$3"; FUSO="$4"; TECLADO="$5"
 
 # Tira o que só existe na ISO
-rm -f /etc/sudoers.d/10-lumen-live \
-      /etc/systemd/system/lumen-live-setup.service \
-      /etc/systemd/system/multi-user.target.wants/lumen-live-setup.service \
-      /usr/local/bin/lumen-live-setup \
+rm -f /etc/sudoers.d/10-alba-live \
+      /etc/systemd/system/alba-live-setup.service \
+      /etc/systemd/system/multi-user.target.wants/alba-live-setup.service \
+      /usr/local/bin/alba-live-setup \
       /etc/mkinitcpio.conf.d/archiso.conf \
       /etc/systemd/system/pacman-init.service \
       /etc/systemd/system/etc-pacman.d-gnupg.mount \
@@ -124,8 +124,8 @@ case "$TECLADO" in
   br) MAPA=br-abnt2 ;; us) MAPA=us ;; us-intl) MAPA=us-acentos ;; pt) MAPA=pt-latin1 ;; es) MAPA=es ;; gb) MAPA=uk ;; *) MAPA=br-abnt2 ;;
 esac
 echo "KEYMAP=$MAPA" >/etc/vconsole.conf
-mkdir -p /etc/lumen
-echo "$TECLADO" >/etc/lumen/teclado
+mkdir -p /etc/alba
+echo "$TECLADO" >/etc/alba/teclado
 
 # Nome do computador
 echo "$MAQUINA" >/etc/hostname
@@ -146,10 +146,10 @@ cat >/etc/systemd/system/getty@tty1.service.d/autologin.conf <<GETTY
 ExecStart=
 ExecStart=-/sbin/agetty -o '-p -f -- \\\\u' --noclear --autologin $USUARIO %I \$TERM
 GETTY
-install -d -o "$USUARIO" -g "$USUARIO" "/home/$USUARIO/.config/lumen"
-echo "$TECLADO" >"/home/$USUARIO/.config/lumen/teclado"
-printf '{"tema": "claro", "destaque": "#2f8c80", "papel": "aurora", "teclado": "%s", "relogio24h": true}\n' "$TECLADO" \
-  >"/home/$USUARIO/.config/lumen/config.json"
+install -d -o "$USUARIO" -g "$USUARIO" "/home/$USUARIO/.config/alba"
+echo "$TECLADO" >"/home/$USUARIO/.config/alba/teclado"
+printf '{"tema": "claro", "destaque": "#5b6ee1", "papel": "alba", "teclado": "%s", "relogio24h": true, "escala": 1.25}\n' "$TECLADO" \
+  >"/home/$USUARIO/.config/alba/config.json"
 chown -R "$USUARIO:$USUARIO" "/home/$USUARIO/.config"
 
 # Serviços
@@ -169,13 +169,13 @@ progresso 85 "Gerando a inicialização do sistema"
 arch-chroot "$ALVO" mkinitcpio -P
 
 progresso 93 "Instalando o carregador de boot"
-sed -i -e 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Lumen OS"/' \
+sed -i -e 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Alba OS"/' \
        -e 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' \
        -e 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' \
        "$ALVO/etc/default/grub"
 if [[ $UEFI == 1 ]]; then
-  arch-chroot "$ALVO" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=lumen --removable
-  arch-chroot "$ALVO" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=lumen 2>/dev/null || true
+  arch-chroot "$ALVO" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=alba --removable
+  arch-chroot "$ALVO" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=alba 2>/dev/null || true
 else
   arch-chroot "$ALVO" grub-install --target=i386-pc "$DISCO"
 fi
@@ -185,4 +185,4 @@ progresso 98 "Finalizando"
 sync
 desmontar
 progresso 100 "Pronto"
-echo "Lúmen OS instalado em $DISCO."
+echo "Alba OS instalado em $DISCO."

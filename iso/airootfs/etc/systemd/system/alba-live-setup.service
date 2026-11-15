@@ -1,11 +1,11 @@
 [Unit]
-Description=Prepara a sessão ao vivo do Lúmen OS
+Description=Prepara a sessão ao vivo do Alba OS
 Before=getty@tty1.service systemd-user-sessions.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/local/bin/lumen-live-setup
+ExecStart=/usr/local/bin/alba-live-setup
 
 [Install]
 WantedBy=multi-user.target

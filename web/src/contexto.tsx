@@ -13,7 +13,7 @@ export const APPS: Record<
   notas: { nome: "Notas", icone: "note", classe: "notes", largura: 760, altura: 540, unico: false },
   ajustes: { nome: "Ajustes", icone: "settings", classe: "settings", largura: 880, altura: 600, unico: true },
   visualizador: { nome: "Imagem", icone: "image", classe: "viewer", largura: 820, altura: 600, unico: false },
-  instalador: { nome: "Instalar o Lúmen OS", icone: "install", classe: "install", largura: 900, altura: 640, unico: true },
+  instalador: { nome: "Instalar o Alba OS", icone: "install", classe: "install", largura: 900, altura: 640, unico: true },
 };
 
 export type Janela = {
@@ -45,11 +45,11 @@ export type Contexto = {
   energia: (acao: "desligar" | "reiniciar") => void;
 };
 
-export const CtxLumen = createContext<Contexto | null>(null);
+export const CtxAlba = createContext<Contexto | null>(null);
 
-export function useLumen() {
-  const c = useContext(CtxLumen);
-  if (!c) throw new Error("Contexto do Lúmen ausente");
+export function useAlba() {
+  const c = useContext(CtxAlba);
+  if (!c) throw new Error("Contexto do Alba ausente");
   return c;
 }
 

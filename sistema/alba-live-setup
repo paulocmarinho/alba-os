@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Sessão ao vivo do Alba: cria o usuário "alba" (sem senha) antes do login automático.
+set -u
+ln -sf /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
+if ! id alba >/dev/null 2>&1; then
+  useradd -m -G wheel,audio,video,input -s /bin/bash -c "Alba" alba
+  passwd -d alba >/dev/null
+fi
+mkdir -p /home/alba/.config/alba
+[[ -f /home/alba/.config/alba/teclado ]] || echo br >/home/alba/.config/alba/teclado
+chown -R alba:alba /home/alba/.config
+exit 0

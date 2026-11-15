@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type Rede, type Som, type Teclado, tamanhoLegivel } from "../api";
-import { useLumen } from "../contexto";
+import { useAlba } from "../contexto";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
 
@@ -14,13 +14,20 @@ const SECOES: { id: Secao; nome: string; icone: NomeIcone }[] = [
   { id: "sobre", nome: "Sobre", icone: "info" },
 ];
 
+const ESCALAS = [
+  { valor: 1, nome: "Compacta", texto: "100%" },
+  { valor: 1.25, nome: "Padrão", texto: "125%" },
+  { valor: 1.5, nome: "Grande", texto: "150%" },
+];
+
 const DESTAQUES = [
-  { cor: "#2f8c80", nome: "Verde-água" },
-  { cor: "#3f7fbf", nome: "Azul" },
-  { cor: "#7a62c9", nome: "Violeta" },
-  { cor: "#c2577a", nome: "Rosa" },
-  { cor: "#c9803a", nome: "Âmbar" },
-  { cor: "#4f6b66", nome: "Grafite" },
+  { cor: "#5b6ee1", nome: "Anil" },
+  { cor: "#3f8fe0", nome: "Azul" },
+  { cor: "#8a64d6", nome: "Lavanda" },
+  { cor: "#d0608f", nome: "Rosa" },
+  { cor: "#2f9c8f", nome: "Verde-água" },
+  { cor: "#d9823b", nome: "Âmbar" },
+  { cor: "#5d6678", nome: "Grafite" },
 ];
 
 function duracao(segundos: number) {
@@ -30,7 +37,19 @@ function duracao(segundos: number) {
 }
 
 export function Ajustes({ secao: inicial }: { secao?: Secao }) {
-  const { config, mudarConfig, sistema } = useLumen();
+  const { config, mudarConfig, sistema, confirmar } = useAlba();
+
+  async function mudarEscala(valor: number) {
+    if (valor === config.escala) return;
+    const ok = await confirmar({
+      titulo: `Mudar o tamanho para ${Math.round(valor * 100)}%?`,
+      texto: "A interface vai se redesenhar no novo tamanho. As janelas abertas serão fechadas.",
+      ok: "Mudar tamanho",
+    });
+    if (!ok) return;
+    await mudarConfig({ escala: valor });
+    await api.recarregar().catch(() => {});
+  }
   const [secao, setSecao] = useState<Secao>(inicial || "aparencia");
   const [rede, setRede] = useState<Rede | null>(null);
   const [som, setSom] = useState<Som | null>(null);
@@ -98,6 +117,18 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
                 </button>
               ))}
             </div>
+            <h3>Tamanho da interface</h3>
+            <div className="ajuste-grupo escalas">
+              {ESCALAS.map((e) => (
+                <button key={e.valor} className={`escala-opcao ${config.escala === e.valor ? "selecionado" : ""}`} onClick={() => mudarEscala(e.valor)}>
+                  <span className="escala-amostra" style={{ fontSize: `${12 * e.valor}px` }}>
+                    Aa
+                  </span>
+                  <strong>{e.nome}</strong>
+                  <small>{e.texto}</small>
+                </button>
+              ))}
+            </div>
             <div className="setting-row">
               <span>
                 <Icone name="moon" /> Modo escuro
@@ -136,7 +167,7 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
                 </div>
               ) : null}
             </div>
-            <p className="dica">Conexões por cabo entram sozinhas. Redes Wi‑Fi com senha chegam numa próxima versão do Lúmen.</p>
+            <p className="dica">Conexões por cabo entram sozinhas. Redes Wi‑Fi com senha chegam numa próxima versão do Alba OS.</p>
           </>
         )}
 
@@ -175,12 +206,11 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
             <h2>Teclado</h2>
             <div className="ajuste-grupo">
               {teclados.map((t) => (
-                <label key={t.id} className={`opcao-lista ${config.teclado === t.id ? "selecionado" : ""}`}>
-                  <input type="radio" name="teclado" checked={config.teclado === t.id} onChange={() => mudarConfig({ teclado: t.id })} />
+                <button type="button" role="radio" aria-checked={config.teclado === t.id} key={t.id} className={`opcao-lista ${config.teclado === t.id ? "selecionado" : ""}`} onClick={() => mudarConfig({ teclado: t.id })}>
                   <Icone name="keyboard" size={18} />
                   <span>{t.nome}</span>
                   {config.teclado === t.id && <Icone name="check" size={17} />}
-                </label>
+                </button>
               ))}
             </div>
             {config.teclado !== tecladoInicial && <p className="dica destaque">O novo teclado passa a valer no próximo login (reinicie o computador).</p>}
@@ -196,7 +226,7 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
             <div className="settings-hero">
               <Icone name="logo" size={54} />
               <div>
-                <h2>Lúmen OS</h2>
+                <h2>Alba OS</h2>
                 <p>Linux, com luz própria · versão {sistema.versao}</p>
               </div>
             </div>

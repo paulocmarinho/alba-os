@@ -1,5 +1,5 @@
-# Pacotes do Lúmen OS, somados à base "releng" do archiso.
-# Não há área de trabalho tradicional: a interface é toda do Lúmen.
+# Pacotes do Alba OS, somados à base "releng" do archiso.
+# Não há área de trabalho tradicional: a interface é toda do Alba.
 
 # Sessão gráfica: compositor mínimo + motor de navegador em modo quiosque
 cage

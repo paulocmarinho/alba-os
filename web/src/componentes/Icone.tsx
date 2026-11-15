@@ -76,9 +76,9 @@ export function Icone({
   const paths: Record<NomeIcone, ReactNode> = {
     logo: (
       <>
-        <path d="M5 6.5 12 2l7 4.5v8.7L12 22l-7-6.8Z" />
-        <path d="m8.5 8.5 3.5-2 3.5 2v4L12 15l-3.5-2.5Z" />
-        <path d="M12 15v7M5 15.2l3.5-2.7M19 15.2l-3.5-2.7" />
+        <path d="M6.5 16.5a5.5 5.5 0 0 1 11 0" />
+        <path d="M2.5 16.5h19M6.5 20h11" />
+        <path d="M12 4.5v3M5.4 7.6l1.9 1.9M18.6 7.6l-1.9 1.9" />
       </>
     ),
     wifi: (

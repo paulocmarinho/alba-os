@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { dataSemAno, hora, iniciais, useLumen } from "../contexto";
+import { dataSemAno, hora, iniciais, useAlba } from "../contexto";
 import { Icone } from "./Icone";
 
-/** Tela de bloqueio do Lúmen: data em cima, hora grande, usuário e senha embaixo. */
+/** Tela de bloqueio do Alba: data em cima, hora grande, usuário e senha embaixo. */
 export function TelaBloqueio({ aoDesbloquear }: { aoDesbloquear: () => void }) {
-  const { agora, sistema, energia } = useLumen();
+  const { agora, sistema, energia } = useAlba();
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState(false);
   const [conferindo, setConferindo] = useState(false);
@@ -44,7 +44,7 @@ export function TelaBloqueio({ aoDesbloquear }: { aoDesbloquear: () => void }) {
         <span className="bloqueio-hora">{hora(agora)}</span>
       </div>
 
-      <form className={`bloqueio-entrar ${erro ? "erro" : ""}`} onSubmit={entrar}>
+      <form autoComplete="off" className={`bloqueio-entrar ${erro ? "erro" : ""}`} onSubmit={entrar}>
         <div className="bloqueio-avatar">{iniciais(sistema.nome)}</div>
         <strong>{sistema.nome}</strong>
         <label className="bloqueio-senha">

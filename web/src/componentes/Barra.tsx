@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type Rede, type Som } from "../api";
-import { APPS, type IdApp, type Janela, dataLonga, hora, useLumen } from "../contexto";
+import { APPS, type IdApp, type Janela, dataLonga, hora, useAlba } from "../contexto";
 import { Icone } from "./Icone";
 
-/** Barra superior completa: menu do Lúmen à esquerda, status, data por extenso e hora à direita. */
+/** Barra superior completa: menu do Alba à esquerda, status, data por extenso e hora à direita. */
 export function BarraSuperior({
   janelaAtiva,
   centralAberta,
@@ -13,7 +13,7 @@ export function BarraSuperior({
   centralAberta: boolean;
   alternarCentral: () => void;
 }) {
-  const { agora, abrir, bloquear, energia, sistema } = useLumen();
+  const { agora, abrir, bloquear, energia, sistema } = useAlba();
   const [menu, setMenu] = useState(false);
   const [rede, setRede] = useState<Rede | null>(null);
   const [som, setSom] = useState<Som | null>(null);
@@ -53,8 +53,8 @@ export function BarraSuperior({
   return (
     <header className="topbar">
       <nav className="app-menu" aria-label="Menu do sistema">
-        <div className="menu-lumen" ref={ref}>
-          <button className="brand-button" aria-label="Menu Lúmen" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+        <div className="menu-alba" ref={ref}>
+          <button className="brand-button" aria-label="Menu Alba" aria-expanded={menu} onClick={() => setMenu(!menu)}>
             <Icone name="logo" size={19} strokeWidth={1.6} />
           </button>
           {menu && (
@@ -68,7 +68,7 @@ export function BarraSuperior({
             </div>
           )}
         </div>
-        <strong>{janelaAtiva ? APPS[janelaAtiva.app].nome : "Lúmen"}</strong>
+        <strong>{janelaAtiva ? APPS[janelaAtiva.app].nome : "Alba"}</strong>
       </nav>
       <nav className="status-menu" aria-label="Status do sistema">
         <span title={rede?.online ? "Conectado" : "Sem conexão"} className={rede?.online ? "" : "desligado"}>
@@ -90,7 +90,7 @@ export function BarraSuperior({
   );
 }
 
-/** Dock com os apps do Lúmen; o ponto indica app aberto. */
+/** Dock com os apps do Alba; o ponto indica app aberto. */
 export function Dock({
   janelas,
   aoClicar,

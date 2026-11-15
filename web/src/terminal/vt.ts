@@ -1,4 +1,4 @@
-// Emulador de terminal do Lúmen (subconjunto de VT100/xterm suficiente para bash, ls, nano, htop simples).
+// Emulador de terminal do Alba (subconjunto de VT100/xterm suficiente para bash, ls, nano, htop simples).
 
 export type Estilo = {
   fg: string | null;

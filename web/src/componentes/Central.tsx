@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, type Rede, type Som } from "../api";
-import { dataSemAno, hora, useLumen } from "../contexto";
+import { dataSemAno, hora, useAlba } from "../contexto";
 import { Icone } from "./Icone";
+
 
 export function Interruptor({ ligado, aoMudar, rotulo }: { ligado: boolean; aoMudar: () => void; rotulo: string }) {
   return (
@@ -33,7 +34,7 @@ export function Deslizante({
 
 /** Central de controle: rede, tema, volume e energia — tudo real. */
 export function Central({ fechar }: { fechar: () => void }) {
-  const { agora, config, mudarConfig, abrir, bloquear, energia, sistema } = useLumen();
+  const { agora, config, mudarConfig, abrir, bloquear, energia, sistema } = useAlba();
   const [rede, setRede] = useState<Rede | null>(null);
   const [som, setSom] = useState<Som | null>(null);
 
@@ -57,35 +58,32 @@ export function Central({ fechar }: { fechar: () => void }) {
         </button>
       </div>
 
-      <div className="control-grid">
-        <div className="connection-card">
-          <button className={`connection-row ${rede?.online ? "enabled" : ""}`} onClick={() => abrir("ajustes", { secao: "rede" })}>
-            <span className="round-icon">
-              <Icone name="wifi" size={19} />
-            </span>
-            <span>
-              <strong>Rede</strong>
-              <small>{rede ? (rede.online ? conexao?.nome || rede.ips[0] || "Conectado" : "Sem conexão") : "Verificando…"}</small>
-            </span>
-          </button>
-          <div className={`connection-row ${escuro ? "enabled" : ""}`}>
-            <span className="round-icon">
-              <Icone name="moon" size={19} />
-            </span>
-            <span>
-              <strong>Modo escuro</strong>
-              <small>{escuro ? "Ativado" : "Desativado"}</small>
-            </span>
-            <Interruptor rotulo="Modo escuro" ligado={escuro} aoMudar={() => mudarConfig({ tema: escuro ? "claro" : "escuro" })} />
-          </div>
-        </div>
-        <button className="focus-card" onClick={() => abrir("ajustes", { secao: "aparencia" })}>
+      <div className="control-grid blocos">
+        <button className={`control-tile ${rede?.online ? "on" : ""}`} onClick={() => abrir("ajustes", { secao: "rede" })}>
           <span className="round-icon">
-            <Icone name="palette" size={20} />
+            <Icone name="wifi" size={18} />
+          </span>
+          <span>
+            <strong>Rede</strong>
+            <small>{rede ? (rede.online ? conexao?.nome || rede.ips[0] || "Conectado" : "Sem conexão") : "Verificando…"}</small>
+          </span>
+        </button>
+        <button className={`control-tile ${escuro ? "on" : ""}`} onClick={() => mudarConfig({ tema: escuro ? "claro" : "escuro" })} aria-pressed={escuro}>
+          <span className="round-icon">
+            <Icone name="moon" size={18} />
+          </span>
+          <span>
+            <strong>Modo escuro</strong>
+            <small>{escuro ? "Ativado" : "Desativado"}</small>
+          </span>
+        </button>
+        <button className="control-tile largo" onClick={() => abrir("ajustes", { secao: "aparencia" })}>
+          <span className="round-icon">
+            <Icone name="palette" size={18} />
           </span>
           <span>
             <strong>Aparência</strong>
-            <small>Cores e tema</small>
+            <small>Cor de destaque, tema e tamanho da interface</small>
           </span>
         </button>
       </div>

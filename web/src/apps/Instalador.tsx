@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { abrirSocket, api, type Disco, type Teclado, tamanhoLegivel } from "../api";
-import { useLumen } from "../contexto";
+import { useAlba } from "../contexto";
 import { Icone } from "../componentes/Icone";
 
 type Passo = "boasvindas" | "regiao" | "disco" | "usuario" | "resumo" | "instalando" | "pronto" | "falhou";
@@ -23,9 +23,9 @@ function nomeUsuario(nome: string) {
   return base && /^[a-z_]/.test(base) ? base.slice(0, 32) : "";
 }
 
-/** Instalador do Lúmen OS: apaga o disco escolhido e instala o sistema. */
+/** Instalador do Alba OS: apaga o disco escolhido e instala o sistema. */
 export function Instalador() {
-  const { energia, confirmar } = useLumen();
+  const { energia, confirmar } = useAlba();
   const [passo, setPasso] = useState<Passo>("boasvindas");
   const [fusos, setFusos] = useState<string[]>([]);
   const [teclados, setTeclados] = useState<Teclado[]>([]);
@@ -37,7 +37,7 @@ export function Instalador() {
   const [nome, setNome] = useState("");
   const [usuario, setUsuario] = useState("");
   const [usuarioEditado, setUsuarioEditado] = useState(false);
-  const [maquina, setMaquina] = useState("lumen");
+  const [maquina, setMaquina] = useState("alba");
   const [senha, setSenha] = useState("");
   const [senha2, setSenha2] = useState("");
   const [progresso, setProgresso] = useState(0);
@@ -76,7 +76,7 @@ export function Instalador() {
     fimRegistro.current?.scrollIntoView({ block: "end" });
   }, [registro, verRegistro]);
 
-  const usuarioValido = /^[a-z_][a-z0-9_-]{0,31}$/.test(usuario) && !["root", "lumen"].includes(usuario);
+  const usuarioValido = /^[a-z_][a-z0-9_-]{0,31}$/.test(usuario) && !["root", "alba"].includes(usuario);
   const maquinaValida = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,62}$/.test(maquina);
   const senhaOk = senha.length >= 4 && senha === senha2;
   const contaOk = nome.trim().length > 0 && usuarioValido && maquinaValida && senhaOk;
@@ -131,7 +131,7 @@ export function Instalador() {
       <aside className="instalador-passos">
         <div className="instalador-marca">
           <Icone name="logo" size={34} strokeWidth={1.5} />
-          <strong>Lúmen OS</strong>
+          <strong>Alba OS</strong>
         </div>
         <ol>
           {PASSOS.map((p, i) => (
@@ -149,8 +149,8 @@ export function Instalador() {
             <div className="instalador-heroi">
               <Icone name="logo" size={64} strokeWidth={1.3} />
             </div>
-            <h1>Bem-vindo ao Lúmen OS</h1>
-            <p>Em poucos passos o Lúmen fica instalado neste computador. Você escolhe o fuso, o teclado, o disco e cria sua conta.</p>
+            <h1>Bem-vindo ao Alba OS</h1>
+            <p>Em poucos passos o Alba OS fica instalado neste computador. Você escolhe o fuso, o teclado, o disco e cria sua conta.</p>
             <div className="instalador-acoes">
               <button className="primario" onClick={() => setPasso("regiao")}>
                 Começar <Icone name="chevron" size={16} />
@@ -176,12 +176,11 @@ export function Instalador() {
               <span>Teclado</span>
               <div className="ajuste-grupo">
                 {teclados.map((t) => (
-                  <label key={t.id} className={`opcao-lista ${teclado === t.id ? "selecionado" : ""}`}>
-                    <input type="radio" name="teclado-inst" checked={teclado === t.id} onChange={() => setTeclado(t.id)} />
+                  <button type="button" role="radio" aria-checked={teclado === t.id} key={t.id} className={`opcao-lista ${teclado === t.id ? "selecionado" : ""}`} onClick={() => setTeclado(t.id)}>
                     <Icone name="keyboard" size={18} />
                     <span>{t.nome}</span>
                     {teclado === t.id && <Icone name="check" size={17} />}
-                  </label>
+                  </button>
                 ))}
               </div>
             </div>
@@ -197,14 +196,13 @@ export function Instalador() {
         {passo === "disco" && (
           <div className="instalador-tela">
             <h1>Onde instalar?</h1>
-            <p>O disco escolhido será apagado por inteiro e passará a ter só o Lúmen OS.</p>
+            <p>O disco escolhido será apagado por inteiro e passará a ter só o Alba OS.</p>
             {erroDiscos && <p className="aviso-erro">{erroDiscos}</p>}
             {!discos && !erroDiscos && <p className="dica">Procurando discos…</p>}
             {discos && discos.length === 0 && <p className="aviso-erro">Nenhum disco de 8 GB ou mais foi encontrado.</p>}
             <div className="ajuste-grupo">
               {discos?.map((d) => (
-                <label key={d.caminho} className={`opcao-lista disco ${disco === d.caminho ? "selecionado" : ""}`}>
-                  <input type="radio" name="disco" checked={disco === d.caminho} onChange={() => setDisco(d.caminho)} />
+                <button type="button" role="radio" aria-checked={disco === d.caminho} key={d.caminho} className={`opcao-lista disco ${disco === d.caminho ? "selecionado" : ""}`} onClick={() => setDisco(d.caminho)}>
                   <Icone name="disk" size={22} />
                   <span>
                     <strong>{d.modelo}</strong>
@@ -214,7 +212,7 @@ export function Instalador() {
                     </small>
                   </span>
                   {disco === d.caminho && <Icone name="check" size={17} />}
-                </label>
+                </button>
               ))}
             </div>
             <div className="instalador-acoes">
@@ -298,7 +296,7 @@ export function Instalador() {
 
         {(passo === "instalando" || passo === "pronto" || passo === "falhou") && (
           <div className="instalador-tela">
-            <h1>{passo === "pronto" ? "O Lúmen OS foi instalado" : passo === "falhou" ? "A instalação não terminou" : "Instalando o Lúmen OS"}</h1>
+            <h1>{passo === "pronto" ? "O Alba OS foi instalado" : passo === "falhou" ? "A instalação não terminou" : "Instalando o Alba OS"}</h1>
             <p>
               {passo === "pronto"
                 ? "Reinicie o computador. No Hyper-V, ejete a ISO em Mídia › Unidade de DVD antes de ligar de novo."

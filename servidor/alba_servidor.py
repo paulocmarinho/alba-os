@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Servidor do sistema Lúmen.
+"""Servidor do sistema Alba.
 
 Liga a interface (que roda no navegador em modo quiosque) ao sistema:
 arquivos, terminal, senha, som, rede, energia, configurações e instalação.
 Só usa a biblioteca padrão do Python. Escuta apenas em 127.0.0.1 e exige
 um token de sessão em todas as chamadas.
 
-Uso: lumen_servidor.py --porta 7070 --token SEGREDO --web /usr/share/lumen/web [--live]
+Uso: alba_servidor.py --porta 7070 --token SEGREDO --web /usr/share/alba/web [--live]
 """
 
 import argparse
@@ -34,15 +34,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
     import pam  # noqa: E402
-except OSError:  # libpam ausente (não deve acontecer no Lúmen)
+except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.1.0"
+VERSAO = "0.2.0"
 CASA = Path.home()
-CONFIG_DIR = CASA / ".config" / "lumen"
+CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
 LIXEIRA = CASA / ".local" / "share" / "Trash"
-CONFIG_PADRAO = {"tema": "claro", "destaque": "#2f8c80", "papel": "aurora", "teclado": "br", "relogio24h": True}
+CONFIG_PADRAO = {"tema": "claro", "destaque": "#5b6ee1", "papel": "alba", "teclado": "br", "relogio24h": True, "escala": 1.25}
+ESCALAS = (1.0, 1.25, 1.5)
 PASTAS_PADRAO = ["Documentos", "Downloads", "Imagens", "Músicas", "Vídeos"]
 TECLADOS = [
     {"id": "br", "nome": "Português (Brasil, ABNT2)"},
@@ -149,6 +150,12 @@ def gravar_config(novo):
         cfg["destaque"] = CONFIG_PADRAO["destaque"]
     if cfg["teclado"] not in {t["id"] for t in TECLADOS}:
         cfg["teclado"] = "br"
+    try:
+        cfg["escala"] = float(cfg["escala"])
+    except (TypeError, ValueError):
+        cfg["escala"] = CONFIG_PADRAO["escala"]
+    if cfg["escala"] not in ESCALAS:
+        cfg["escala"] = CONFIG_PADRAO["escala"]
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_ARQ.write_text(json.dumps(cfg, indent=2, ensure_ascii=False))
     # A sessão lê este arquivo para ajustar o teclado no próximo login.
@@ -218,7 +225,7 @@ def api_sistema(_q, _c):
         "usuario": usuario.pw_name,
         "nome": nome,
         "maquina": platform.node(),
-        "sistema": rel.get("PRETTY_NAME", "Lúmen OS"),
+        "sistema": rel.get("PRETTY_NAME", "Alba OS"),
         "versao": VERSAO,
         "kernel": platform.release(),
         "processador": cpu_modelo(),
@@ -412,6 +419,14 @@ def api_config_gravar(_q, c):
     return {"config": gravar_config(c)}
 
 
+def api_recarregar(_q, _c):
+    """Fecha a interface para a sessão abrir de novo (usado ao trocar a escala)."""
+    caminho = CASA / ".cache" / "alba" / "recarregar"
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text("1\n")
+    return {"ok": True}
+
+
 def api_som_ler(_q, _c):
     cod, saida, _ = rodar("wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@")
     if cod != 0:
@@ -502,6 +517,7 @@ ROTAS = {
     ("POST", "/api/autenticar"): api_autenticar,
     ("GET", "/api/config"): api_config_ler,
     ("POST", "/api/config"): api_config_gravar,
+    ("POST", "/api/recarregar"): api_recarregar,
     ("GET", "/api/som"): api_som_ler,
     ("POST", "/api/som"): api_som_gravar,
     ("GET", "/api/rede"): api_rede,
@@ -533,7 +549,7 @@ class Requisicao:
         return None
 
     def autorizada(self):
-        return ARGS.token in (self.cookie("lumen"), self.cabecalhos.get("x-lumen-token"))
+        return ARGS.token in (self.cookie("alba"), self.cabecalhos.get("x-alba-token"))
 
 
 async def ler_requisicao(leitor):
@@ -585,7 +601,7 @@ def arquivo_estatico(req):
         tipo += "; charset=utf-8"
     extras = []
     if req.query.get("t") == ARGS.token:
-        extras.append(f"Set-Cookie: lumen={ARGS.token}; Path=/; HttpOnly; SameSite=Strict")
+        extras.append(f"Set-Cookie: alba={ARGS.token}; Path=/; HttpOnly; SameSite=Strict")
     return resposta(200, alvo.read_bytes(), tipo, extras)
 
 
@@ -814,19 +830,19 @@ async def atender(leitor, escritor):
 async def principal():
     preparar_pastas()
     servidor = await asyncio.start_server(atender, "127.0.0.1", ARGS.porta)
-    print(f"Lúmen: servidor em http://127.0.0.1:{ARGS.porta}", flush=True)
+    print(f"Alba: servidor em http://127.0.0.1:{ARGS.porta}", flush=True)
     async with servidor:
         await servidor.serve_forever()
 
 
 def main():
     global ARGS
-    p = argparse.ArgumentParser(description="Servidor do sistema Lúmen")
+    p = argparse.ArgumentParser(description="Servidor do sistema Alba")
     p.add_argument("--porta", type=int, default=7070)
     p.add_argument("--token", required=True)
-    p.add_argument("--web", default="/usr/share/lumen/web")
+    p.add_argument("--web", default="/usr/share/alba/web")
     p.add_argument("--live", action="store_true", help="sessão ao vivo (instalação)")
-    p.add_argument("--instalador", default="/usr/share/lumen/sistema/instalar.sh")
+    p.add_argument("--instalador", default="/usr/share/alba/sistema/instalar.sh")
     ARGS = p.parse_args()
     mimetypes.add_type("application/javascript", ".js")
     mimetypes.add_type("text/css", ".css")

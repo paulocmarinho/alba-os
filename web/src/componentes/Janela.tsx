@@ -15,7 +15,7 @@ type Props = {
   onRedimensionar: (largura: number, altura: number) => void;
 };
 
-/** Moldura de janela do Lúmen: arrastar pela barra, redimensionar pelo canto, controles próprios à direita. */
+/** Moldura de janela do Alba: arrastar pela barra, redimensionar pelo canto, controles próprios à direita. */
 export function Janela({
   janela,
   ativa,

@@ -1,6 +1,9 @@
 import { createRoot } from "react-dom/client";
-import { Lumen } from "./Lumen";
+import { Alba } from "./Alba";
+import { blindar } from "./blindagem";
 import "./estilos.css";
-import "./lumen.css";
+import "./alba-base.css";
+import "./alba.css";
 
-createRoot(document.getElementById("raiz")!).render(<Lumen />);
+blindar();
+createRoot(document.getElementById("raiz")!).render(<Alba />);

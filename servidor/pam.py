@@ -63,8 +63,8 @@ _strdup.argtypes = [ctypes.c_char_p]
 
 
 def _servico():
-    """Usa o serviço PAM do Lúmen se existir; senão, o de login do sistema."""
-    for nome in ("lumen", "login", "other"):
+    """Usa o serviço PAM do Alba se existir; senão, o de login do sistema."""
+    for nome in ("alba", "login", "other"):
         if os.path.exists(f"/etc/pam.d/{nome}"):
             return nome
     return "login"

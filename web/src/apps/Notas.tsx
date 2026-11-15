@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { useLumen } from "../contexto";
+import { useAlba } from "../contexto";
 import { Icone } from "../componentes/Icone";
 
 /** Editor de texto simples: abre, edita e salva arquivos de texto. */
 export function Notas({ caminho: inicial, idJanela }: { caminho?: string; idJanela: number }) {
-  const { sistema, aviso, perguntar, confirmar, renomearJanela } = useLumen();
+  const { sistema, aviso, perguntar, confirmar, renomearJanela } = useAlba();
   const [caminho, setCaminho] = useState<string | null>(inicial ?? null);
   const [texto, setTexto] = useState("");
   const [original, setOriginal] = useState("");

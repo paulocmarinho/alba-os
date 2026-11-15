@@ -1,9 +1,9 @@
-/* Componentes próprios do Lúmen OS (janelas, bloqueio, apps, diálogos). */
+/* Componentes próprios do Alba OS (janelas, bloqueio, apps, diálogos). */
 
 .desktop {
-  --destaque: #2f8c80;
+  --destaque: #2d3d8e;
   --vidro-cartao: rgba(255, 255, 255, 0.42);
-  --linha: rgba(74, 99, 95, 0.12);
+  --linha: rgba(73, 78, 100, 0.12);
   --campo: rgba(255, 255, 255, 0.72);
   --perigo: #c64553;
   user-select: none;
@@ -77,7 +77,7 @@
   font-size: 13px;
 }
 
-.menu-lumen {
+.menu-alba {
   position: relative;
   display: flex;
   align-items: center;
@@ -102,11 +102,11 @@
   flex-direction: column;
   gap: 2px;
   padding: 6px;
-  color: var(--ink, #17211f);
-  background: rgba(244, 250, 247, 0.86);
+  color: var(--ink, #171921);
+  background: rgba(244, 246, 250, 0.86);
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 14px;
-  box-shadow: 0 18px 50px rgba(14, 33, 36, 0.28);
+  box-shadow: 0 18px 50px rgba(13, 16, 37, 0.28);
   backdrop-filter: blur(30px) saturate(150%);
   -webkit-backdrop-filter: blur(30px) saturate(150%);
   animation: panel-in 0.18s ease both;
@@ -127,8 +127,8 @@
 
 .desktop.dark .menu-suspenso,
 .menu-contexto.escuro {
-  color: #edf5f2;
-  background: rgba(25, 38, 42, 0.92);
+  color: #edeff5;
+  background: rgba(25, 26, 42, 0.92);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -149,7 +149,7 @@
 .menu-suspenso button:hover,
 .menu-contexto button:hover {
   color: #ffffff;
-  background: var(--destaque, #2f8c80);
+  background: var(--destaque, #2d3d8e);
 }
 
 .menu-contexto button.perigo:hover {
@@ -161,7 +161,7 @@
   height: 1px;
   margin: 4px 0;
   border: 0;
-  background: rgba(74, 99, 95, 0.15);
+  background: rgba(73, 78, 100, 0.15);
 }
 
 .status-menu > span {
@@ -195,7 +195,7 @@
 }
 
 .janela:not(.ativa) {
-  box-shadow: 0 16px 40px rgba(16, 34, 37, 0.16);
+  box-shadow: 0 16px 40px rgba(15, 18, 38, 0.16);
 }
 
 .janela .window-bar {
@@ -261,8 +261,8 @@
 }
 
 .desktop.dark .control-center {
-  color: #edf5f2;
-  background: rgba(24, 36, 40, 0.86);
+  color: #edeff5;
+  background: rgba(24, 25, 40, 0.86);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -316,7 +316,7 @@
   flex-direction: column;
   align-items: center;
   color: #ffffff;
-  background: rgba(10, 26, 30, 0.12);
+  background: rgba(10, 11, 30, 0.12);
   animation: window-in 0.4s ease both;
 }
 
@@ -325,7 +325,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-shadow: 0 2px 30px rgba(10, 30, 32, 0.35);
+  text-shadow: 0 2px 30px rgba(9, 12, 33, 0.35);
 }
 
 .bloqueio-data {
@@ -372,10 +372,10 @@
   font-size: 22px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(145deg, rgba(99, 188, 167, 0.9), rgba(35, 118, 108, 0.9));
+  background: linear-gradient(145deg, rgba(97, 115, 190, 0.9), rgba(33, 48, 120, 0.9));
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
-  box-shadow: 0 10px 30px rgba(10, 30, 32, 0.3);
+  box-shadow: 0 10px 30px rgba(9, 12, 33, 0.3);
 }
 
 .bloqueio-senha {
@@ -586,8 +586,8 @@
 }
 
 .cursor-terminal {
-  color: #10201f;
-  background: #9ff0d0;
+  color: #101220;
+  background: #9db1f2;
   border-radius: 2px;
 }
 
@@ -661,7 +661,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(10, 20, 22, 0.55);
+  background: rgba(10, 11, 22, 0.55);
 }
 
 .app-visualizador img {
@@ -683,7 +683,7 @@
   flex-direction: column;
   gap: 3px;
   padding: 18px 12px;
-  background: rgba(231, 241, 237, 0.4);
+  background: rgba(231, 233, 241, 0.4);
   border-right: 1px solid var(--linha);
 }
 
@@ -708,7 +708,7 @@
 
 .ajustes-lado button.active {
   background: var(--vidro-cartao);
-  box-shadow: 0 1px 6px rgba(15, 40, 40, 0.08);
+  box-shadow: 0 1px 6px rgba(14, 18, 41, 0.08);
   font-weight: 700;
 }
 
@@ -803,14 +803,14 @@
   gap: 6px;
   padding: 10px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #d8b98c 0%, #6daba6 45%, #395e69 100%);
+  background: linear-gradient(135deg, #d8b98c 0%, #6b76ad 45%, #383c6a 100%);
 }
 
 .tema-amostra i {
   display: block;
   height: 14px;
   border-radius: 5px;
-  background: rgba(248, 252, 250, 0.85);
+  background: rgba(248, 249, 252, 0.85);
 }
 
 .tema-amostra i:last-child {
@@ -818,7 +818,7 @@
 }
 
 .tema-amostra.escuro i {
-  background: rgba(25, 38, 42, 0.92);
+  background: rgba(25, 26, 42, 0.92);
 }
 
 .destaques {
@@ -937,8 +937,8 @@
 
 .instalador-passos {
   padding: 24px 20px;
-  color: #e3f4f0;
-  background: linear-gradient(170deg, rgba(28, 64, 62, 0.92), rgba(19, 44, 46, 0.95));
+  color: #e3e6f4;
+  background: linear-gradient(170deg, rgba(27, 33, 65, 0.92), rgba(18, 22, 47, 0.95));
 }
 
 .instalador-marca {
@@ -1029,10 +1029,10 @@
   place-items: center;
   margin: 10px 0 24px;
   color: #fff;
-  background: linear-gradient(145deg, #63bca7, #23766c);
+  background: linear-gradient(145deg, #6173be, #213078);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 28px;
-  box-shadow: 0 14px 34px rgba(35, 118, 108, 0.35);
+  box-shadow: 0 14px 34px rgba(33, 48, 120, 0.35);
 }
 
 .instalador-acoes {
@@ -1078,8 +1078,8 @@
   margin: 10px 0 0;
   overflow: auto;
   padding: 12px;
-  color: #cfeee3;
-  background: rgba(14, 28, 30, 0.85);
+  color: #ced6ef;
+  background: rgba(14, 15, 30, 0.85);
   border-radius: 10px;
   font: 11.5px/1.45 "JetBrains Mono", monospace;
   white-space: pre-wrap;
@@ -1092,7 +1092,7 @@
   z-index: 200;
   display: grid;
   place-items: center;
-  background: rgba(12, 26, 28, 0.28);
+  background: rgba(12, 13, 28, 0.28);
   animation: panel-in 0.15s ease both;
 }
 
@@ -1147,8 +1147,8 @@
 
 .aviso {
   padding: 10px 16px;
-  color: #eef8f4;
-  background: rgba(20, 38, 41, 0.86);
+  color: #eef0f8;
+  background: rgba(19, 22, 42, 0.86);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
@@ -1179,28 +1179,28 @@
 }
 
 .dock-icon.install {
-  background: linear-gradient(145deg, #7fb8d9, #2f6d8c);
+  background: linear-gradient(145deg, #7d81db, #2d328e);
 }
 
 /* ---------- ajustes do modo escuro ---------- */
 .desktop.dark .connection-card,
 .desktop.dark .focus-card,
 .desktop.dark .control-slider-card {
-  color: #edf5f2;
+  color: #edeff5;
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
 .desktop.dark .connection-row,
 .desktop.dark .focus-card {
-  color: #c9d8d4;
+  color: #c9ccd8;
 }
 
 .desktop.dark .connection-row strong,
 .desktop.dark .focus-card strong,
 .desktop.dark .control-slider-card label,
 .desktop.dark .control-heading strong {
-  color: #edf5f2;
+  color: #edeff5;
 }
 
 .desktop.dark .slider-wrap {
@@ -1214,5 +1214,5 @@
 
 .janela-terminal .window-title,
 .janela-terminal.ativa .window-title {
-  color: #b9d0ca;
+  color: #b8bdd1;
 }

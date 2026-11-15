@@ -2,14 +2,14 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { abrirSocket } from "../api";
 import { type Celula, type Estilo, TelaTerminal } from "../terminal/vt";
 
-const FG = "#d8f3e7";
+const FG = "#e1e7f6";
 const BG = "transparent";
 
 function estiloCss(e: Estilo): React.CSSProperties {
   let fg = e.fg ?? FG;
   let bg = e.bg ?? BG;
   if (e.inverso) {
-    [fg, bg] = [e.bg ?? "#10201f", e.fg ?? FG];
+    [fg, bg] = [e.bg ?? "#131a2c", e.fg ?? FG];
   }
   return {
     color: fg,
@@ -52,7 +52,7 @@ function Linha({ celulas, cursor }: { celulas: Celula[]; cursor: number }) {
   return <div className="linha-terminal">{partes}</div>;
 }
 
-/** Terminal de verdade (bash) com emulador próprio do Lúmen. */
+/** Terminal de verdade (bash) com emulador próprio do Alba. */
 export function Terminal({ ativo }: { ativo: boolean }) {
   const tela = useRef(new TelaTerminal(80, 24));
   const socket = useRef<WebSocket | null>(null);
