@@ -17,6 +17,22 @@ from comum import APPS, Pagina, abrir_app, escala, lancar_desktop, publicar  # n
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 
 
+_CSS_APLICADO = False
+
+
+def _css_sem_moldura():
+    global _CSS_APLICADO
+    if _CSS_APLICADO:
+        return
+    _CSS_APLICADO = True
+    css = Gtk.CssProvider()
+    css.load_from_string(
+        "window.alba-sem-moldura, window.alba-sem-moldura.background, window.alba-sem-moldura > * "
+        "{ background: transparent; background-color: transparent; box-shadow: none; border: none; outline: none; }"
+    )
+    Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+
 class AppAlba(Gtk.Application):
     def __init__(self, app: str):
         super().__init__(application_id=f"org.alba.{app}", flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
@@ -49,6 +65,10 @@ class AppAlba(Gtk.Application):
         sem_moldura = bool(self.definicao.get("sem_moldura")) or instalando
         if sem_moldura:
             janela.set_decorated(False)
+            # Sem isto o GTK pinta o fundo da janela de branco e ele aparece nos cantos
+            # arredondados do Sleeve e do mini player (as "abinhas" brancas).
+            janela.add_css_class("alba-sem-moldura")
+            _css_sem_moldura()
         pagina = Pagina({"app": self.app, "props": json.dumps(props, ensure_ascii=False)},
                         lambda m: self.mensagem(janela, m), transparente=sem_moldura)
         pagina.view.connect("notify::title", lambda v, _p: janela.set_title(v.get_title() or self.definicao["nome"]))
