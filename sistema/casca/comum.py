@@ -92,10 +92,25 @@ def publicar(evento: dict) -> None:
         pass
 
 
+_idioma_definido = False
+
+
+def _idioma():
+    """O WebKit segue o idioma do sistema; garantimos português para os apps (ex.: o Sleeve)."""
+    global _idioma_definido
+    if not _idioma_definido:
+        _idioma_definido = True
+        try:
+            WebKit.WebContext.get_default().set_preferred_languages(["pt-BR", "pt", "en"])
+        except (AttributeError, TypeError):
+            pass
+
+
 class Pagina:
     """Uma página da interface do Alba num WebKit sem cara de navegador."""
 
     def __init__(self, consulta: dict, ao_receber, transparente: bool = True, carregar_ja: bool = True):
+        _idioma()
         self.ao_receber = ao_receber
         self.pronta = False
         self.fila: list[dict] = []

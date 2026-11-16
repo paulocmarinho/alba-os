@@ -1238,3 +1238,48 @@ html.na-casca .casca-app:has(.sem-moldura) {
 .status-menu > button.desligado {
   opacity: 0.5;
 }
+
+/* ------------------------------------------------------------------ casca: ajustes finos */
+.status-menu .date-time {
+  white-space: nowrap;
+}
+
+.painel-cabecalho .mes {
+  text-transform: none;
+}
+
+.painel-cabecalho .mes::first-letter {
+  text-transform: uppercase;
+}
+
+/* Sem desfoque entre programas diferentes: na casca os painéis ficam mais sólidos. */
+.casca-sobre .painel-flutuante,
+.casca-sobre .control-center,
+.casca-sobre .menu-suspenso {
+  background: rgba(240, 244, 251, 0.96);
+}
+
+.casca-sobre.dark .painel-flutuante,
+.casca-sobre.dark .control-center,
+.casca-sobre.dark .menu-suspenso {
+  background: rgba(30, 32, 54, 0.97);
+}
+
+.casca-barra .topbar {
+  background: rgba(239, 246, 252, 0.72);
+}
+
+.casca-barra.dark .topbar {
+  background: rgba(22, 24, 44, 0.78);
+}
+
+/* Sleeve numa janela sem moldura: cantos arredondados como as outras janelas. */
+html.na-casca .casca-app .window.avulsa.sem-moldura {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(70, 80, 120, 0.16);
+}
+
+.app-menu strong {
+  background: transparent;
+}

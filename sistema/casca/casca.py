@@ -113,6 +113,7 @@ class Casca(Gtk.Application):
         self.bloqueada = not LIVE
         self.painel = None
         self.icones: dict[str, str | None] = {}
+        self._ultimo_painel, self._ultimo_painel_t = None, 0
         self.connect("activate", self.ativar)
 
     # ------------------------------------------------------------ montagem
@@ -297,6 +298,10 @@ class Casca(Gtk.Application):
             {"ativar": self.janelas.ativar, "minimizar": self.janelas.minimizar, "fechar": self.janelas.fechar}.get(acao, lambda _i: None)(ident)
         elif tipo == "painel":
             qual = m.get("qual")
+            agora = GLib.get_monotonic_time()
+            if self._ultimo_painel == (qual, origem.nome) and agora - self._ultimo_painel_t < 350_000:
+                return  # clique duplo / evento repetido
+            self._ultimo_painel, self._ultimo_painel_t = (qual, origem.nome), agora
             if self.sobre.visivel and self.painel == qual:
                 self.fechar_sobre()
             else:
