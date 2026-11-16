@@ -8,6 +8,7 @@ window.__alba.receber(...).
 from __future__ import annotations
 
 import json
+import glob
 import os
 import shutil
 import subprocess
@@ -106,6 +107,9 @@ def _idioma():
             pass
 
 
+SEM_GPU = not glob.glob("/dev/dri/renderD*")
+
+
 class Pagina:
     """Uma página da interface do Alba num WebKit sem cara de navegador."""
 
@@ -126,6 +130,10 @@ class Pagina:
         ajustes.set_media_playback_requires_user_gesture(False)
         ajustes.set_javascript_can_access_clipboard(True)
         ajustes.set_enable_smooth_scrolling(True)
+        if SEM_GPU:
+            # Sem placa de vídeo (ex.: Hyper-V) o desenho acelerado do WebKit deixa partes da
+            # tela sem pintar até o mouse passar por cima. Desenho direto, sem camadas.
+            ajustes.set_hardware_acceleration_policy(WebKit.HardwareAccelerationPolicy.NEVER)
         if transparente:
             self.view.set_background_color(Gdk.RGBA(0, 0, 0, 0))
         self.view.set_zoom_level(escala())
