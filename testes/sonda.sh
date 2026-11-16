@@ -7,7 +7,7 @@ export WEBKIT_DISABLE_DMABUF_RENDERER=1 LIBGL_ALWAYS_SOFTWARE=1 GDK_BACKEND=wayl
 mkdir -p saida
 labwc -d > saida/labwc.log 2>&1 &
 sleep 3
-export WAYLAND_DISPLAY=$(ls $XDG_RUNTIME_DIR | grep -m1 '^wayland-[0-9]$')
+export WAYLAND_DISPLAY=$(ls $XDG_RUNTIME_DIR | grep -m1 "^wayland-[0-9]$")
 echo "WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 wlr-randr --output HEADLESS-1 --custom-mode 1600x900 || wlr-randr
 LD_PRELOAD=/usr/lib/libgtk4-layer-shell.so python3 testes/sonda.py > saida/sonda.log 2>&1 &
