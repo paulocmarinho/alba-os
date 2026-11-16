@@ -8,6 +8,7 @@ on:
     paths-ignore:
       - "README.md"
       - "iso/pacotes.txt"
+      - "testes/**"
   workflow_dispatch:
 
 permissions:
