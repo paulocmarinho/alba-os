@@ -40,7 +40,7 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.3.1"
+VERSAO = "0.4.0"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -475,7 +475,7 @@ def api_atualizacao_instalar(_q, _c):
     if os.getuid() != 0:
         cmd = ["sudo", "-n", *cmd]
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
     except subprocess.TimeoutExpired as e:
         raise ErroApi(500, "A atualização demorou demais.") from e
     saida = (r.stdout + r.stderr).strip()

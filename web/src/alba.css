@@ -1283,3 +1283,9 @@ html.na-casca .casca-app .window.avulsa.sem-moldura {
 .app-menu strong {
   background: transparent;
 }
+
+.status-menu button.date-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

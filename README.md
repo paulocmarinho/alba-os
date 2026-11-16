@@ -2,14 +2,16 @@
 
 Um sistema operacional com interface própria, feita do zero. Por baixo roda um Linux mínimo (Arch), só como motor. Tudo o que aparece na tela é do Alba: tela de bloqueio, área de trabalho, janelas, dock, central de controle e apps.
 
-> Versão 0.3: funções básicas, player de música e atualização pela internet. Ainda não roda programas do Linux nem jogos dentro da interface.
+> Versão 0.4: compositor de janelas próprio. Programas do Linux (Firefox, que já vem instalado, e outros) abrem em janelas de verdade ao lado dos apps do Alba.
 
 ## O que já funciona
 
 | Parte | O que faz |
 |---|---|
 | Tela de bloqueio | Data em cima, hora grande e senha de verdade (conferida pelo sistema). Bloqueie com **Ctrl+Alt+L** |
-| Área de trabalho | Barra superior com data por extenso, dock, janelas que se movem, redimensionam, minimizam e maximizam |
+| Área de trabalho | Barra superior com data por extenso, dock com os programas abertos, janelas de verdade (mover, redimensionar, encaixar nas bordas, **Alt+Tab**) |
+| Barra superior | Clique no som (volume), na data (calendário do mês), na rede ou no ícone de controles (central) |
+| **Firefox** | Navegador padrão, já instalado. Links abertos de qualquer lugar do Alba vão para ele |
 | Central de controle | Rede, modo escuro, volume, bloquear, reiniciar e desligar |
 | **Arquivos** | Navega pelas pastas, cria pastas, renomeia, manda para a lixeira, restaura e esvazia a lixeira |
 | **Terminal** | Terminal de verdade (bash), com emulador próprio do Alba |
@@ -29,7 +31,7 @@ Um sistema operacional com interface própria, feita do zero. Por baixo roda um 
 Troque o caminho da ISO:
 ```powershell
 $Nome = "AlbaOS"
-$Iso  = "C:\caminho\para\alba-os-0.3.1-x86_64.iso"
+$Iso  = "C:\caminho\para\alba-os-0.4.0-x86_64.iso"
 $Base = "C:\HyperV"
 
 New-VM -Name $Nome -Generation 2 -Path $Base -MemoryStartupBytes 4GB `
@@ -61,19 +63,25 @@ Uma ISO nova só é necessária para mudanças na base (pacotes do Arch, drivers
 ```
 Linux (Arch, mínimo) ─► login automático no tty1 ─► alba-sessao
                                                       ├─ servidor do sistema (Python, só 127.0.0.1)
-                                                      └─ cage + motor de exibição (Chromium em quiosque) ─► interface do Alba (React)
+                                                      └─ labwc (compositor de janelas, tema "Alba")
+                                                           ├─ alba-casca: fundo, barra, dock e painéis (camadas layer-shell, GTK4 + WebKitGTK)
+                                                           ├─ alba-app arquivos | terminal | notas | ajustes | musica… (uma janela por app)
+                                                           └─ programas do Linux (Firefox, etc.)
 ```
 
-O motor de exibição fica invisível: as políticas em `iso/airootfs/etc/chromium/policies/managed/alba.json` e o módulo `web/src/blindagem.ts` desligam gerenciador de senhas, tradução, preenchimento automático, menus de navegador, zoom, recarregar e voltar página.
+A interface (React) é a mesma em todas as partes: cada camada e cada app é uma página dela num WebKitGTK sem nada de navegador. A casca acompanha as janelas abertas pelo protocolo *wlr-foreign-toplevel* e as partes conversam entre si pelo servidor (`/ws/eventos`). Se o compositor não abrir três vezes seguidas, a sessão entra no modo de segurança (a interface antiga de tela única).
+
+Atalhos: **Super+L** bloqueia, **Alt+Tab** troca de janela, **Super+←/→** encaixa nas bordas, **Super+↑** maximiza, **Ctrl+Alt+T** abre o Terminal, **Super+E** o Arquivos.
 
 | Pasta | Conteúdo |
 |---|---|
 | `web/` | Interface do Alba (React + TypeScript). `npm install && npm run build` gera `web/dist` |
 | `servidor/` | Servidor do sistema: arquivos, terminal, senha (PAM), som, rede, energia, instalação, atualização e a biblioteca de música do Sleeve (`musica.py`, usa o mutagen) |
 | `web/sleeve/` | Ponte do Sleeve para o Alba (substitui o `bridge.js` dele na construção) |
-| `sistema/` | Sessão gráfica, instalador em disco, configuração da sessão ao vivo e identidade do sistema |
+| `sistema/` | Sessão gráfica, casca (`sistema/casca/`), configuração e tema do labwc, instalador em disco, atualizador e identidade do sistema |
 | `iso/` | Perfil da ISO (archiso) e script de construção |
-| `.github/workflows/` | Construção automática da ISO |
+| `.github/workflows/` | Construção da ISO, pacote de atualização e teste da sessão gráfica num compositor sem tela (com capturas no ramo `testes-capturas`) |
+| `testes/` | Roteiro do teste da sessão gráfica |
 
 ### Rodar a interface no seu computador (para desenvolver)
 Com Linux ou WSL, Python 3 e Node 22:
@@ -85,8 +93,9 @@ python3 servidor/alba_servidor.py --porta 7070 --token teste --web web/dist
 ```
 Ela usa a sua pasta pessoal de verdade, com cuidado: só altera arquivos dentro dela.
 
-## Limitações da versão 0.3
-- A interface ainda não abre programas do Linux (Firefox, Steam, o próprio app do Spotify). Isso precisa de um compositor de janelas próprio e é o próximo passo grande.
+## Limitações da versão 0.4
+- Ainda não há loja de aplicativos: por enquanto, programas novos se instalam pelo Terminal (`sudo pacman -S <programa>`). A Loja do Alba (com o Flathub por trás) é o próximo passo.
+- As molduras das janelas seguem o tema claro mesmo no modo escuro.
 - Wi‑Fi com senha, Bluetooth e brilho de tela ainda não existem.
 - O instalador apaga o disco inteiro escolhido. Não há instalação lado a lado com outro sistema.
 - No Hyper-V não há aceleração de vídeo, então as animações e o vidro ficam mais lentos.
