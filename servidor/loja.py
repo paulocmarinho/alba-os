@@ -80,6 +80,14 @@ RESUMOS = {
     "org.darktable.Darktable": "Revelação de fotos RAW",
 }
 
+# Textos em português para os apps da vitrine que mais aparecem (o Flathub manda em inglês).
+DESCRICOES = {
+    "com.spotify.Client": "Ouça milhões de músicas e podcasts, descubra lançamentos e monte suas playlists.\n\n"
+                          "No Alba, o Sleeve mostra o que está tocando no Spotify, com a capa do álbum, e "
+                          "controla play, pausa e troca de faixa sem você precisar abrir o Spotify.\n\n"
+                          "Para ouvir, entre com a sua conta Spotify (grátis ou Premium).",
+}
+
 _tarefas: dict[str, dict] = {}
 _trava = threading.Lock()
 _avisar = None  # função que publica eventos para a interface (definida pelo servidor)
@@ -196,7 +204,7 @@ def detalhes(app_id: str) -> dict:
         "id": app_id,
         "nome": d.get("name"),
         "resumo": RESUMOS.get(app_id) or d.get("summary") or "",
-        "descricao": _limpar_html(d.get("description") or ""),
+        "descricao": DESCRICOES.get(app_id) or _limpar_html(d.get("description") or ""),
         "icone": _icone(d),
         "capturas": _capturas(d),
         "desenvolvedor": d.get("developer_name") or "",
