@@ -51,6 +51,7 @@ class Superficie:
         self.altura = altura
         self.reserva = reserva
         self.regiao = None
+        self.clicavel = True
         self.janela = Gtk.Window(application=casca)
         Camada.init_for_window(self.janela)
         Camada.set_namespace(self.janela, f"alba-{nome}")
@@ -90,10 +91,19 @@ class Superficie:
 
     def _aplicar_regiao(self):
         superficie = self.janela.get_surface()
-        if superficie is None or self.regiao is None:
+        if superficie is None:
             return False
-        superficie.set_input_region(cairo.Region(cairo.RectangleInt(*self.regiao)))
+        if not self.clicavel:
+            superficie.set_input_region(cairo.Region())  # cliques passam direto
+        elif self.regiao is not None:
+            superficie.set_input_region(cairo.Region(cairo.RectangleInt(*self.regiao)))
+        else:
+            superficie.set_input_region(None)
         return False
+
+    def definir_clicavel(self, sim: bool):
+        self.clicavel = sim
+        self._aplicar_regiao()
 
     def mostrar(self):
         self.janela.set_visible(True)
@@ -126,10 +136,13 @@ class Casca(Gtk.Application):
         self.sobre = Superficie(self, "sobre", Camada.Layer.OVERLAY, [A.TOP, A.BOTTOM, A.LEFT, A.RIGHT],
                                 teclado=Camada.KeyboardMode.EXCLUSIVE)
         self.dock.definir_regiao(0, 0, 1, 1)  # até a página dizer onde está o dock
-        for s in (self.fundo, self.barra, self.dock):
+        # A camada de painéis fica sempre carregada (abre na hora); sem painel, os cliques passam direto.
+        self.sobre_ativo = self.bloqueada
+        self.sobre.clicavel = self.bloqueada
+        if not self.bloqueada:
+            Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.NONE)
+        for s in (self.fundo, self.barra, self.dock, self.sobre):
             s.mostrar()
-        if self.bloqueada:
-            self.sobre.mostrar()
         try:
             from janelas import Janelas
             self.janelas = Janelas(self.janelas_mudaram)
@@ -263,17 +276,20 @@ class Casca(Gtk.Application):
     # ------------------------------------------------------------ painéis e bloqueio
     def abrir_sobre(self, modo, qual=None):
         self.painel = qual if modo == "painel" else None
+        self.sobre_ativo = True
         Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.EXCLUSIVE if modo == "bloqueio" else Camada.KeyboardMode.ON_DEMAND)
         self.sobre.pagina.enviar({"tipo": "modo", "modo": modo, "qual": qual})
-        self.sobre.mostrar()
+        self.sobre.definir_clicavel(True)
         self.barra.pagina.enviar({"tipo": "painel", "qual": self.painel})
 
     def fechar_sobre(self):
         if self.bloqueada:
             return
         self.painel = None
+        self.sobre_ativo = False
         self.sobre.pagina.enviar({"tipo": "modo", "modo": None})
-        self.sobre.esconder()
+        self.sobre.definir_clicavel(False)
+        Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.NONE)
         self.barra.pagina.enviar({"tipo": "painel", "qual": None})
 
     # ------------------------------------------------------------ mensagens das páginas
@@ -302,7 +318,7 @@ class Casca(Gtk.Application):
             if self._ultimo_painel == (qual, origem.nome) and agora - self._ultimo_painel_t < 350_000:
                 return  # clique duplo / evento repetido
             self._ultimo_painel, self._ultimo_painel_t = (qual, origem.nome), agora
-            if self.sobre.visivel and self.painel == qual:
+            if self.sobre_ativo and self.painel == qual:
                 self.fechar_sobre()
             else:
                 self.abrir_sobre("painel", qual)
