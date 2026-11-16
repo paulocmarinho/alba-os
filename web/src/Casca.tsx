@@ -42,12 +42,19 @@ export function AlbaCasca() {
   const [avisos, setAvisos] = useState<{ id: number; texto: string }[]>([]);
 
   useEffect(() => {
+    const nome = superficie || appAvulso;
+    console.log(`[alba ${nome}] iniciando ${innerWidth}x${innerHeight}`);
+    window.addEventListener("error", (e) => console.log(`[alba ${nome}] erro: ${e.message} ${e.filename}:${e.lineno}`));
     Promise.all([api.sistema(), api.config()])
       .then(([s, c]) => {
+        console.log(`[alba ${nome}] sistema carregado`);
         setSistema(s);
         setConfig(c.config);
       })
-      .catch((e) => setErro(e.message));
+      .catch((e) => {
+        console.log(`[alba ${nome}] falhou: ${e.message}`);
+        setErro(e.message);
+      });
     const t = window.setInterval(() => setAgora(new Date()), 5000);
     const sair = ouvirEventos((m) => {
       if (m.tipo === "config" && m.config) {

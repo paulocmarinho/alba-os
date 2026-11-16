@@ -127,6 +127,13 @@ class Casca(Gtk.Application):
             print("Alba: sem lista de janelas:", e, flush=True)
         if LIVE:
             GLib.timeout_add(1200, lambda: abrir_app("instalador") and False)
+        if os.environ.get("ALBA_DEPURAR") == "1":
+            def relatar():
+                for s in (self.fundo, self.barra, self.dock, self.sobre):
+                    print(f"[casca] {s.nome}: visível={s.visivel} {s.janela.get_width()}x{s.janela.get_height()} "
+                          f"view={s.pagina.view.get_width()}x{s.pagina.view.get_height()} pronta={s.pagina.pronta}", flush=True)
+                return True
+            GLib.timeout_add_seconds(8, relatar)
         self.hold()
 
     # ------------------------------------------------------------ dock e barra
@@ -262,6 +269,8 @@ class Casca(Gtk.Application):
     # ------------------------------------------------------------ mensagens das páginas
     def mensagem(self, origem: Superficie, m: dict):
         tipo = m.get("tipo")
+        if os.environ.get("ALBA_DEPURAR") == "1":
+            print(f"[casca] {origem.nome} → {m}", flush=True)
         if tipo == "pronto":
             if origem in (self.barra, self.dock):
                 origem.pagina.enviar(self.estado())

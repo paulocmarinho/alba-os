@@ -21,6 +21,16 @@ PASTA = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "alba" 
 MAXIMIZADA, MINIMIZADA, ATIVA, TELA_CHEIA = 0, 1, 2, 3
 
 
+def _gerar(pacote: Path) -> None:
+    """Roda o scanner do pywayland pela API (a linha de comando dele exige pkg-config)."""
+    from pywayland.scanner import Protocol
+
+    protocolos = [Protocol.parse_file(x) for x in (XML_WAYLAND, XML_TOPLEVEL)]
+    importes = {interface.name: protocolo.name for protocolo in protocolos for interface in protocolo.interface}
+    for protocolo in protocolos:
+        protocolo.output(str(pacote), importes)
+
+
 def _modulos():
     """Gera (uma vez) as classes Python do protocolo com o scanner do pywayland."""
     pacote = PASTA / "albaproto"
@@ -28,10 +38,13 @@ def _modulos():
     if not alvo.exists():
         pacote.mkdir(parents=True, exist_ok=True)
         (pacote / "__init__.py").write_text("")
-        r = subprocess.run([sys.executable, "-m", "pywayland.scanner", "-i", XML_WAYLAND, XML_TOPLEVEL, "-o", str(pacote)],
-                           capture_output=True, text=True)
-        if r.returncode != 0:
-            raise RuntimeError(f"scanner do pywayland falhou: {r.stderr.strip() or r.stdout.strip()}")
+        try:
+            _gerar(pacote)
+        except Exception as e:  # noqa: BLE001
+            r = subprocess.run([sys.executable, "-m", "pywayland.scanner", "-i", XML_WAYLAND, XML_TOPLEVEL, "-o", str(pacote)],
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                raise RuntimeError(f"scanner do pywayland falhou ({e}): {r.stderr.strip()[-300:]}") from e
     if str(PASTA) not in sys.path:
         sys.path.insert(0, str(PASTA))
     toplevel = importlib.import_module("albaproto.wlr_foreign_toplevel_management_unstable_v1")
