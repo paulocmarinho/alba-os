@@ -27,6 +27,7 @@ export WAYLAND_DISPLAY=$(ls $XDG_RUNTIME_DIR | grep -m1 "^wayland-[0-9]$")
 wlr-randr --output HEADLESS-1 --custom-mode 1920x1080
 sleep 25
 grim saida/1-bloqueio.png
+for n in $(seq 10 29); do grim -s 0.25 saida/r$n.jpg; sleep 0.2; done  # rajada: procura quadros pela metade
 wtype teste123; sleep 0.5; wtype -k Return
 sleep 4
 grim saida/1b-senha.png
