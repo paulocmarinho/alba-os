@@ -33,6 +33,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import musica  # noqa: E402
+import loja  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
@@ -681,7 +682,30 @@ def capa_de_album(req):
     return resposta(200, dados, musica.tipo_imagem(dados))
 
 
+# ---------------------------------------------------------------- Alba Store
+def _loja(func):
+    def rota(q, c):
+        try:
+            return func(q, c)
+        except loja.ErroLoja as e:
+            raise ErroApi(502, str(e)) from e
+    return rota
+
+
+ROTAS_LOJA = {
+    ("GET", "/api/loja/vitrine"): _loja(lambda q, c: loja.vitrine()),
+    ("GET", "/api/loja/buscar"): _loja(lambda q, c: {"apps": loja.buscar(q.get("q", ""))}),
+    ("GET", "/api/loja/app"): _loja(lambda q, c: loja.detalhes(q.get("id", ""))),
+    ("GET", "/api/loja/instalados"): _loja(lambda q, c: {"apps": loja.instalados(), "tarefas": loja.tarefas()}),
+    ("GET", "/api/loja/atualizacoes"): _loja(lambda q, c: {"apps": loja.atualizacoes()}),
+    ("GET", "/api/loja/tarefas"): _loja(lambda q, c: loja.tarefas()),
+    ("POST", "/api/loja/instalar"): _loja(lambda q, c: loja.instalar(str(c.get("id", "")), str(c.get("nome", "")))),
+    ("POST", "/api/loja/remover"): _loja(lambda q, c: loja.remover(str(c.get("id", "")), str(c.get("nome", "")))),
+    ("POST", "/api/loja/atualizar"): _loja(lambda q, c: loja.atualizar_tudo()),
+}
+
 ROTAS = {
+    **ROTAS_LOJA,
     ("GET", "/api/sistema"): api_sistema,
     ("GET", "/api/locais"): api_locais,
     ("GET", "/api/arquivos"): api_arquivos,
@@ -1079,6 +1103,7 @@ def main():
     p.add_argument("--live", action="store_true", help="sessão ao vivo (instalação)")
     p.add_argument("--instalador", default="/usr/share/alba/sistema/instalar.sh")
     ARGS = p.parse_args()
+    loja.configurar(publicar_de_fora)
     mimetypes.add_type("application/javascript", ".js")
     mimetypes.add_type("text/css", ".css")
     mimetypes.add_type("font/ttf", ".ttf")

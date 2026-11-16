@@ -41,6 +41,7 @@ FIXOS = [
     {"chave": "firefox", "tipo": "externo", "desktop": "firefox.desktop"},
     {"chave": "terminal", "tipo": "alba", "app": "terminal"},
     {"chave": "notas", "tipo": "alba", "app": "notas"},
+    {"chave": "loja", "tipo": "alba", "app": "loja"},
     {"chave": "ajustes", "tipo": "alba", "app": "ajustes"},
 ]
 
@@ -332,7 +333,7 @@ class Casca(Gtk.Application):
     def lista_apps(self) -> list[dict]:
         """Tudo que dá para abrir: os apps do Alba e os programas instalados (.desktop)."""
         apps = [{"chave": a, "tipo": "alba", "app": a, "nome": APPS[a]["nome"]}
-                for a in ("arquivos", "musica", "terminal", "notas", "ajustes")]
+                for a in ("arquivos", "musica", "terminal", "notas", "loja", "ajustes")]
         vistos = set()
         for info in Gio.AppInfo.get_all():
             try:
@@ -350,7 +351,7 @@ class Casca(Gtk.Application):
                              "icone": self.icone(ident), "busca": " ".join(filter(None, [info.get_generic_name(), " ".join(info.get_keywords() or [])]))})
             except (TypeError, GLib.Error):
                 continue
-        alba, externos = apps[:5], sorted(apps[5:], key=lambda a: a["nome"].casefold())
+        alba, externos = apps[:6], sorted(apps[6:], key=lambda a: a["nome"].casefold())
         return alba + externos
 
     def abrir_launchpad(self):

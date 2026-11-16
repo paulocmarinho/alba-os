@@ -72,6 +72,36 @@ async function pedir<T>(metodo: "GET" | "POST", rota: string, corpo?: unknown): 
 
 const q = (caminho: string) => encodeURIComponent(caminho);
 
+export type AppLoja = { id: string; nome: string; resumo: string; icone: string | null; instalado?: boolean };
+export type DetalheLoja = AppLoja & {
+  descricao: string;
+  capturas: string[];
+  desenvolvedor: string;
+  versao: string;
+  licenca: string;
+  site?: string;
+  verificado: boolean;
+  tamanho_download?: number | null;
+  tamanho_instalado?: number | null;
+};
+export type Vitrine = {
+  destaque: { id: string; titulo: string; texto: string; cor: string; app: AppLoja };
+  secoes: { titulo: string; apps: AppLoja[] }[];
+};
+export type TarefaLoja = { acao: string; progresso: number; estado: "rodando" | "pronto" | "erro"; texto: string; nome: string };
+export type InstaladoLoja = { id: string; nome: string; versao: string; tamanho: string };
+
+export const loja = {
+  vitrine: () => pedir<Vitrine>("GET", "/api/loja/vitrine"),
+  buscar: (termo: string) => pedir<{ apps: AppLoja[] }>("GET", `/api/loja/buscar?q=${encodeURIComponent(termo)}`),
+  app: (id: string) => pedir<DetalheLoja>("GET", `/api/loja/app?id=${encodeURIComponent(id)}`),
+  instalados: () => pedir<{ apps: InstaladoLoja[]; tarefas: Record<string, TarefaLoja> }>("GET", "/api/loja/instalados"),
+  atualizacoes: () => pedir<{ apps: string[] }>("GET", "/api/loja/atualizacoes"),
+  instalar: (id: string, nome: string) => pedir("POST", "/api/loja/instalar", { id, nome }),
+  remover: (id: string, nome: string) => pedir("POST", "/api/loja/remover", { id, nome }),
+  atualizarTudo: () => pedir("POST", "/api/loja/atualizar", {}),
+};
+
 export const api = {
   sistema: () => pedir<Sistema>("GET", "/api/sistema"),
   locais: () => pedir<{ locais: Local[] }>("GET", "/api/locais"),

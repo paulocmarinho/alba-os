@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from comum import APPS, Pagina, abrir_app, escala, publicar  # noqa: E402
+from comum import APPS, Pagina, abrir_app, escala, lancar_desktop, publicar  # noqa: E402
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 
 
@@ -120,6 +120,8 @@ class AppAlba(Gtk.Application):
             janela._tocando = bool(m.get("tocando"))
         elif tipo == "abrir":
             abrir_app(str(m.get("app")), m.get("props") or {})
+        elif tipo == "lancar":
+            lancar_desktop(str(m.get("desktop")))
         elif tipo == "escala" and pagina:
             pagina.definir_escala(escala())
         elif tipo == "publicar":

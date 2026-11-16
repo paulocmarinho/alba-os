@@ -6,6 +6,7 @@ import { APPS, CtxAlba, type Contexto, type IdApp, type Janela as DadosJanela } 
 import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
 import { Instalador } from "./apps/Instalador";
+import { Loja } from "./apps/Loja";
 import { Notas, Visualizador } from "./apps/Notas";
 import { Musica, type Tocando } from "./apps/Musica";
 import { Terminal } from "./apps/Terminal";
@@ -287,6 +288,8 @@ export function Alba() {
         return <Ajustes secao={j.props.secao} />;
       case "instalador":
         return <Instalador />;
+      case "loja":
+        return <Loja />;
       case "musica":
         return (
           <Musica

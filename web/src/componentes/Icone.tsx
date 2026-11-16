@@ -52,7 +52,8 @@ export type NomeIcone =
   | "restore"
   | "video"
   | "archive"
-  | "palette";
+  | "palette"
+  | "store";
 
 export function Icone({
   name,
@@ -143,6 +144,12 @@ export function Icone({
       <>
         <path d="M12 3v12M7 11l5 5 5-5" />
         <path d="M5 20h14" />
+      </>
+    ),
+    store: (
+      <>
+        <path d="M5 8h14l-1.2 11.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9Z" />
+        <path d="M9 8V7a3 3 0 0 1 6 0v1" />
       </>
     ),
     cloud: <path d="M7 18h11a4 4 0 0 0 .7-7.9A7 7 0 0 0 5.4 8.7 4.7 4.7 0 0 0 7 18Z" />,

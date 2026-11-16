@@ -40,7 +40,7 @@ jobs:
           ls -la dist dist/fonts || true
 
       - name: Testar o servidor do sistema
-        run: python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py
+        run: python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py servidor/loja.py
 
       - name: Identificar a compilação
         run: |

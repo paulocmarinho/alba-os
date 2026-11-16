@@ -6,6 +6,7 @@ import { appAvulso, daCasca, ouvirEventos, paraCasca, propsIniciais, publicarEve
 import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
 import { Instalador } from "./apps/Instalador";
+import { Loja } from "./apps/Loja";
 import { Musica, type Tocando } from "./apps/Musica";
 import { Notas, Visualizador } from "./apps/Notas";
 import { Terminal } from "./apps/Terminal";
@@ -372,6 +373,9 @@ function AppAvulso({ app }: { app: IdApp }) {
       break;
     case "ajustes":
       conteudo = <Ajustes secao={props.secao} vez={props._vez} />;
+      break;
+    case "loja":
+      conteudo = <Loja abrirApp={props.app} vez={props._vez} />;
       break;
     case "instalador":
       conteudo = <Instalador />;
