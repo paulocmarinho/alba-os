@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import glob
 import os
+import sys
 import shutil
 import subprocess
 import urllib.parse
@@ -59,13 +60,25 @@ def css_transparente() -> None:
     Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 
+def ambiente_limpo() -> dict:
+    """Ambiente para programas abertos pela casca, sem a biblioteca da camada (layer-shell)
+    que a casca carrega à força: num programa GTK3, como o Firefox, ela o derruba ao abrir."""
+    env = dict(os.environ)
+    resto = [p for p in env.get("LD_PRELOAD", "").split(":") if p and "layer-shell" not in p]
+    if resto:
+        env["LD_PRELOAD"] = ":".join(resto)
+    else:
+        env.pop("LD_PRELOAD", None)
+    return env
+
+
 def abrir_app(app: str, props: dict | None = None) -> None:
     """Abre (ou traz para frente) um app do Alba num processo próprio."""
     if app not in APPS:
         return
     comando = shutil.which("alba-app") or "/usr/bin/alba-app"
     subprocess.Popen(["bash", comando, app, json.dumps(props or {}, ensure_ascii=False)], start_new_session=True,
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                     env=ambiente_limpo(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def lancar_desktop(id_desktop: str) -> bool:
@@ -76,10 +89,20 @@ def lancar_desktop(id_desktop: str) -> bool:
         info = None
     if info is None:
         return False
+    contexto = Gdk.Display.get_default().get_app_launch_context()
+    if "LD_PRELOAD" in os.environ:
+        limpo = ambiente_limpo().get("LD_PRELOAD")
+        if limpo:
+            contexto.setenv("LD_PRELOAD", limpo)
+        else:
+            contexto.unsetenv("LD_PRELOAD")
     try:
-        return info.launch([], None)
-    except GLib.Error:
+        ok = info.launch([], contexto)
+    except GLib.Error as erro:
+        print(f"alba-casca: não abriu {id_desktop}: {erro.message}", file=sys.stderr, flush=True)
         return False
+    print(f"alba-casca: abrindo {id_desktop}", file=sys.stderr, flush=True)
+    return ok
 
 
 def publicar(evento: dict) -> None:

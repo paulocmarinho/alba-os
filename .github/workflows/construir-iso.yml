@@ -44,7 +44,8 @@ jobs:
 
       - name: Identificar a compilação
         run: |
-          printf '{"versao": "%s", "commit": "%s", "data": %s, "numero": 0}\n' "$(cat VERSAO)" "$GITHUB_SHA" "$(git log -1 --format=%ct)" > compilacao.json
+          SV="$(grep -oP '(?<=<Version>)[^<]+' web/sleeve-src/src/windows/Sleeve.csproj || echo '')"
+          printf '{"versao": "%s", "commit": "%s", "data": %s, "numero": 0, "sleeve": {"versao": "%s", "commit": "%s"}}\n' "$(cat VERSAO)" "$GITHUB_SHA" "$(git log -1 --format=%ct)" "$SV" "$(git -C web/sleeve-src rev-parse HEAD)" > compilacao.json
           cat compilacao.json
 
       - name: Montar a ISO num contêiner Arch Linux

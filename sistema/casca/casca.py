@@ -131,8 +131,20 @@ class Casca(Gtk.Application):
         self.connect("activate", self.ativar)
 
     # ------------------------------------------------------------ montagem
+    def aplicar_tema_janelas(self):
+        try:
+            import tema_janelas
+            from comum import ler_config
+            c = ler_config()
+            tema_janelas.aplicar(escala(), c.get("tema") == "escuro", c.get("destaque"))
+        except Exception as e:  # noqa: BLE001
+            print("alba-casca: tema das janelas:", e, file=sys.stderr, flush=True)
+        return False
+
     def ativar(self, _app):
         css_transparente()
+        if not LIVE:
+            GLib.idle_add(self.aplicar_tema_janelas)
         A = Camada.Edge
         self.fundo = Superficie(self, "fundo", Camada.Layer.BACKGROUND, [A.TOP, A.BOTTOM, A.LEFT, A.RIGHT])
         self.barra = Superficie(self, "barra", Camada.Layer.TOP, [A.TOP, A.LEFT, A.RIGHT], altura=ALTURA_BARRA, reserva=ALTURA_BARRA)
@@ -153,6 +165,12 @@ class Casca(Gtk.Application):
             self.janelas = Janelas(self.janelas_mudaram)
         except Exception as e:  # noqa: BLE001
             print("Alba: sem lista de janelas:", e, flush=True)
+        if not LIVE:
+            try:
+                from notificacoes import Notificacoes
+                self.notificacoes = Notificacoes(self.notificar)
+            except Exception as e:  # noqa: BLE001
+                print("alba-casca: sem notificações:", e, file=sys.stderr, flush=True)
         if LIVE:
             GLib.timeout_add(1200, lambda: abrir_app("instalador") and False)
             GLib.timeout_add_seconds(3, self.vigiar_instalador)
@@ -293,11 +311,52 @@ class Casca(Gtk.Application):
             for j in dados:
                 self.janelas.ativar(j["id"])
 
+    def notificar(self, app, titulo, texto):
+        import threading
+        from comum import publicar
+        partes = [p for p in (titulo, texto) if p]
+        if not partes:
+            return
+        aviso = " — ".join(partes)
+        threading.Thread(target=publicar, args=({"tipo": "aviso", "texto": aviso[:240], "app": app},), daemon=True).start()
+
+    # ------------------------------------------------------------ launchpad
+    def lista_apps(self) -> list[dict]:
+        """Tudo que dá para abrir: os apps do Alba e os programas instalados (.desktop)."""
+        apps = [{"chave": a, "tipo": "alba", "app": a, "nome": APPS[a]["nome"]}
+                for a in ("arquivos", "musica", "terminal", "notas", "ajustes")]
+        vistos = set()
+        for info in Gio.AppInfo.get_all():
+            try:
+                if not info.should_show() or not isinstance(info, Gio.DesktopAppInfo):
+                    continue
+                ident = info.get_id() or ""
+                if not ident or ident.startswith("org.alba.") or ident in vistos:
+                    continue
+                if info.get_boolean("Terminal"):
+                    continue  # programas de terminal (htop, vim…) não abrem sozinhos
+                vistos.add(ident)
+                apps.append({"chave": ident, "tipo": "externo", "desktop": ident, "nome": info.get_display_name() or ident,
+                             "icone": self.icone(ident), "busca": " ".join(filter(None, [info.get_generic_name(), " ".join(info.get_keywords() or [])]))})
+            except (TypeError, GLib.Error):
+                continue
+        alba, externos = apps[:5], sorted(apps[5:], key=lambda a: a["nome"].casefold())
+        return alba + externos
+
+    def abrir_launchpad(self):
+        if LIVE or self.bloqueada:
+            return
+        if self.sobre_ativo and self.painel == "launchpad":
+            self.fechar_sobre()
+            return
+        self.sobre.pagina.enviar({"tipo": "apps", "apps": self.lista_apps()})
+        self.abrir_sobre("launchpad")
+
     # ------------------------------------------------------------ painéis e bloqueio
     def abrir_sobre(self, modo, qual=None):
-        self.painel = qual if modo == "painel" else None
+        self.painel = qual if modo == "painel" else ("launchpad" if modo == "launchpad" else None)
         self.sobre_ativo = True
-        Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.EXCLUSIVE if modo == "bloqueio" else Camada.KeyboardMode.ON_DEMAND)
+        Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.EXCLUSIVE if modo in ("bloqueio", "launchpad") else Camada.KeyboardMode.ON_DEMAND)
         self.sobre.pagina.enviar({"tipo": "modo", "modo": modo, "qual": qual})
         self.sobre.definir_clicavel(True)
         self.barra.pagina.enviar({"tipo": "painel", "qual": self.painel})
@@ -326,7 +385,10 @@ class Casca(Gtk.Application):
             self.fechar_sobre()
             abrir_app(str(m.get("app")), m.get("props") or {})
         elif tipo == "lancar":
+            self.fechar_sobre()
             lancar_desktop(str(m.get("desktop")))
+        elif tipo == "launchpad":
+            self.abrir_launchpad()
         elif tipo == "item":
             self.clique_item(str(m.get("chave")))
         elif tipo == "janela" and self.janelas:
@@ -358,6 +420,7 @@ class Casca(Gtk.Application):
         elif tipo == "escala":
             for s in (self.fundo, self.barra, self.dock, self.sobre):
                 s.redimensionar()
+            self.aplicar_tema_janelas()
 
 
 def main():

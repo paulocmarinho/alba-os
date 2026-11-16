@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Captura de tela do Alba OS.
+#   alba-captura          tela inteira          (tecla Print Screen)
+#   alba-captura area     escolhe um pedaço     (Shift+Print Screen ou Super+Shift+S)
+# Salva em ~/Imagens, copia para a área de transferência e avisa na tela.
+set -u
+
+pasta="$(xdg-user-dir PICTURES 2>/dev/null || true)"
+[[ -n "$pasta" && "$pasta" != "$HOME" ]] || pasta="$HOME/Imagens"
+mkdir -p "$pasta"
+arquivo="$pasta/Captura de tela $(date '+%Y-%m-%d às %H.%M.%S').png"
+
+avisar() { command -v alba-enviar >/dev/null && alba-enviar "{\"tipo\": \"aviso\", \"texto\": \"$1\"}" || true; }
+
+if ! command -v grim >/dev/null; then
+  avisar "Captura de tela indisponível: atualize o Alba em Ajustes › Sobre."
+  exit 1
+fi
+
+if [[ "${1:-}" == "area" ]]; then
+  command -v slurp >/dev/null || { avisar "Escolher um pedaço da tela precisa de uma atualização do Alba."; exit 1; }
+  regiao="$(slurp -d -b '#10142a66' -c '#e0662fff' -w 2)" || exit 0   # Esc cancela
+  grim -g "$regiao" "$arquivo" || { avisar "Não consegui capturar a tela."; exit 1; }
+else
+  grim "$arquivo" || { avisar "Não consegui capturar a tela."; exit 1; }
+fi
+
+command -v wl-copy >/dev/null && wl-copy --type image/png < "$arquivo"
+avisar "Captura salva em Imagens e copiada."

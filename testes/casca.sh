@@ -37,7 +37,7 @@ grim saida/2-mesa.png
 alba-app arquivos &
 sleep 10
 grim saida/3-arquivos.png
-firefox --new-window about:blank > saida/firefox.log 2>&1 &
+alba-enviar '{"tipo":"lancar","desktop":"firefox.desktop"}'  # igual a clicar no dock
 sleep 25
 grim saida/4-firefox.png
 alba-enviar '{"tipo": "painel", "qual": "calendario"}'
@@ -51,5 +51,21 @@ alba-enviar '{"tipo": "painel", "qual": "central"}'
 alba-app musica &
 sleep 10
 grim saida/7-sleeve.png
+alba-enviar launchpad
+sleep 4
+grim saida/8-launchpad.png
+wtype fire
+sleep 2
+grim saida/9-launchpad-busca.png
+wtype -k Escape; wtype -k Escape
+sleep 2
+gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications \
+  --method org.freedesktop.Notifications.Notify "Firefox" 0 "" "Download concluído" "relatorio.pdf" "[]" "{}" 5000 > saida/notificacao.txt 2>&1
+sleep 1
+grim saida/10-notificacao.png
+alba-app ajustes '{"secao": "sobre"}' &
+sleep 8
+grim saida/11-sobre.png
+ls -la ~/.config/labwc ~/.local/share/themes/Alba/labwc > saida/tema.txt 2>&1
 cp ~/.cache/alba/*.log saida/ 2>/dev/null
 python3 -m pywayland.scanner --help > saida/scanner.txt 2>&1

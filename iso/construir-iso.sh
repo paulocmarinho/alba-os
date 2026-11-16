@@ -36,7 +36,7 @@ sed -i -E \
   -e 's/^iso_application=.*/iso_application="Alba OS"/' \
   -e "s/^iso_version=.*/iso_version=\"$VERSAO\"/" \
   "$PERFIL/profiledef.sh"
-sed -i 's/^file_permissions=(/file_permissions=(\n  ["\/etc\/sudoers.d\/10-alba-live"]="0:0:440"\n  ["\/usr\/bin\/alba-sessao"]="0:0:755"\n  ["\/usr\/bin\/alba-casca"]="0:0:755"\n  ["\/usr\/bin\/alba-app"]="0:0:755"\n  ["\/usr\/bin\/alba-enviar"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-live-setup"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-identidade"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-atualizar"]="0:0:755"\n  ["\/etc\/sudoers.d\/20-alba-atualizar"]="0:0:440"\n  ["\/usr\/share\/alba\/sistema\/instalar.sh"]="0:0:755"/' "$PERFIL/profiledef.sh"
+sed -i 's/^file_permissions=(/file_permissions=(\n  ["\/etc\/sudoers.d\/10-alba-live"]="0:0:440"\n  ["\/usr\/bin\/alba-sessao"]="0:0:755"\n  ["\/usr\/bin\/alba-casca"]="0:0:755"\n  ["\/usr\/bin\/alba-app"]="0:0:755"\n  ["\/usr\/bin\/alba-enviar"]="0:0:755"\n  ["\/usr\/bin\/alba-captura"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-live-setup"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-identidade"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-atualizar"]="0:0:755"\n  ["\/etc\/sudoers.d\/20-alba-atualizar"]="0:0:440"\n  ["\/usr\/share\/alba\/sistema\/instalar.sh"]="0:0:755"/' "$PERFIL/profiledef.sh"
 
 echo "==> Menu de boot"
 for pasta in efiboot syslinux grub; do

@@ -38,7 +38,7 @@ function duracao(segundos: number) {
   return h ? `${h} h ${m} min` : `${m} min`;
 }
 
-export function Ajustes({ secao: inicial }: { secao?: Secao }) {
+export function Ajustes({ secao: inicial, vez }: { secao?: Secao; vez?: number }) {
   const { config, mudarConfig, sistema, perguntar } = useAlba();
 
   async function escolherImagem() {
@@ -55,6 +55,10 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
     if (valor !== config.escala) await mudarConfig({ escala: valor });
   }
   const [secao, setSecao] = useState<Secao>(inicial || "aparencia");
+  // Já aberto e pedido de novo com outra seção (ex.: "Sobre este computador"): vai para ela.
+  useEffect(() => {
+    if (inicial) setSecao(inicial);
+  }, [inicial, vez]);
   const [rede, setRede] = useState<Rede | null>(null);
   const [som, setSom] = useState<Som | null>(null);
   const [teclados, setTeclados] = useState<Teclado[]>([]);

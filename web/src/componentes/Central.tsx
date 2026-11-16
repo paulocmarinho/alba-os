@@ -121,7 +121,7 @@ export function Central({ fechar }: { fechar: () => void }) {
           valor={som?.volume ?? 0}
           aoMudar={(v) => {
             setSom((s) => (s ? { ...s, volume: v } : s));
-            api.gravarSom({ volume: v }).then(setSom).catch(() => {});
+            api.gravarSom({ volume: v, bip: true }).then(setSom).catch(() => {});
           }}
         />
       </div>

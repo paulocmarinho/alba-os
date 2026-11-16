@@ -53,3 +53,7 @@ xdg-desktop-portal-gtk
 # Navegador padrão
 firefox
 firefox-i18n-pt-br
+grim
+slurp
+wl-clipboard
+xdg-user-dirs

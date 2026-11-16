@@ -49,7 +49,7 @@ export type Rede = {
   conexoes: { dispositivo: string; tipo: string; estado: string; nome: string }[];
   ips: string[];
 };
-export type Som = { disponivel: boolean; volume: number; mudo: boolean };
+export type Som = { disponivel: boolean; volume: number; mudo: boolean; placa?: boolean; bip?: boolean };
 
 export class ErroAlba extends Error {}
 

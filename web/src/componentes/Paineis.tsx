@@ -22,8 +22,14 @@ export function PainelSom() {
       </div>
       {som?.disponivel ? (
         <>
-          <Deslizante valor={som.mudo ? 0 : som.volume} rotulo="Volume" icone={som.mudo ? "mute" : "volume"} aoMudar={(v) => mudar({ volume: v, mudo: false })} />
-          <small className="painel-nota">{som.mudo ? "Sem som" : `Volume em ${som.volume}%`}</small>
+          <Deslizante valor={som.mudo ? 0 : som.volume} rotulo="Volume" icone={som.mudo ? "mute" : "volume"} aoMudar={(v) => mudar({ volume: v, mudo: false, bip: true })} />
+          <small className="painel-nota">
+            {som.placa === false
+              ? "Este computador não tem placa de som. No Hyper-V, máquinas Linux não recebem áudio."
+              : som.mudo
+                ? "Sem som"
+                : `Volume em ${som.volume}%`}
+          </small>
         </>
       ) : (
         <small className="painel-nota">Nenhuma saída de som encontrada.</small>

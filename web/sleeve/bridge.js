@@ -29,10 +29,9 @@ window.matchMedia = (q) => (/prefers-color-scheme:\s*dark/.test(q) ? consultaTem
 // ---------- Ajustes que só fazem sentido no Windows ficam escondidos ----------
 const estilo = document.createElement('style');
 estilo.textContent = `
-  #pin-button, .update-chip { display: none !important; }
+  #pin-button { display: none !important; }
   .row:has([data-key="startup"]), .row:has([data-key="autoUpdate"]), .row:has([data-key="hiRes"]),
-  .row:has([data-key="pinned"]), .section-title:has(+ .panel [data-act="update-check"]),
-  .panel:has([data-act="update-check"]) { display: none !important; }
+  .row:has([data-key="pinned"]) { display: none !important; }
   html, body { overscroll-behavior: none; }
   body { -webkit-user-select: none; user-select: none; }
   input { -webkit-user-select: text; user-select: text; }
@@ -212,6 +211,35 @@ function seguirMouse() {
 
 let pinned = false;
 
+// ---------- Atualizações: o Sleeve vem dentro das atualizações do Alba ----------
+// Cada pacote do Alba leva o Sleeve mais novo (compilacao.json diz qual). "Procurar
+// atualizações" no Sleeve pergunta ao Alba; "Reiniciar" instala o pacote e reabre a sessão.
+let versaoSleeve = '';
+async function verAtualizacao(avisar) {
+  if (avisar) emit({ type: 'update', state: 'checking', version: null, current: versaoSleeve });
+  try {
+    const r = await api('GET', '/api/atualizacao');
+    versaoSleeve = r.atual?.sleeve?.versao || versaoSleeve;
+    const atual = r.atual?.sleeve?.commit;
+    const nova = r.nova?.sleeve;
+    const temNova = r.disponivel && nova && nova.commit && nova.commit !== atual;
+    if (r.erro && avisar) emit({ type: 'update', state: 'error', version: null, current: versaoSleeve });
+    else emit({ type: 'update', state: temNova ? 'ready' : avisar ? 'none' : 'idle', version: temNova ? nova.versao : null, current: versaoSleeve });
+  } catch {
+    emit({ type: 'update', state: avisar ? 'error' : 'idle', version: null, current: versaoSleeve });
+  }
+}
+async function instalarAtualizacao() {
+  emit({ type: 'update', state: 'downloading', version: null, current: versaoSleeve });
+  try {
+    await api('POST', '/api/atualizacao');
+    await api('POST', '/api/recarregar', { sessao: true });
+  } catch (e) {
+    paraAlba({ type: 'aviso', texto: e.message });
+    emit({ type: 'update', state: 'error', version: null, current: versaoSleeve });
+  }
+}
+
 export const host = {
   kind: 'alba',
   send: async (msg) => {
@@ -220,7 +248,7 @@ export const host = {
         const cfg = await api('POST', '/api/musica/config', {}).catch(() => ({ pinned: false }));
         pinned = !!cfg.pinned;
         emit({ type: 'settings', hiRes: false, startup: false, pinned, mini: false, autoUpdate: false });
-        emit({ type: 'update', state: 'none', version: null, current: '' });
+        verAtualizacao(false);
         await carregar();
         const abrir = params.get('abrir');
         if (abrir) abrirArquivos(JSON.parse(abrir));
@@ -267,7 +295,8 @@ export const host = {
         if (msg.key === 'pinned') host.send({ type: 'window', action: 'pin' });
         break;
       case 'update':
-        emit({ type: 'update', state: 'none', version: null, current: '' });
+        if (msg.action === 'restart') instalarAtualizacao();
+        else verAtualizacao(true);
         break;
       case 'theme':
         paraAlba(msg);

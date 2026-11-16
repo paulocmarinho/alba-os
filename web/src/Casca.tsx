@@ -12,6 +12,7 @@ import { Terminal } from "./apps/Terminal";
 import { BarraSuperior, MarcaSleeve, type Painel } from "./componentes/Barra";
 import { Central } from "./componentes/Central";
 import { Icone } from "./componentes/Icone";
+import { type AppLista, Launchpad } from "./componentes/Launchpad";
 import { PainelCalendario, PainelSom } from "./componentes/Paineis";
 import { TelaBloqueio } from "./componentes/TelaBloqueio";
 
@@ -60,9 +61,11 @@ export function AlbaCasca() {
       if (m.tipo === "config" && m.config) {
         setConfig(m.config);
         if (superficie === "barra" || appAvulso) paraCasca({ tipo: "escala" });
+      } else if (m.tipo === "aviso" && superficie === "sobre" && m.texto) {
+        aviso(String(m.texto)); // avisos do sistema (ex.: captura de tela) aparecem por cima de tudo
       } else if (m.tipo === "tocando") {
         setTocando(m.dados ?? null);
-      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "desbloquear-teste")) {
+      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "lancar" || m.tipo === "launchpad" || m.tipo === "desbloquear-teste")) {
         paraCasca(m); // atalhos de teclado e scripts chegam pelo servidor e a barra repassa à casca
       }
     });
@@ -245,6 +248,11 @@ function DockCasca() {
   );
   return (
     <nav className="dock" aria-label="Aplicativos" ref={nav}>
+      <button data-label="Aplicativos" onClick={() => paraCasca({ tipo: "launchpad" })}>
+        <span className="dock-icon launchpad-icone">
+          <Icone name="grid" size={27} />
+        </span>
+      </button>
       {itens.map(botao)}
       {extras.length > 0 && <span className="dock-divider" />}
       {extras.map(botao)}
@@ -284,8 +292,19 @@ function MenuAlba({ fechar }: { fechar: () => void }) {
 }
 
 function Sobre() {
-  const [modo, setModo] = useState<{ modo: "bloqueio" | "painel" | null; qual?: PainelCasca }>({ modo: null });
-  useEffect(() => daCasca((m) => m.tipo === "modo" && setModo({ modo: m.modo, qual: m.qual })), []);
+  const [modo, setModo] = useState<{ modo: "bloqueio" | "painel" | "launchpad" | null; qual?: PainelCasca }>({ modo: null });
+  const [apps, setApps] = useState<AppLista[]>([]);
+  const [vez, setVez] = useState(0);
+  useEffect(
+    () =>
+      daCasca((m) => {
+        if (m.tipo === "modo") {
+          setModo({ modo: m.modo, qual: m.qual });
+          if (m.modo === "launchpad") setVez((v) => v + 1);
+        } else if (m.tipo === "apps") setApps(m.apps || []);
+      }),
+    [],
+  );
   useEffect(() => {
     const tecla = (e: KeyboardEvent) => e.key === "Escape" && modo.modo === "painel" && paraCasca({ tipo: "fecharSobre" });
     window.addEventListener("keydown", tecla);
@@ -297,6 +316,22 @@ function Sobre() {
       <>
         <Papel />
         <TelaBloqueio aoDesbloquear={() => paraCasca({ tipo: "desbloqueado" })} />
+      </>
+    );
+  if (modo.modo === "launchpad")
+    return (
+      <>
+        <div className="launchpad-papel">
+          <Papel />
+        </div>
+        <Launchpad
+          key={vez}
+          apps={apps}
+          fechar={fechar}
+          abrir={(a) =>
+            a.tipo === "alba" && a.app ? paraCasca({ tipo: "abrir", app: a.app }) : paraCasca({ tipo: "lancar", desktop: a.desktop })
+          }
+        />
       </>
     );
   if (modo.modo !== "painel") return null;
@@ -317,7 +352,7 @@ function AppAvulso({ app }: { app: IdApp }) {
   useEffect(() => {
     document.title = APPS[app]?.nome || "Alba";
     return daCasca((m) => {
-      if (m.tipo === "props") setProps((p) => ({ ...p, ...m.props }));
+      if (m.tipo === "props") setProps((p) => ({ ...p, ...m.props, _vez: Date.now() }));
     });
   }, [app]);
   if (!APPS[app]) return <p className="casca-erro">App desconhecido: {app}</p>;
@@ -336,7 +371,7 @@ function AppAvulso({ app }: { app: IdApp }) {
       conteudo = <Visualizador caminho={props.caminho} />;
       break;
     case "ajustes":
-      conteudo = <Ajustes secao={props.secao} />;
+      conteudo = <Ajustes secao={props.secao} vez={props._vez} />;
       break;
     case "instalador":
       conteudo = <Instalador />;

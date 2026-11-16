@@ -10,6 +10,9 @@ on:
       - "iso/pacotes.txt"
       - "testes/**"
   workflow_dispatch:
+  # O Sleeve mora em outro repositório: de 3 em 3 horas, se ele mudou, sai um pacote novo.
+  schedule:
+    - cron: "17 */3 * * *"
 
 permissions:
   contents: write
@@ -34,7 +37,24 @@ jobs:
       - name: Baixar o Sleeve (player de música)
         run: git clone --depth 1 https://github.com/paulocmarinho/sleeve web/sleeve-src
 
+      - name: Ver se há o que publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SLEEVE_COMMIT="$(git -C web/sleeve-src rev-parse HEAD)"
+          SLEEVE_VERSAO="$(grep -oP '(?<=<Version>)[^<]+' web/sleeve-src/src/windows/Sleeve.csproj || echo '')"
+          echo "SLEEVE_COMMIT=$SLEEVE_COMMIT" >> "$GITHUB_ENV"
+          echo "SLEEVE_VERSAO=$SLEEVE_VERSAO" >> "$GITHUB_ENV"
+          SEGUIR=1
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            PUBLICADO="$(gh release download -R "$GITHUB_REPOSITORY" -p compilacao.json -O - 2>/dev/null | python3 -c 'import json,sys; print((json.load(sys.stdin).get("sleeve") or {}).get("commit",""))' || true)"
+            [ "$PUBLICADO" = "$SLEEVE_COMMIT" ] && SEGUIR=0
+            echo "Sleeve publicado: $PUBLICADO; atual: $SLEEVE_COMMIT; publicar: $SEGUIR"
+          fi
+          echo "SEGUIR=$SEGUIR" >> "$GITHUB_ENV"
+
       - name: Montar a interface
+        if: env.SEGUIR == '1'
         working-directory: web
         run: |
           mkdir -p public/fonts
@@ -45,19 +65,23 @@ jobs:
           test -f dist/apps/sleeve/index.html
 
       - name: Testar os scripts
+        if: env.SEGUIR == '1'
         run: |
           python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py
           for f in sistema/alba-sessao sistema/alba-atualizar sistema/instalar.sh sistema/montar-arquivos.sh iso/construir-iso.sh; do bash -n "$f"; done
 
       - name: Identificar a compilação
+        if: env.SEGUIR == '1'
         run: |
           VERSAO="$(cat VERSAO)"
           DATA="$(git log -1 --format=%ct)"
-          printf '{"versao": "%s", "commit": "%s", "data": %s, "numero": %s}\n' "$VERSAO" "$GITHUB_SHA" "$DATA" "$GITHUB_RUN_NUMBER" > compilacao.json
+          [ "${{ github.event_name }}" = "schedule" ] && DATA="$(date +%s)"  # pacote novo só por causa do Sleeve
+          printf '{"versao": "%s", "commit": "%s", "data": %s, "numero": %s, "sleeve": {"versao": "%s", "commit": "%s"}}\n' "$VERSAO" "$GITHUB_SHA-$GITHUB_RUN_NUMBER" "$DATA" "$GITHUB_RUN_NUMBER" "$SLEEVE_VERSAO" "$SLEEVE_COMMIT" > compilacao.json
           cat compilacao.json
           echo "TAG=alba-$VERSAO-$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
 
       - name: Montar o pacote
+        if: env.SEGUIR == '1'
         run: |
           RAIZ_PACOTE="$(mktemp -d)"
           bash sistema/montar-arquivos.sh "$RAIZ_PACOTE"
@@ -69,6 +93,7 @@ jobs:
           tar -tzf saida/alba-atualizacao.tar.gz | head -40
 
       - name: Publicar
+        if: env.SEGUIR == '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

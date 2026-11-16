@@ -40,7 +40,7 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.4.2"
+VERSAO = "0.4.3"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -501,15 +501,38 @@ def api_atualizacao_instalar(_q, _c):
 def api_som_ler(_q, _c):
     cod, saida, _ = rodar("wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@")
     if cod != 0:
-        return {"disponivel": False, "volume": 0, "mudo": False}
+        return {"disponivel": False, "volume": 0, "mudo": False, "placa": False}
     m = re.search(r"([\d.]+)", saida)
-    return {"disponivel": True, "volume": round(float(m.group(1)) * 100) if m else 0, "mudo": "MUTED" in saida}
+    # Sem placa de som (ex.: Hyper-V) o PipeWire cria uma saída "falsa" (auto_null): o volume
+    # muda, mas não sai som nenhum. A interface avisa em vez de fingir que funciona.
+    _c2, info, _ = rodar("wpctl", "inspect", "@DEFAULT_AUDIO_SINK@")
+    placa = "auto_null" not in info and "Dummy" not in info
+    return {"disponivel": True, "volume": round(float(m.group(1)) * 100) if m else 0, "mudo": "MUTED" in saida,
+            "placa": placa}
+
+
+_ULTIMO_BIP = [0.0]
+
+
+def tocar_bip():
+    """Som curto de confirmação ao mudar o volume (como no macOS)."""
+    import time
+    agora = time.monotonic()
+    if agora - _ULTIMO_BIP[0] < 0.25:
+        return
+    _ULTIMO_BIP[0] = agora
+    arquivo = os.path.join(ARGS.web, "sons", "volume.wav")
+    tocador = shutil.which("pw-play")
+    if tocador and os.path.exists(arquivo):
+        subprocess.Popen([tocador, arquivo], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
 
 def api_som_gravar(_q, c):
     if "volume" in c:
         v = max(0, min(100, int(c["volume"])))
         rodar("wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{v / 100:.2f}")
+        if c.get("bip"):
+            tocar_bip()
     if "mudo" in c:
         rodar("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1" if c["mudo"] else "0")
     return api_som_ler({}, {})
