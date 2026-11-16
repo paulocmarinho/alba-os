@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Config, type Sistema } from "./api";
+import { alturaTela, definirEscala, larguraTela } from "./escala";
 import { APPS, CtxAlba, type Contexto, type IdApp, type Janela as DadosJanela } from "./contexto";
 import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
@@ -135,14 +136,14 @@ export function Alba() {
         if (existente) return js.map((j) => (j.id === existente.id ? { ...j, z: ++proximoZ.current, minimizada: false, props: { ...j.props, ...props } } : j));
       }
       const deslocamento = (js.length % 6) * 28;
-      const largura = Math.min(def.largura, window.innerWidth - 60);
-      const altura = Math.min(def.altura, window.innerHeight - 36 - 110);
+      const largura = Math.min(def.largura, larguraTela() - 60);
+      const altura = Math.min(def.altura, alturaTela() - 36 - 110);
       const nova: DadosJanela = {
         id: proximoId.current++,
         app,
         titulo: def.nome,
-        x: Math.max(20, (window.innerWidth - largura) / 2 - 80 + deslocamento),
-        y: Math.max(12, (window.innerHeight - 36 - 96 - altura) / 2 + deslocamento),
+        x: Math.max(20, (larguraTela() - largura) / 2 - 80 + deslocamento),
+        y: Math.max(12, (alturaTela() - 36 - 96 - altura) / 2 + deslocamento),
         largura,
         altura,
         minimizada: false,
@@ -204,6 +205,10 @@ export function Alba() {
 
   // Na sessão de instalação, o instalador abre sozinho.
   const abriuInstalador = useRef(false);
+  useEffect(() => {
+    if (config) definirEscala(config.escala ?? 1.25);
+  }, [config?.escala]);
+
   // Procura atualização um pouco depois de entrar; se houver, avisa uma vez.
   useEffect(() => {
     if (!sistema || sistema.live || bloqueado) return;

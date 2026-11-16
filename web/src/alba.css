@@ -990,3 +990,22 @@ button.opcao-lista.selecionado {
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
 }
+
+/* ------------------------------------------------------------------ tamanho da interface (zoom na página) */
+/* Com zoom no <html>, vw/vh passam a valer mais que a tela: a área de trabalho ocupa a tela pelo "inset". */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  min-height: 0;
+}
+
+.desktop {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
+}

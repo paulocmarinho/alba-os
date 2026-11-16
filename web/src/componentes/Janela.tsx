@@ -1,5 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import type { Janela as DadosJanela } from "../contexto";
+import { alturaTela, emCss, larguraTela } from "../escala";
 
 type Props = {
   janela: DadosJanela;
@@ -37,14 +38,14 @@ export function Janela({
     if ((e.target as HTMLElement).closest("button, input, select, textarea, a")) return;
     if (janela.maximizada) return;
     onFoco();
-    arraste.current = { dx: e.clientX - janela.x, dy: e.clientY - janela.y };
+    arraste.current = { dx: emCss(e.clientX) - janela.x, dy: emCss(e.clientY) - janela.y };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
 
   function mover(e: React.PointerEvent<HTMLElement>) {
     if (!arraste.current) return;
-    const x = Math.min(Math.max(e.clientX - arraste.current.dx, 40 - janela.largura), window.innerWidth - 80);
-    const y = Math.min(Math.max(e.clientY - arraste.current.dy, 0), window.innerHeight - 120);
+    const x = Math.min(Math.max(emCss(e.clientX) - arraste.current.dx, 40 - janela.largura), larguraTela() - 80);
+    const y = Math.min(Math.max(emCss(e.clientY) - arraste.current.dy, 0), alturaTela() - 120);
     onMover(x, y);
   }
 
@@ -55,11 +56,11 @@ export function Janela({
   function iniciarRedim(e: React.PointerEvent<HTMLElement>) {
     e.stopPropagation();
     onFoco();
-    const inicio = { x: e.clientX, y: e.clientY, l: janela.largura, a: janela.altura };
+    const inicio = { x: emCss(e.clientX), y: emCss(e.clientY), l: janela.largura, a: janela.altura };
     const alvo = e.currentTarget as HTMLElement;
     alvo.setPointerCapture(e.pointerId);
     const aoMover = (ev: PointerEvent) =>
-      onRedimensionar(Math.max(380, inicio.l + ev.clientX - inicio.x), Math.max(260, inicio.a + ev.clientY - inicio.y));
+      onRedimensionar(Math.max(380, inicio.l + emCss(ev.clientX) - inicio.x), Math.max(260, inicio.a + emCss(ev.clientY) - inicio.y));
     const aoSoltar = () => {
       alvo.removeEventListener("pointermove", aoMover);
       alvo.removeEventListener("pointerup", aoSoltar);
@@ -69,7 +70,7 @@ export function Janela({
   }
 
   const estilo: React.CSSProperties = janela.maximizada
-    ? { left: 10, top: 10, width: "calc(100vw - 20px)", height: "calc(100vh - 36px - 96px)", zIndex: janela.z }
+    ? { left: 10, top: 10, right: 10, bottom: 86, zIndex: janela.z }
     : { left: janela.x, top: janela.y, width: janela.largura, height: janela.altura, zIndex: janela.z };
 
   return (

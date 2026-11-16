@@ -37,18 +37,10 @@ function duracao(segundos: number) {
 }
 
 export function Ajustes({ secao: inicial }: { secao?: Secao }) {
-  const { config, mudarConfig, sistema, confirmar } = useAlba();
+  const { config, mudarConfig, sistema } = useAlba();
 
   async function mudarEscala(valor: number) {
-    if (valor === config.escala) return;
-    const ok = await confirmar({
-      titulo: `Mudar o tamanho para ${Math.round(valor * 100)}%?`,
-      texto: "A interface vai se redesenhar no novo tamanho. As janelas abertas serão fechadas.",
-      ok: "Mudar tamanho",
-    });
-    if (!ok) return;
-    await mudarConfig({ escala: valor });
-    await api.recarregar().catch(() => {});
+    if (valor !== config.escala) await mudarConfig({ escala: valor });
   }
   const [secao, setSecao] = useState<Secao>(inicial || "aparencia");
   const [rede, setRede] = useState<Rede | null>(null);

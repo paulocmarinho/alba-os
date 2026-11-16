@@ -41,16 +41,6 @@ MOTOR="$(command -v chromium || command -v chromium-browser)"
 URL="http://127.0.0.1:$PORTA/?t=$TOKEN"
 PERFIL="$CACHE/motor"
 
-escala() {
-  python3 - "$HOME/.config/alba/config.json" <<'PY' 2>/dev/null || echo 1.25
-import json, sys
-try:
-    v = float(json.load(open(sys.argv[1])).get("escala", 1.25))
-except Exception:
-    v = 1.25
-print(v if v in (1.0, 1.25, 1.5) else 1.25)
-PY
-}
 
 falhas=0
 while true; do
@@ -62,7 +52,7 @@ while true; do
     --kiosk "$URL" \
     --ozone-platform=wayland \
     --user-data-dir="$PERFIL" \
-    --force-device-scale-factor="$(escala)" \
+    --force-device-scale-factor=1 \
     --no-first-run --no-default-browser-check --noerrdialogs --disable-infobars \
     --disable-session-crashed-bubble --disable-translate --password-store=basic \
     --disable-sync --disable-extensions --disable-default-apps --disable-component-update \

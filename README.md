@@ -29,7 +29,7 @@ Um sistema operacional com interface própria, feita do zero. Por baixo roda um 
 Troque o caminho da ISO:
 ```powershell
 $Nome = "AlbaOS"
-$Iso  = "C:\caminho\para\alba-os-0.3.0-x86_64.iso"
+$Iso  = "C:\caminho\para\alba-os-0.3.1-x86_64.iso"
 $Base = "C:\HyperV"
 
 New-VM -Name $Nome -Generation 2 -Path $Base -MemoryStartupBytes 4GB `

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Janela } from "../contexto";
 import { useAlba } from "../contexto";
+import { alturaTela, emCss, larguraTela } from "../escala";
 
 /** Controle da janela que a área de trabalho entrega ao Sleeve (ele desenha a própria barra). */
 export type ControleJanela = {
@@ -53,8 +54,8 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
     const y0 = janela.y;
     gesto.current = (dx, dy) =>
       ctl.current.mover(
-        Math.min(Math.max(x0 + dx, 40 - janela.largura), window.innerWidth - 80),
-        Math.min(Math.max(y0 + dy, 0), window.innerHeight - 60),
+        Math.min(Math.max(x0 + dx, 40 - janela.largura), larguraTela() - 80),
+        Math.min(Math.max(y0 + dy, 0), alturaTela() - 60),
       );
   }
 
@@ -88,7 +89,7 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
     }
     antesMini.current = { x: j.x, y: j.y, l: j.largura, a: j.altura };
     if (j.maximizada) ctl.current.maximizar();
-    ctl.current.redimensionar(window.innerWidth - 400, 20, 380, 100);
+    ctl.current.redimensionar(larguraTela() - 400, 20, 380, 100);
   }
 
   useEffect(() => {
@@ -99,7 +100,7 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
       if (!m) return;
       switch (m.type) {
         case "arrastando":
-          gesto.current?.(Number(m.dx) || 0, Number(m.dy) || 0);
+          gesto.current?.(emCss(Number(m.dx) || 0), emCss(Number(m.dy) || 0));
           break;
         case "arrastou":
           gesto.current = null;

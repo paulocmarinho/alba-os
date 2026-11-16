@@ -1,5 +1,6 @@
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { alturaTela, emCss, larguraTela } from "../escala";
 import { api, type Item, type Local, tamanhoLegivel } from "../api";
 import { iniciais, useAlba } from "../contexto";
 import { Icone, type NomeIcone } from "../componentes/Icone";
@@ -251,7 +252,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
       onContextMenu={(e) => {
         e.preventDefault();
         setSelecionado(item.caminho);
-        setMenu({ item, x: e.clientX, y: e.clientY });
+        setMenu({ item, x: emCss(e.clientX), y: emCss(e.clientY) });
       }}
     >
       {visao === "grade" ? (
@@ -400,7 +401,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
         createPortal(
         <div
           className={`menu-contexto ${config.tema === "escuro" ? "escuro" : ""}`}
-          style={{ left: Math.min(menu.x, window.innerWidth - 250), top: Math.min(menu.y, window.innerHeight - 140) }}
+          style={{ left: Math.min(menu.x, larguraTela() - 250), top: Math.min(menu.y, alturaTela() - 140) }}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {naLixeira ? (
