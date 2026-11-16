@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type Rede, type Som, type Teclado, tamanhoLegivel } from "../api";
+import { api, type InfoAtualizacao, type Rede, type Som, type Teclado, tamanhoLegivel } from "../api";
 import { useAlba } from "../contexto";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
@@ -227,9 +227,10 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
               <Icone name="logo" size={54} />
               <div>
                 <h2>Alba OS</h2>
-                <p>Linux, com luz própria · versão {sistema.versao}</p>
+                <p>Um novo dia para o Linux · versão {sistema.versao}</p>
               </div>
             </div>
+            {!sistema.live && <Atualizacoes />}
             <div className="ajuste-grupo">
               {[
                 ["Computador", sistema.maquina],
@@ -247,6 +248,85 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
               ))}
             </div>
           </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function quando(segundos: number) {
+  if (!segundos) return "";
+  return new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(segundos * 1000));
+}
+
+/** Atualizações pelo GitHub: baixa só a interface e o sistema do Alba (alguns MB), sem reinstalar. */
+function Atualizacoes() {
+  const { confirmar, aviso } = useAlba();
+  const [info, setInfo] = useState<InfoAtualizacao | null>(null);
+  const [estado, setEstado] = useState<"procurando" | "pronto" | "instalando" | "erro">("procurando");
+  const [erro, setErro] = useState("");
+
+  async function procurar() {
+    setEstado("procurando");
+    try {
+      setInfo(await api.verAtualizacao());
+      setEstado("pronto");
+    } catch (e: any) {
+      setErro(e.message);
+      setEstado("erro");
+    }
+  }
+
+  async function instalar() {
+    const ok = await confirmar({
+      titulo: "Instalar a atualização?",
+      texto: "Leva alguns segundos. Depois a interface reinicia sozinha; as janelas abertas serão fechadas.",
+      ok: "Atualizar agora",
+    });
+    if (!ok) return;
+    setEstado("instalando");
+    try {
+      await api.instalarAtualizacao();
+      aviso("Alba OS atualizado. Reiniciando a interface…");
+      await api.recarregar(true);
+    } catch (e: any) {
+      setErro(e.message);
+      setEstado("erro");
+    }
+  }
+
+  useEffect(() => {
+    procurar();
+  }, []);
+
+  const atual = info?.atual;
+  let texto = "Procurando atualizações…";
+  if (estado === "instalando") texto = "Baixando e instalando…";
+  else if (estado === "erro") texto = erro;
+  else if (info?.erro) texto = info.erro;
+  else if (info?.disponivel && info.nova) texto = `Nova versão ${info.nova.versao} (${info.nova.commit.slice(0, 7)}) de ${quando(info.nova.data)}.`;
+  else if (info) texto = "O Alba OS está atualizado.";
+
+  return (
+    <div className="ajuste-grupo atualizacoes">
+      <div className="setting-row">
+        <span className="atualizacao-texto">
+          <strong>Atualizações</strong>
+          <small>{texto}</small>
+          {atual?.commit && (
+            <small className="discreto">
+              Instalado: {atual.versao} ({atual.commit.slice(0, 7)}){atual.data ? `, de ${quando(atual.data)}` : ""}
+            </small>
+          )}
+        </span>
+        {info?.disponivel && estado !== "instalando" ? (
+          <button className="botao-destaque" onClick={instalar}>
+            Atualizar agora
+          </button>
+        ) : (
+          <button className="botao-secundario" onClick={procurar} disabled={estado === "procurando" || estado === "instalando"}>
+            {estado === "instalando" ? "Atualizando…" : "Procurar"}
+          </button>
         )}
       </div>
     </div>

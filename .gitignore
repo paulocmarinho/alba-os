@@ -3,3 +3,5 @@ web/dist/
 web/public/fonts/
 saida/
 __pycache__/
+web/sleeve-src/
+compilacao.json

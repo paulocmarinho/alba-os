@@ -36,7 +36,7 @@ sed -i -E \
   -e 's/^iso_application=.*/iso_application="Alba OS"/' \
   -e "s/^iso_version=.*/iso_version=\"$VERSAO\"/" \
   "$PERFIL/profiledef.sh"
-sed -i 's/^file_permissions=(/file_permissions=(\n  ["\/etc\/sudoers.d\/10-alba-live"]="0:0:440"\n  ["\/usr\/bin\/alba-sessao"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-live-setup"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-identidade"]="0:0:755"\n  ["\/usr\/share\/alba\/sistema\/instalar.sh"]="0:0:755"/' "$PERFIL/profiledef.sh"
+sed -i 's/^file_permissions=(/file_permissions=(\n  ["\/etc\/sudoers.d\/10-alba-live"]="0:0:440"\n  ["\/usr\/bin\/alba-sessao"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-live-setup"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-identidade"]="0:0:755"\n  ["\/usr\/local\/bin\/alba-atualizar"]="0:0:755"\n  ["\/etc\/sudoers.d\/20-alba-atualizar"]="0:0:440"\n  ["\/usr\/share\/alba\/sistema\/instalar.sh"]="0:0:755"/' "$PERFIL/profiledef.sh"
 
 echo "==> Menu de boot"
 for pasta in efiboot syslinux grub; do
@@ -52,17 +52,7 @@ done
 
 echo "==> Arquivos do Alba"
 cp -a "$RAIZ/iso/airootfs/." "$PERFIL/airootfs/"
-L="$PERFIL/airootfs/usr/share/alba"
-mkdir -p "$L/web" "$L/servidor" "$L/sistema"
-cp -a "$RAIZ/web/dist/." "$L/web/"
-cp -a "$RAIZ/servidor/alba_servidor.py" "$RAIZ/servidor/pam.py" "$L/servidor/"
-cp -a "$RAIZ/sistema/instalar.sh" "$L/sistema/"
-install -Dm755 "$RAIZ/sistema/alba-sessao" "$PERFIL/airootfs/usr/bin/alba-sessao"
-install -Dm755 "$RAIZ/sistema/alba-live-setup" "$PERFIL/airootfs/usr/local/bin/alba-live-setup"
-install -Dm755 "$RAIZ/sistema/alba-identidade" "$PERFIL/airootfs/usr/local/bin/alba-identidade"
-install -Dm644 "$RAIZ/sistema/alba-identidade.hook" "$PERFIL/airootfs/etc/pacman.d/hooks/alba-identidade.hook"
-install -Dm644 "$RAIZ/sistema/alba-perfil.sh" "$PERFIL/airootfs/etc/profile.d/alba.sh"
-chmod 755 "$L/sistema/instalar.sh"
+bash "$RAIZ/sistema/montar-arquivos.sh" "$PERFIL/airootfs" --com-live
 
 echo "==> Serviços"
 W="$PERFIL/airootfs/etc/systemd/system"

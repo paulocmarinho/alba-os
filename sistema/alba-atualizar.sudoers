@@ -1,0 +1,2 @@
+# Quem administra o computador (grupo wheel) pode atualizar o Alba pela interface sem digitar senha.
+%wheel ALL=(root) NOPASSWD: /usr/local/bin/alba-atualizar

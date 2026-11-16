@@ -94,7 +94,9 @@ export const api = {
   energia: (acao: "desligar" | "reiniciar") => pedir("POST", "/api/energia", { acao }),
   discos: () => pedir<{ discos: Disco[] }>("GET", "/api/discos"),
   fusos: () => pedir<{ fusos: string[]; padrao: string; teclados: Teclado[] }>("GET", "/api/fusos"),
-  recarregar: () => pedir<{ ok: boolean }>("POST", "/api/recarregar", {}),
+  recarregar: (sessao = false) => pedir<{ ok: boolean }>("POST", "/api/recarregar", { sessao }),
+  verAtualizacao: () => pedir<InfoAtualizacao>("GET", "/api/atualizacao"),
+  instalarAtualizacao: () => pedir<{ ok: boolean; atual: Compilacao }>("POST", "/api/atualizacao", {}),
   urlArquivo: (caminho: string) => `/api/arquivo?caminho=${q(caminho)}`,
 };
 
@@ -113,3 +115,6 @@ export function tamanhoLegivel(bytes = 0) {
   }
   return `${n.toLocaleString("pt-BR", { maximumFractionDigits: n < 10 && i > 0 ? 1 : 0 })} ${unidades[i]}`;
 }
+
+export type Compilacao = { versao: string; commit: string; data: number };
+export type InfoAtualizacao = { atual: Compilacao; nova: Compilacao | null; disponivel: boolean; live: boolean; erro?: string };

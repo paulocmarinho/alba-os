@@ -1,0 +1,77 @@
+name: Publicar atualização do Alba
+
+# A cada mudança na main, monta um pacote pequeno com a interface, o servidor e a sessão
+# do Alba e publica como "release" no GitHub. O Alba instalado baixa por Ajustes › Sobre.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "iso/pacotes.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizacao
+  cancel-in-progress: false
+
+jobs:
+  pacote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar o projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar o Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Baixar o Sleeve (player de música)
+        run: git clone --depth 1 https://github.com/paulocmarinho/sleeve web/sleeve-src
+
+      - name: Montar a interface
+        working-directory: web
+        run: |
+          mkdir -p public/fonts
+          curl -fsSL --retry 3 -o public/fonts/DMSans.ttf \
+            "https://github.com/google/fonts/raw/main/ofl/dmsans/DMSans%5Bopsz%2Cwght%5D.ttf" || echo "Sem DM Sans; a interface usa a fonte padrão."
+          npm install --no-audit --no-fund
+          npm run build
+          test -f dist/apps/sleeve/index.html
+
+      - name: Testar os scripts
+        run: |
+          python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py
+          for f in sistema/alba-sessao sistema/alba-atualizar sistema/instalar.sh sistema/montar-arquivos.sh iso/construir-iso.sh; do bash -n "$f"; done
+
+      - name: Identificar a compilação
+        run: |
+          VERSAO="$(cat VERSAO)"
+          DATA="$(git log -1 --format=%ct)"
+          printf '{"versao": "%s", "commit": "%s", "data": %s, "numero": %s}\n' "$VERSAO" "$GITHUB_SHA" "$DATA" "$GITHUB_RUN_NUMBER" > compilacao.json
+          cat compilacao.json
+          echo "TAG=alba-$VERSAO-$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Montar o pacote
+        run: |
+          RAIZ_PACOTE="$(mktemp -d)"
+          bash sistema/montar-arquivos.sh "$RAIZ_PACOTE"
+          mkdir -p saida
+          tar --owner=0 --group=0 --numeric-owner -czf saida/alba-atualizacao.tar.gz -C "$RAIZ_PACOTE" usr etc
+          cp compilacao.json saida/
+          (cd saida && sha256sum alba-atualizacao.tar.gz > alba-atualizacao.tar.gz.sha256)
+          ls -lh saida
+          tar -tzf saida/alba-atualizacao.tar.gz | head -40
+
+      - name: Publicar
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" saida/* \
+            --title "Alba OS $(cat VERSAO) (compilação $GITHUB_RUN_NUMBER)" \
+            --notes "$(git log -1 --format=%B)" \
+            --latest

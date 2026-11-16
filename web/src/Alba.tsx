@@ -5,6 +5,7 @@ import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
 import { Instalador } from "./apps/Instalador";
 import { Notas, Visualizador } from "./apps/Notas";
+import { Musica, type Tocando } from "./apps/Musica";
 import { Terminal } from "./apps/Terminal";
 import { BarraSuperior, Dock } from "./componentes/Barra";
 import { Central } from "./componentes/Central";
@@ -86,6 +87,7 @@ export function Alba() {
   const [janelas, setJanelas] = useState<DadosJanela[]>([]);
   const [central, setCentral] = useState(false);
   const [dialogo, setDialogo] = useState<Dialogo | null>(null);
+  const [tocando, definirTocando] = useState<Tocando | null>(null);
   const [avisos, setAvisos] = useState<{ id: number; texto: string }[]>([]);
   const proximoId = useRef(1);
   const proximoZ = useRef(10);
@@ -202,6 +204,19 @@ export function Alba() {
 
   // Na sessão de instalação, o instalador abre sozinho.
   const abriuInstalador = useRef(false);
+  // Procura atualização um pouco depois de entrar; se houver, avisa uma vez.
+  useEffect(() => {
+    if (!sistema || sistema.live || bloqueado) return;
+    const t = setTimeout(() => {
+      api
+        .verAtualizacao()
+        .then((i) => i.disponivel && aviso("Há uma atualização do Alba OS. Instale em Ajustes › Sobre."))
+        .catch(() => {});
+    }, 15000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sistema, bloqueado]);
+
   useEffect(() => {
     if (sistema?.live && !abriuInstalador.current) {
       abriuInstalador.current = true;
@@ -212,9 +227,9 @@ export function Alba() {
   const ctx: Contexto | null = useMemo(
     () =>
       sistema && config
-        ? { sistema, config, agora, mudarConfig, abrir, fechar, renomearJanela, aviso, confirmar, perguntar, bloquear, energia }
+        ? { sistema, config, agora, mudarConfig, abrir, fechar, renomearJanela, aviso, confirmar, perguntar, bloquear, energia, tocando, definirTocando }
         : null,
-    [sistema, config, agora, mudarConfig, abrir, fechar, renomearJanela, aviso, confirmar, perguntar, bloquear, energia],
+    [sistema, config, agora, mudarConfig, abrir, fechar, renomearJanela, aviso, confirmar, perguntar, bloquear, energia, tocando],
   );
 
   if (erro)
@@ -257,6 +272,21 @@ export function Alba() {
         return <Ajustes secao={j.props.secao} />;
       case "instalador":
         return <Instalador />;
+      case "musica":
+        return (
+          <Musica
+            abrir={j.props.abrir}
+            controle={{
+              janela: j,
+              focar: () => focar(j.id),
+              mover: (x, y) => alterar(j.id, { x, y }),
+              redimensionar: (x, y, largura, altura) => alterar(j.id, { x, y, largura, altura, maximizada: false }),
+              minimizar: () => alterar(j.id, { minimizada: true }),
+              maximizar: () => alterar(j.id, { maximizada: !j.maximizada }),
+              fechar: () => fechar(j.id),
+            }}
+          />
+        );
     }
   }
 
@@ -279,6 +309,7 @@ export function Alba() {
                   janela={j}
                   ativa={ativa?.id === j.id}
                   classe={j.app === "terminal" ? "terminal-window janela-terminal" : `janela-${j.app}`}
+                  semMoldura={APPS[j.app].semMoldura}
                   onFoco={() => ativa?.id !== j.id && focar(j.id)}
                   onFechar={() => fechar(j.id)}
                   onMinimizar={() => alterar(j.id, { minimizada: true })}

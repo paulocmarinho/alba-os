@@ -32,12 +32,15 @@ import urllib.parse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import musica  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
     import pam  # noqa: E402
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.2.0"
+VERSAO = "0.3.0"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -60,7 +63,7 @@ WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 ARGS = None
 STATUS = {200: "OK", 204: "No Content", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden",
           404: "Not Found", 405: "Method Not Allowed", 409: "Conflict", 413: "Payload Too Large",
-          500: "Internal Server Error"}
+          206: "Partial Content", 416: "Range Not Satisfiable", 500: "Internal Server Error", 503: "Service Unavailable"}
 
 
 class ErroApi(Exception):
@@ -419,12 +422,65 @@ def api_config_gravar(_q, c):
     return {"config": gravar_config(c)}
 
 
-def api_recarregar(_q, _c):
-    """Fecha a interface para a sessão abrir de novo (usado ao trocar a escala)."""
+def api_recarregar(_q, c):
+    """Fecha a interface para a sessão abrir de novo (escala nova; ou, com "sessao", depois de atualizar)."""
     caminho = CASA / ".cache" / "alba" / "recarregar"
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    caminho.write_text("1\n")
+    caminho.write_text("sessao" if c.get("sessao") else "1")
     return {"ok": True}
+
+
+# ---------------------------------------------------------------- atualizações
+REPO_ATUALIZACOES = "paulocmarinho/alba-os"
+COMPILACAO = Path(__file__).resolve().parent.parent / "compilacao.json"
+
+
+def compilacao_atual():
+    try:
+        return json.loads(COMPILACAO.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"versao": VERSAO, "commit": "", "data": 0}
+
+
+def _baixar_json(url):
+    import urllib.request
+    pedido = urllib.request.Request(url, headers={"User-Agent": f"AlbaOS/{VERSAO}", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(pedido, timeout=12) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def api_atualizacao_ver(_q, _c):
+    atual = compilacao_atual()
+    if ARGS and ARGS.live:
+        return {"atual": atual, "nova": None, "disponivel": False, "live": True}
+    try:
+        lancamento = _baixar_json(f"https://api.github.com/repos/{REPO_ATUALIZACOES}/releases/latest")
+        ativo = next((a for a in lancamento.get("assets", []) if a.get("name") == "compilacao.json"), None)
+        if ativo is None:
+            return {"atual": atual, "nova": None, "disponivel": False, "live": False}
+        nova = _baixar_json(ativo["browser_download_url"])
+    except Exception:  # noqa: BLE001
+        return {"atual": atual, "nova": None, "disponivel": False, "live": False,
+                "erro": "Não consegui procurar atualizações. Confira a internet."}
+    disponivel = int(nova.get("data") or 0) > int(atual.get("data") or 0) and nova.get("commit") != atual.get("commit")
+    return {"atual": atual, "nova": nova, "disponivel": disponivel, "live": False}
+
+
+def api_atualizacao_instalar(_q, _c):
+    if ARGS and ARGS.live:
+        raise ErroApi(409, "A sessão de instalação não se atualiza.")
+    cmd = ["/usr/local/bin/alba-atualizar"]
+    if os.getuid() != 0:
+        cmd = ["sudo", "-n", *cmd]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+    except subprocess.TimeoutExpired as e:
+        raise ErroApi(500, "A atualização demorou demais.") from e
+    saida = (r.stdout + r.stderr).strip()
+    if r.returncode != 0:
+        ultima = saida.splitlines()[-1] if saida else "A atualização falhou."
+        raise ErroApi(500, ultima.replace("ERRO: ", ""))
+    return {"ok": True, "saida": saida, "atual": compilacao_atual()}
 
 
 def api_som_ler(_q, _c):
@@ -502,6 +558,91 @@ def api_fusos(_q, _c):
     return {"fusos": sorted(set(fusos)), "padrao": "America/Sao_Paulo", "teclados": TECLADOS}
 
 
+# ---------------------------------------------------------------- música (Sleeve)
+def api_musica_biblioteca(_q, _c):
+    return musica.biblioteca()
+
+
+def api_musica_ler(_q, _c):
+    return musica.biblioteca(reler=True)
+
+
+def api_musica_estado(_q, _c):
+    return musica.estado_leitura()
+
+
+def api_musica_pastas(_q, c):
+    cfg = musica.ler_config()
+    acao = c.get("acao")
+    if acao == "add":
+        p = caminho_seguro(str(c.get("caminho", "")))
+        if not p.is_dir():
+            raise ErroApi(400, "Essa pasta não existe.")
+        if str(p) not in cfg["pastas"]:
+            cfg["pastas"].append(str(p))
+    elif acao == "remove":
+        cfg["pastas"] = [x for x in cfg["pastas"] if x != c.get("caminho")]
+    musica.gravar_config(cfg)
+    return musica.biblioteca()
+
+
+def api_musica_abrir(_q, c):
+    return {"tracks": musica.faixas_abertas([str(x) for x in c.get("caminhos", [])][:500])}
+
+
+def api_musica_spotify(_q, _c):
+    return {"info": musica.spotify()}
+
+
+def api_musica_spotify_acao(_q, c):
+    return {"ok": musica.spotify_acao(str(c.get("acao", "")), c.get("posicao"), c.get("volume"))}
+
+
+def api_musica_config(_q, c):
+    cfg = musica.ler_config()
+    if "pinned" in c:
+        cfg["pinned"] = bool(c["pinned"])
+    musica.gravar_config(cfg)
+    return {"pinned": cfg["pinned"]}
+
+
+def faixa_de_audio(req):
+    """Áudio com suporte a Range, para o player poder pular para qualquer ponto da música."""
+    p = Path(req.query.get("caminho", ""))
+    if not musica.permitido(p):
+        raise ErroApi(403, "Esse arquivo não pode ser tocado.")
+    total = p.stat().st_size
+    tipo = musica.tipo_audio(p)
+    faixa = req.cabecalhos.get("range", "")
+    extras = ["Accept-Ranges: bytes"]
+    if faixa.startswith("bytes="):
+        inicio_txt, _, fim_txt = faixa[6:].split(",")[0].partition("-")
+        if inicio_txt:
+            inicio = int(inicio_txt)
+            fim = int(fim_txt) if fim_txt else total - 1
+        else:
+            inicio = max(0, total - int(fim_txt or 0))
+            fim = total - 1
+        fim = min(fim, total - 1, inicio + 8 * 1024 * 1024 - 1)
+        if inicio >= total or inicio > fim:
+            return resposta(416, b"", tipo, [f"Content-Range: bytes */{total}"])
+        with open(p, "rb") as f:
+            f.seek(inicio)
+            dados = f.read(fim - inicio + 1)
+        return resposta(206, dados, tipo, extras + [f"Content-Range: bytes {inicio}-{fim}/{total}"])
+    if total > LIMITE_ARQUIVO * 4:
+        raise ErroApi(413, "Arquivo grande demais.")
+    return resposta(200, p.read_bytes(), tipo, extras)
+
+
+def capa_de_album(req):
+    p = musica.caminho_capa(req.query.get("id", ""))
+    if p is None:
+        raise ErroApi(404, "Sem capa.")
+    dados = p.read_bytes()
+    return resposta(200, dados, musica.tipo_imagem(dados))
+
+
 ROTAS = {
     ("GET", "/api/sistema"): api_sistema,
     ("GET", "/api/locais"): api_locais,
@@ -518,6 +659,16 @@ ROTAS = {
     ("GET", "/api/config"): api_config_ler,
     ("POST", "/api/config"): api_config_gravar,
     ("POST", "/api/recarregar"): api_recarregar,
+    ("GET", "/api/atualizacao"): api_atualizacao_ver,
+    ("POST", "/api/atualizacao"): api_atualizacao_instalar,
+    ("GET", "/api/musica/biblioteca"): api_musica_biblioteca,
+    ("POST", "/api/musica/ler"): api_musica_ler,
+    ("GET", "/api/musica/estado"): api_musica_estado,
+    ("POST", "/api/musica/pastas"): api_musica_pastas,
+    ("POST", "/api/musica/abrir"): api_musica_abrir,
+    ("GET", "/api/musica/spotify"): api_musica_spotify,
+    ("POST", "/api/musica/spotify"): api_musica_spotify_acao,
+    ("POST", "/api/musica/config"): api_musica_config,
     ("GET", "/api/som"): api_som_ler,
     ("POST", "/api/som"): api_som_gravar,
     ("GET", "/api/rede"): api_rede,
@@ -801,6 +952,10 @@ async def atender(leitor, escritor):
                     try:
                         if req.caminho == "/api/arquivo" and req.metodo == "GET":
                             dados = arquivo_bruto(req)
+                        elif req.caminho == "/api/musica/audio" and req.metodo == "GET":
+                            dados = await asyncio.get_running_loop().run_in_executor(None, faixa_de_audio, req)
+                        elif req.caminho == "/api/musica/capa" and req.metodo == "GET":
+                            dados = capa_de_album(req)
                         else:
                             func = ROTAS.get((req.metodo, req.caminho))
                             if func is None:

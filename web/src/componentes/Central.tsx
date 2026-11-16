@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Rede, type Som } from "../api";
 import { dataSemAno, hora, useAlba } from "../contexto";
 import { Icone } from "./Icone";
+import { comandoMusica } from "../apps/Musica";
 
 
 export function Interruptor({ ligado, aoMudar, rotulo }: { ligado: boolean; aoMudar: () => void; rotulo: string }) {
@@ -34,7 +35,7 @@ export function Deslizante({
 
 /** Central de controle: rede, tema, volume e energia — tudo real. */
 export function Central({ fechar }: { fechar: () => void }) {
-  const { agora, config, mudarConfig, abrir, bloquear, energia, sistema } = useAlba();
+  const { agora, config, mudarConfig, abrir, bloquear, energia, sistema, tocando } = useAlba();
   const [rede, setRede] = useState<Rede | null>(null);
   const [som, setSom] = useState<Som | null>(null);
 
@@ -87,6 +88,30 @@ export function Central({ fechar }: { fechar: () => void }) {
           </span>
         </button>
       </div>
+
+      {tocando && (
+        <div className="tocando-card" style={{ "--cor-capa": tocando.cor || "#6c5bd4" } as React.CSSProperties}>
+          <button className="tocando-capa" onClick={() => abrir("musica")} aria-label="Abrir o Sleeve">
+            {tocando.capa ? <img src={tocando.capa} alt="" draggable={false} /> : <Icone name="music" size={22} />}
+          </button>
+          <span className="tocando-texto">
+            <small>Sleeve</small>
+            <strong>{tocando.titulo}</strong>
+            <span>{tocando.artista}</span>
+          </span>
+          <span className="tocando-botoes">
+            <button onClick={() => comandoMusica("previous")} aria-label="Anterior">
+              <span className="espelhado"><Icone name="skip" size={16} /></span>
+            </button>
+            <button onClick={() => comandoMusica("toggle")} aria-label={tocando.tocando ? "Pausar" : "Tocar"}>
+              <Icone name={tocando.tocando ? "pause" : "play"} size={18} />
+            </button>
+            <button onClick={() => comandoMusica("next")} aria-label="Próxima">
+              <Icone name="skip" size={16} />
+            </button>
+          </span>
+        </div>
+      )}
 
       <div className="control-slider-card">
         <label>Som {som && !som.disponivel && <em>· sem saída de áudio</em>}</label>

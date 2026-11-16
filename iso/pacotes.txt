@@ -34,3 +34,6 @@ dosfstools
 e2fsprogs
 grub
 efibootmgr
+python-mutagen
+playerctl
+curl

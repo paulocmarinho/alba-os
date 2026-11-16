@@ -5,6 +5,7 @@ type Props = {
   janela: DadosJanela;
   ativa: boolean;
   classe?: string;
+  semMoldura?: boolean;
   acoes?: ReactNode;
   children: ReactNode;
   onFoco: () => void;
@@ -20,6 +21,7 @@ export function Janela({
   janela,
   ativa,
   classe = "",
+  semMoldura = false,
   acoes,
   children,
   onFoco,
@@ -72,11 +74,12 @@ export function Janela({
 
   return (
     <article
-      className={`window janela ${classe} ${ativa ? "ativa" : ""} ${janela.minimizada ? "minimizada" : ""}`}
+      className={`window janela ${classe} ${semMoldura ? "sem-moldura" : ""} ${ativa ? "ativa" : ""} ${janela.minimizada ? "minimizada" : ""}`}
       style={estilo}
       onPointerDown={onFoco}
       aria-label={janela.titulo}
     >
+      {!semMoldura && (
       <header
         className="window-bar"
         onPointerDown={iniciarArraste}
@@ -108,8 +111,9 @@ export function Janela({
           </div>
         </div>
       </header>
+      )}
       <div className="janela-conteudo">{children}</div>
-      {!janela.maximizada && <span className="alca-redim" onPointerDown={iniciarRedim} aria-hidden="true" />}
+      {!janela.maximizada && !semMoldura && <span className="alca-redim" onPointerDown={iniciarRedim} aria-hidden="true" />}
     </article>
   );
 }

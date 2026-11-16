@@ -82,6 +82,13 @@ while true; do
     sleep 0.4
   done
   wait "$CAGE" 2>/dev/null
+  # Depois de uma atualização, a sessão inteira recomeça (servidor e script novos).
+  if [[ "$(cat "$CACHE/recarregar" 2>/dev/null)" == "sessao" ]]; then
+    rm -f "$CACHE/recarregar"
+    kill "$SERVIDOR" 2>/dev/null
+    wait "$SERVIDOR" 2>/dev/null
+    exec /usr/bin/alba-sessao
+  fi
   if (( $(date +%s) - inicio < 5 )); then
     falhas=$((falhas + 1))
     echo "Interface fechou rápido demais ($falhas)."

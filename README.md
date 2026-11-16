@@ -2,7 +2,7 @@
 
 Um sistema operacional com interface própria, feita do zero. Por baixo roda um Linux mínimo (Arch), só como motor. Tudo o que aparece na tela é do Alba: tela de bloqueio, área de trabalho, janelas, dock, central de controle e apps.
 
-> Versão 0.2: funções básicas. Ainda não roda programas do Linux nem jogos dentro da interface.
+> Versão 0.3: funções básicas, player de música e atualização pela internet. Ainda não roda programas do Linux nem jogos dentro da interface.
 
 ## O que já funciona
 
@@ -15,6 +15,8 @@ Um sistema operacional com interface própria, feita do zero. Por baixo roda um 
 | **Terminal** | Terminal de verdade (bash), com emulador próprio do Alba |
 | **Notas** | Abre, edita e salva arquivos de texto (**Ctrl+S**) |
 | **Ajustes** | Tema claro ou escuro, cor de destaque, tamanho da interface (100/125/150%), rede, som, teclado e informações do computador |
+| **Sleeve** | Player de música do sistema ([paulocmarinho/sleeve](https://github.com/paulocmarinho/sleeve)): lê `~/Músicas`, toca MP3/FLAC/M4A/OGG/Opus/WAV, abre músicas direto do Arquivos e aparece na central de controle |
+| **Atualizações** | Em **Ajustes › Sobre**: baixa só o que mudou (alguns MB) e reinicia a interface, sem reinstalar |
 | **Instalador** | Fuso, teclado, disco e conta. Instala o Alba no disco escolhido |
 
 ## Testar no Hyper-V
@@ -27,7 +29,7 @@ Um sistema operacional com interface própria, feita do zero. Por baixo roda um 
 Troque o caminho da ISO:
 ```powershell
 $Nome = "AlbaOS"
-$Iso  = "C:\caminho\para\alba-os-0.2.0-x86_64.iso"
+$Iso  = "C:\caminho\para\alba-os-0.3.0-x86_64.iso"
 $Base = "C:\HyperV"
 
 New-VM -Name $Nome -Generation 2 -Path $Base -MemoryStartupBytes 4GB `
@@ -49,6 +51,11 @@ vmconnect.exe localhost $Nome
 3. No fim, clique em **Reiniciar agora** e ejete a ISO no Hyper-V (**Mídia › Unidade de DVD › Ejetar**).
 4. O Alba liga direto na **tela de bloqueio**. Entre com a senha que você criou.
 
+## Atualizar sem reinstalar
+A cada mudança na `main`, o GitHub publica um pacote de atualização em *Releases* (workflow **Publicar atualização do Alba**). No Alba instalado, abra **Ajustes › Sobre › Procurar** e depois **Atualizar agora**: o sistema baixa o pacote, confere a soma SHA-256, troca os arquivos do Alba e reinicia a interface. Ele também avisa sozinho quando há versão nova.
+
+Uma ISO nova só é necessária para mudanças na base (pacotes do Arch, drivers, boot). Para gerar: **Actions › Construir ISO do Alba › Run workflow**.
+
 ## Como é feito
 
 ```
@@ -62,7 +69,8 @@ O motor de exibição fica invisível: as políticas em `iso/airootfs/etc/chromi
 | Pasta | Conteúdo |
 |---|---|
 | `web/` | Interface do Alba (React + TypeScript). `npm install && npm run build` gera `web/dist` |
-| `servidor/` | Servidor do sistema: arquivos, terminal, senha (PAM), som, rede, energia e instalação. Só usa a biblioteca padrão do Python |
+| `servidor/` | Servidor do sistema: arquivos, terminal, senha (PAM), som, rede, energia, instalação, atualização e a biblioteca de música do Sleeve (`musica.py`, usa o mutagen) |
+| `web/sleeve/` | Ponte do Sleeve para o Alba (substitui o `bridge.js` dele na construção) |
 | `sistema/` | Sessão gráfica, instalador em disco, configuração da sessão ao vivo e identidade do sistema |
 | `iso/` | Perfil da ISO (archiso) e script de construção |
 | `.github/workflows/` | Construção automática da ISO |
@@ -70,14 +78,15 @@ O motor de exibição fica invisível: as políticas em `iso/airootfs/etc/chromi
 ### Rodar a interface no seu computador (para desenvolver)
 Com Linux ou WSL, Python 3 e Node 22:
 ```bash
+git clone --depth 1 https://github.com/paulocmarinho/sleeve web/sleeve-src   # opcional: o player de música
 cd web && npm install && npm run build && cd ..
 python3 servidor/alba_servidor.py --porta 7070 --token teste --web web/dist
 # abra http://127.0.0.1:7070/?t=teste no navegador
 ```
 Ela usa a sua pasta pessoal de verdade, com cuidado: só altera arquivos dentro dela.
 
-## Limitações da versão 0.2
-- A interface ainda não abre programas do Linux (Firefox, Steam). Isso precisa de um compositor de janelas próprio e é o próximo passo grande.
+## Limitações da versão 0.3
+- A interface ainda não abre programas do Linux (Firefox, Steam, o próprio app do Spotify). Isso precisa de um compositor de janelas próprio e é o próximo passo grande.
 - Wi‑Fi com senha, Bluetooth e brilho de tela ainda não existem.
 - O instalador apaga o disco inteiro escolhido. Não há instalação lado a lado com outro sistema.
 - No Hyper-V não há aceleração de vídeo, então as animações e o vidro ficam mais lentos.

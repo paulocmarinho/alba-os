@@ -100,7 +100,7 @@ export function Dock({
   aoClicar: (app: IdApp | "lixeira") => void;
   live: boolean;
 }) {
-  const ordem: IdApp[] = ["arquivos", "terminal", "notas", "ajustes"];
+  const ordem: IdApp[] = ["arquivos", "musica", "terminal", "notas", "ajustes"];
   if (live) ordem.push("instalador");
   const aberto = (app: IdApp) => janelas.some((j) => j.app === app);
   return (
@@ -108,7 +108,7 @@ export function Dock({
       {ordem.map((app) => (
         <button key={app} className={aberto(app) ? "running" : ""} onClick={() => aoClicar(app)} data-label={APPS[app].nome}>
           <span className={`dock-icon ${APPS[app].classe}`}>
-            <Icone name={APPS[app].icone} size={27} />
+            {app === "musica" ? <MarcaSleeve /> : <Icone name={APPS[app].icone} size={27} />}
           </span>
         </button>
       ))}
@@ -119,5 +119,17 @@ export function Dock({
         </span>
       </button>
     </nav>
+  );
+}
+
+/** Marca do Sleeve (duas linhas paralelas), para o ícone no dock. */
+function MarcaSleeve() {
+  return (
+    <svg viewBox="0 0 120 120" width="30" height="30" aria-hidden="true">
+      <g stroke="currentColor" strokeWidth="17" strokeLinecap="round">
+        <line x1="30.2" y1="58.6" x2="74.2" y2="25.6" />
+        <line x1="45.8" y1="94.4" x2="89.8" y2="61.4" />
+      </g>
+    </svg>
   );
 }

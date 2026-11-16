@@ -1,18 +1,20 @@
 import { createContext, useContext } from "react";
 import type { Config, Sistema } from "./api";
 import type { NomeIcone } from "./componentes/Icone";
+import type { Tocando } from "./apps/Musica";
 
-export type IdApp = "arquivos" | "terminal" | "notas" | "ajustes" | "visualizador" | "instalador";
+export type IdApp = "arquivos" | "terminal" | "notas" | "ajustes" | "visualizador" | "instalador" | "musica";
 
 export const APPS: Record<
   IdApp,
-  { nome: string; icone: NomeIcone; classe: string; largura: number; altura: number; unico: boolean }
+  { nome: string; icone: NomeIcone; classe: string; largura: number; altura: number; unico: boolean; semMoldura?: boolean }
 > = {
   arquivos: { nome: "Arquivos", icone: "folder", classe: "files", largura: 980, altura: 640, unico: false },
   terminal: { nome: "Terminal", icone: "terminal", classe: "terminal", largura: 780, altura: 480, unico: false },
   notas: { nome: "Notas", icone: "note", classe: "notes", largura: 760, altura: 540, unico: false },
   ajustes: { nome: "Ajustes", icone: "settings", classe: "settings", largura: 880, altura: 600, unico: true },
   visualizador: { nome: "Imagem", icone: "image", classe: "viewer", largura: 820, altura: 600, unico: false },
+  musica: { nome: "Sleeve", icone: "music", classe: "music", largura: 1120, altura: 720, unico: true, semMoldura: true },
   instalador: { nome: "Instalar o Alba OS", icone: "install", classe: "install", largura: 900, altura: 640, unico: true },
 };
 
@@ -42,6 +44,8 @@ export type Contexto = {
   confirmar: (opcoes: { titulo: string; texto?: string; ok?: string; perigo?: boolean }) => Promise<boolean>;
   perguntar: (opcoes: { titulo: string; texto?: string; valor?: string; ok?: string }) => Promise<string | null>;
   bloquear: () => void;
+  tocando: Tocando | null;
+  definirTocando: (t: Tocando | null) => void;
   energia: (acao: "desligar" | "reiniciar") => void;
 };
 

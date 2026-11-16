@@ -175,6 +175,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
     if (naLixeira) return;
     if (item.tipo === "pasta") return ir(item.caminho);
     if (item.categoria === "imagem") return abrir("visualizador", { caminho: item.caminho });
+    if (item.categoria === "audio") return abrir("musica", { abrir: { caminhos: [item.caminho], vez: Date.now() } });
     if (item.categoria === "texto" || (item.tamanho ?? 0) < 512 * 1024) return abrir("notas", { caminho: item.caminho });
     aviso("O Alba OS ainda não tem um app para abrir este tipo de arquivo.");
   }

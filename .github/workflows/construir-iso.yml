@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "iso-v*"
 
 jobs:
   iso:
@@ -25,6 +25,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Baixar o Sleeve (player de música)
+        run: git clone --depth 1 https://github.com/paulocmarinho/sleeve web/sleeve-src
+
       - name: Montar a interface
         working-directory: web
         run: |
@@ -33,10 +36,16 @@ jobs:
             "https://github.com/google/fonts/raw/main/ofl/dmsans/DMSans%5Bopsz%2Cwght%5D.ttf" || echo "Sem DM Sans; a interface usa a fonte padrão."
           npm install --no-audit --no-fund
           npm run build
+          test -f dist/apps/sleeve/index.html
           ls -la dist dist/fonts || true
 
       - name: Testar o servidor do sistema
-        run: python3 -m py_compile servidor/alba_servidor.py servidor/pam.py
+        run: python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py
+
+      - name: Identificar a compilação
+        run: |
+          printf '{"versao": "%s", "commit": "%s", "data": %s, "numero": 0}\n' "$(cat VERSAO)" "$GITHUB_SHA" "$(git log -1 --format=%ct)" > compilacao.json
+          cat compilacao.json
 
       - name: Montar a ISO num contêiner Arch Linux
         run: |
