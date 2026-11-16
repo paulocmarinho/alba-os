@@ -11,7 +11,7 @@ bash sistema/montar-arquivos.sh / --com-live || exit 1
 export ALBA_TOKEN=teste ALBA_URL=http://127.0.0.1:7070
 python3 /usr/share/alba/servidor/alba_servidor.py --porta 7070 --token teste --web /usr/share/alba/web --live > saida/servidor.log 2>&1 &
 sleep 2
-chmod 644 /usr/bin/alba-casca /usr/bin/alba-app /usr/bin/alba-enviar  # igual à ISO 0.4
+chmod 644 /usr/bin/alba-casca  # igual à ISO 0.4
 labwc -s "bash /usr/bin/alba-casca" > saida/compositor.log 2>&1 &
 sleep 4
 export WAYLAND_DISPLAY=$(ls $XDG_RUNTIME_DIR | grep -m1 "^wayland-[0-9]$")
