@@ -63,7 +63,7 @@ def abrir_app(app: str, props: dict | None = None) -> None:
     if app not in APPS:
         return
     comando = shutil.which("alba-app") or "/usr/bin/alba-app"
-    subprocess.Popen([comando, app, json.dumps(props or {}, ensure_ascii=False)], start_new_session=True,
+    subprocess.Popen(["bash", comando, app, json.dumps(props or {}, ensure_ascii=False)], start_new_session=True,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 

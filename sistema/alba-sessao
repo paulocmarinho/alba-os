@@ -72,10 +72,10 @@ while true; do
   if [[ "$modo" == casca ]]; then
     rm -f "$CACHE/casca-falhou"
     if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
-      labwc -s /usr/bin/alba-casca >"$CACHE/compositor.log" 2>&1 &
+      labwc -s "bash /usr/bin/alba-casca" >"$CACHE/compositor.log" 2>&1 &
     else
       # Sem barramento de sessão (os apps do Alba precisam de um): cria um só para a sessão.
-      dbus-run-session -- labwc -s /usr/bin/alba-casca >"$CACHE/compositor.log" 2>&1 &
+      dbus-run-session -- labwc -s "bash /usr/bin/alba-casca" >"$CACHE/compositor.log" 2>&1 &
     fi
   else
     quiosque
