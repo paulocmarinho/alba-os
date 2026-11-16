@@ -1,0 +1,1 @@
+['requires', 'launchable', 'bundle', 'keywords', 'mimetypes', 'is_eol', 'developer_name', 'content_rating_details', 'translation', 'icons', 'id', 'screenshots', 'supports', 'recommends', 'isMobileFriendly', 'icon', 'is_free_license', 'metadata', 'provides', 'categories', 'type', 'summary', 'description', 'kudos', 'urls', 'name', 'project_license', 'branding', 'releases']

@@ -1,0 +1,9 @@
+Installing runtime/org.freedesktop.Platform.GL.default/x86_64/25.08
+Installing runtime/org.freedesktop.Platform.GL.default/x86_64/25.08-extra
+Installing runtime/org.freedesktop.Platform.Locale/x86_64/25.08
+Installing runtime/org.freedesktop.Platform.codecs-extra/x86_64/25.08-extra
+Installing runtime/org.freedesktop.Platform/x86_64/25.08
+Installing app/com.spotify.Client/x86_64/stable
+bwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. On e.g. debian this can be enabled with 'sysctl kernel.unprivileged_userns_clone=1'.
+Error: Failed to install com.spotify.Client: While trying to apply extra data: apply_extra script failed, exit status 256
+codigo 1
