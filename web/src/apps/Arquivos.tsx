@@ -106,7 +106,7 @@ function ArteArquivo({ item }: { item: Item }) {
 }
 
 export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: number }) {
-  const { sistema, config, abrir, aviso, confirmar, perguntar, renomearJanela } = useAlba();
+  const { sistema, config, abrir, aviso, confirmar, perguntar, renomearJanela, mudarConfig } = useAlba();
   const [locais, setLocais] = useState<Local[]>([]);
   const [caminho, setCaminho] = useState(inicial || sistema.casa);
   const [historico, setHistorico] = useState<string[]>([]);
@@ -413,6 +413,18 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
               <button onClick={() => (setMenu(null), abrirItem(menu.item))}>
                 <Icone name="chevron" size={16} /> Abrir
               </button>
+              {menu.item.categoria === "imagem" && (
+                <button
+                  onClick={() => {
+                    const caminho = menu.item.caminho;
+                    setMenu(null);
+                    mudarConfig({ papel: "personalizado", papel_arquivo: caminho, papel_definido: true });
+                    aviso("Papel de parede trocado.");
+                  }}
+                >
+                  <Icone name="image" size={16} /> Usar como papel de parede
+                </button>
+              )}
               {gravavel && (
                 <>
                   <button onClick={() => (setMenu(null), renomear(menu.item))}>

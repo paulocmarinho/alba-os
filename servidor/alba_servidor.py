@@ -40,12 +40,14 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.4.0"
+VERSAO = "0.4.1"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
 LIXEIRA = CASA / ".local" / "share" / "Trash"
-CONFIG_PADRAO = {"tema": "claro", "destaque": "#5b6ee1", "papel": "alba", "teclado": "br", "relogio24h": True, "escala": 1.25}
+CONFIG_PADRAO = {"tema": "claro", "destaque": "#e0662f", "papel": "mar", "papel_arquivo": "", "papel_definido": False,
+                 "teclado": "br", "relogio24h": True, "escala": 1.25}
+PAPEIS = ("mar", "montanhas", "alba", "personalizado")
 ESCALAS = (1.0, 1.25, 1.5)
 PASTAS_PADRAO = ["Documentos", "Downloads", "Imagens", "Músicas", "Vídeos"]
 TECLADOS = [
@@ -139,6 +141,13 @@ def ler_config():
         cfg.update(json.loads(CONFIG_ARQ.read_text()))
     except (OSError, ValueError):
         pass
+    # Quem nunca escolheu papel de parede ganha o padrão novo (o mar), com a cor que combina.
+    if not cfg.get("papel_definido") and cfg.get("papel") in ("alba", "aurora"):
+        cfg["papel"] = "mar"
+        if cfg.get("destaque") == "#5b6ee1":
+            cfg["destaque"] = CONFIG_PADRAO["destaque"]
+    if cfg.get("papel") not in PAPEIS:
+        cfg["papel"] = "mar"
     return cfg
 
 
@@ -153,6 +162,10 @@ def gravar_config(novo):
         cfg["destaque"] = CONFIG_PADRAO["destaque"]
     if cfg["teclado"] not in {t["id"] for t in TECLADOS}:
         cfg["teclado"] = "br"
+    if cfg["papel"] not in PAPEIS or (cfg["papel"] == "personalizado" and not cfg.get("papel_arquivo")):
+        cfg["papel"] = "mar"
+    cfg["papel_arquivo"] = str(cfg.get("papel_arquivo") or "")[:1024]
+    cfg["papel_definido"] = bool(cfg.get("papel_definido"))
     try:
         cfg["escala"] = float(cfg["escala"])
     except (TypeError, ValueError):

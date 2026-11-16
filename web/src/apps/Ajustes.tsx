@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type InfoAtualizacao, type Rede, type Som, type Teclado, tamanhoLegivel } from "../api";
 import { useAlba } from "../contexto";
+import { PAPEIS } from "../papeis";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
 
@@ -21,6 +22,7 @@ const ESCALAS = [
 ];
 
 const DESTAQUES = [
+  { cor: "#e0662f", nome: "Pôr do sol" },
   { cor: "#5b6ee1", nome: "Anil" },
   { cor: "#3f8fe0", nome: "Azul" },
   { cor: "#8a64d6", nome: "Lavanda" },
@@ -37,7 +39,17 @@ function duracao(segundos: number) {
 }
 
 export function Ajustes({ secao: inicial }: { secao?: Secao }) {
-  const { config, mudarConfig, sistema } = useAlba();
+  const { config, mudarConfig, sistema, perguntar } = useAlba();
+
+  async function escolherImagem() {
+    const caminho = await perguntar({
+      titulo: "Usar uma imagem sua",
+      texto: "Caminho da imagem (JPG, PNG ou WebP). Dica: no Arquivos, clique com o botão direito numa foto e escolha “Usar como papel de parede”.",
+      valor: config.papel_arquivo || "~/Imagens/",
+      ok: "Usar",
+    });
+    if (caminho) await mudarConfig({ papel: "personalizado", papel_arquivo: caminho.trim(), papel_definido: true });
+  }
 
   async function mudarEscala(valor: number) {
     if (valor !== config.escala) await mudarConfig({ escala: valor });
@@ -81,6 +93,29 @@ export function Ajustes({ secao: inicial }: { secao?: Secao }) {
         {secao === "aparencia" && (
           <>
             <h2>Aparência</h2>
+            <h3>Papel de parede</h3>
+            <div className="ajuste-grupo papeis">
+              {PAPEIS.map((p) => (
+                <button
+                  key={p.id}
+                  className={`papel-opcao ${config.papel === p.id ? "selecionado" : ""}`}
+                  onClick={() => mudarConfig({ papel: p.id, papel_definido: true, destaque: p.destaque })}
+                >
+                  <span className={`papel-amostra papel-${p.id}`} style={p.mini ? { backgroundImage: `url(${p.mini})` } : undefined} />
+                  {p.nome}
+                </button>
+              ))}
+              <button className={`papel-opcao ${config.papel === "personalizado" ? "selecionado" : ""}`} onClick={escolherImagem}>
+                <span
+                  className="papel-amostra papel-sua"
+                  style={config.papel === "personalizado" && config.papel_arquivo ? { backgroundImage: `url(${api.urlArquivo(config.papel_arquivo)})` } : undefined}
+                >
+                  {config.papel !== "personalizado" && <Icone name="image" size={22} />}
+                </span>
+                Sua imagem…
+              </button>
+            </div>
+            <h3>Tema</h3>
             <div className="ajuste-grupo">
               <div className="tema-opcoes">
                 {(["claro", "escuro"] as const).map((t) => (

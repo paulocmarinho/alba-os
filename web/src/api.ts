@@ -22,6 +22,8 @@ export type Config = {
   tema: "claro" | "escuro";
   destaque: string;
   papel: string;
+  papel_arquivo?: string;
+  papel_definido?: boolean;
   escala: number;
   teclado: string;
   relogio24h: boolean;

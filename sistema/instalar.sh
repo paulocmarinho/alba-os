@@ -148,7 +148,7 @@ ExecStart=-/sbin/agetty -o '-p -f -- \\\\u' --noclear --autologin $USUARIO %I \$
 GETTY
 install -d -o "$USUARIO" -g "$USUARIO" "/home/$USUARIO/.config/alba"
 echo "$TECLADO" >"/home/$USUARIO/.config/alba/teclado"
-printf '{"tema": "claro", "destaque": "#5b6ee1", "papel": "alba", "teclado": "%s", "relogio24h": true, "escala": 1.25}\n' "$TECLADO" \
+printf '{"tema": "claro", "destaque": "#e0662f", "papel": "mar", "teclado": "%s", "relogio24h": true, "escala": 1.25}\n' "$TECLADO" \
   >"/home/$USUARIO/.config/alba/config.json"
 chown -R "$USUARIO:$USUARIO" "/home/$USUARIO/.config"
 

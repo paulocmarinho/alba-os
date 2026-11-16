@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Config, type Sistema } from "./api";
 import { alturaTela, definirEscala, larguraTela } from "./escala";
+import { fotoDoPapel } from "./papeis";
 import { APPS, CtxAlba, type Contexto, type IdApp, type Janela as DadosJanela } from "./contexto";
 import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
@@ -20,6 +21,14 @@ export type Dialogo =
   | { tipo: "perguntar"; titulo: string; texto?: string; valor?: string; ok?: string; resolver: (v: string | null) => void };
 
 export function Papel() {
+  const config = useContext(CtxAlba)?.config;
+  const foto = fotoDoPapel(config);
+  if (foto)
+    return (
+      <div className="wallpaper foto" aria-hidden="true">
+        <img src={foto} alt="" draggable={false} />
+      </div>
+    );
   return (
     <div className="wallpaper" aria-hidden="true">
       <span className="forma forma-1" />
