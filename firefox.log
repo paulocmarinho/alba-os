@@ -1,0 +1,15 @@
+[1937] Sandbox: CanCreateUserNamespace() clone() failure: EPERM
+WARNING: Glycin running without sandbox. Bubblewrap (bwrap) doesn't work in the environment.
+[Parent 1937, Main Thread] WARNING: g_dbus_connection_unregister_object: assertion 'G_IS_DBUS_CONNECTION (connection)' failed: 'glib warning', file toolkit/xre/nsSigHandlers.cpp:244
+
+(firefox:1937): GLib-GIO-CRITICAL **: 18:20:29.839: g_dbus_connection_unregister_object: assertion 'G_IS_DBUS_CONNECTION (connection)' failed
+[Parent 1937, Main Thread] WARNING: nsDBusRemoteServer: Unable to unregister root object from within onNameLost!: 'glib warning', file toolkit/xre/nsSigHandlers.cpp:244
+
+** (firefox:1937): WARNING **: 18:20:29.839: nsDBusRemoteServer: Unable to unregister root object from within onNameLost!
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.
+Exiting due to channel error.
