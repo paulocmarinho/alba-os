@@ -133,20 +133,31 @@ def _icone(dados: dict) -> str | None:
 
 
 def _capturas(dados: dict) -> list[str]:
+    """Uma imagem por captura, a maior com até ~1300 px de largura.
+    O Flathub manda "sizes" como lista de {src, width, height} (antes era um dicionário)."""
     urls = []
     for c in dados.get("screenshots") or []:
         tamanhos = c.get("sizes") if isinstance(c, dict) else None
-        if not isinstance(tamanhos, dict) or not tamanhos:
+        opcoes = []
+        if isinstance(tamanhos, list):
+            for t in tamanhos:
+                if isinstance(t, dict) and t.get("src"):
+                    try:
+                        largura = int(t.get("width") or 0)
+                    except ValueError:
+                        largura = 0
+                    opcoes.append((largura, t["src"]))
+        elif isinstance(tamanhos, dict):
+            for k, u in tamanhos.items():
+                try:
+                    opcoes.append((int(str(k).split("x")[0]), u))
+                except ValueError:
+                    opcoes.append((0, u))
+        if not opcoes:
             continue
-        # o maior até ~1250 px de largura
-        def largura(k):
-            try:
-                return int(str(k).split("x")[0])
-            except ValueError:
-                return 0
-        opcoes = sorted(tamanhos.items(), key=lambda kv: largura(kv[0]))
-        escolhida = next((u for k, u in reversed(opcoes) if largura(k) <= 1300), opcoes[-1][1])
-        urls.append(escolhida)
+        opcoes.sort()
+        boas = [u for largura, u in opcoes if 0 < largura <= 1300]
+        urls.append(boas[-1] if boas else opcoes[0][1])
     return urls[:6]
 
 
@@ -192,7 +203,8 @@ def detalhes(app_id: str) -> dict:
         "versao": versao,
         "licenca": d.get("project_license") or "",
         "site": (d.get("urls") or {}).get("homepage") if isinstance(d.get("urls"), dict) else "",
-        "verificado": bool((d.get("metadata") or {}).get("flathub::verification::verified")) if isinstance(d.get("metadata"), dict) else False,
+        "verificado": str((d.get("metadata") or {}).get("flathub::verification::verified")).lower() == "true"
+        if isinstance(d.get("metadata"), dict) else False,
         "tamanho_download": s.get("download_size") if isinstance(s, dict) else None,
         "tamanho_instalado": s.get("installed_size") if isinstance(s, dict) else None,
         "instalado": app_id in instalados_ids(),
