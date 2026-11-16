@@ -9,6 +9,12 @@ on:
       script:
         description: "Script de teste"
         default: "testes/casca.sh"
+      ambiente:
+        description: "Variáveis extras (ex.: GSK_RENDERER=cairo)"
+        default: ""
+      ramo:
+        description: "Ramo das capturas"
+        default: "testes-capturas"
 
 permissions:
   contents: write
@@ -30,6 +36,8 @@ jobs:
           git clone --depth 1 https://github.com/paulocmarinho/sleeve web/sleeve-src
           cd web && npm install --no-audit --no-fund && npm run build
       - name: Rodar
+        env:
+          ALBA_AMBIENTE: ${{ inputs.ambiente }}
         run: bash "${{ inputs.script || 'testes/casca.sh' }}" || true
       - name: Publicar capturas no ramo testes-capturas
         if: always()
@@ -37,7 +45,7 @@ jobs:
           git config --global --add safe.directory "$PWD"
           git config user.name "alba-testes"; git config user.email "alba-testes@users.noreply.github.com"
           rm -rf /tmp/cap && cp -r saida /tmp/cap
-          git checkout --orphan testes-capturas
+          git checkout --orphan "${{ inputs.ramo || 'testes-capturas' }}"
           git rm -rfq . >/dev/null
           rm -rf ./* && cp -r /tmp/cap/. .
-          git add -A && git commit -qm "Capturas $GITHUB_SHA" && git push -f origin testes-capturas
+          git add -A && git commit -qm "Capturas $GITHUB_SHA" && git push -f origin "${{ inputs.ramo || 'testes-capturas' }}"

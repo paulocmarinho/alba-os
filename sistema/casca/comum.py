@@ -107,7 +107,7 @@ def _idioma():
             pass
 
 
-SEM_GPU = not glob.glob("/dev/dri/renderD*")
+SEM_GPU = os.environ.get("ALBA_SEM_GPU", "1" if not glob.glob("/dev/dri/renderD*") else "0") == "1"
 
 
 class Pagina:
