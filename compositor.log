@@ -1,0 +1,167 @@
+
+(process:1619): Gdk-WARNING **: 18:27:52.785: Cannot get portal org.freedesktop.portal.Settings version: GDBus.Error:org.freedesktop.DBus.Error.InvalidArgs: No such interface “org.freedesktop.portal.Settings”
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:52.805: Cannot get portal org.freedesktop.portal.Inhibit version: GDBus.Error:org.freedesktop.DBus.Error.InvalidArgs: No such interface “org.freedesktop.portal.Inhibit”
+alba-casca: desenho da tela: GLRenderer
+alba-casca: desenho da tela: GLRenderer
+alba-casca: desenho da tela: GLRenderer
+alba-casca: desenho da tela: GLRenderer
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.111: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.111: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.144: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.149: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.547: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.575: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.584: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:53.594: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+http://127.0.0.1:7070/main.js:10:32721: CONSOLE LOG [alba dock] iniciando 1024x124
+http://127.0.0.1:7070/main.js:10:32721: CONSOLE LOG [alba barra] iniciando 1024x36
+http://127.0.0.1:7070/main.js:10:32948: CONSOLE LOG [alba dock] sistema carregado
+http://127.0.0.1:7070/main.js:10:32948: CONSOLE LOG [alba barra] sistema carregado
+http://127.0.0.1:7070/main.js:10:32721: CONSOLE LOG [alba sobre] iniciando 1024x576
+http://127.0.0.1:7070/main.js:10:32948: CONSOLE LOG [alba sobre] sistema carregado
+[casca] dock → {'tipo': 'regiao', 'x': 464.8000183105469, 'l': 94.5999984741211, 'y': 26, 'a': 88}
+[casca] dock → {'tipo': 'pronto'}
+/usr/share/alba/casca/casca.py:212: PyGIDeprecationWarning: Gio.DesktopAppInfo is deprecated; use GioUnix.DesktopAppInfo instead
+  info = Gio.DesktopAppInfo.new(fixo["desktop"])
+/usr/share/alba/casca/casca.py:174: PyGIDeprecationWarning: Gio.DesktopAppInfo is deprecated; use GioUnix.DesktopAppInfo instead
+  info = Gio.DesktopAppInfo.new(id_desktop)
+[casca] barra → {'tipo': 'pronto'}
+http://127.0.0.1:7070/main.js:10:32721: CONSOLE LOG [alba fundo] iniciando 1024x576
+[casca] dock → {'y': 26, 'l': 94.5999984741211, 'a': 88, 'x': 464.8000183105469, 'tipo': 'regiao'}
+[casca] sobre → {'tipo': 'pronto'}
+http://127.0.0.1:7070/main.js:10:32948: CONSOLE LOG [alba fundo] sistema carregado
+[casca] fundo → {'tipo': 'pronto'}
+[casca] dock → {'x': 284.8000183105469, 'y': 26, 'a': 88, 'tipo': 'regiao', 'l': 454.6000061035156}
+[casca] dock → {'y': 26, 'tipo': 'regiao', 'x': 284.8000183105469, 'a': 88, 'l': 454.6000061035156}
+[casca] dock → {'x': 284.8000183105469, 'y': 26, 'l': 454.6000061035156, 'tipo': 'regiao', 'a': 88}
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:56.319: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:56.319: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:56.322: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:27:56.322: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+[casca] dock → {'a': 88, 'l': 454.6000061035156, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26}
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra → {'tipo': 'desbloquear-teste'}
+
+(alba-casca:1619): Gdk-WARNING **: 18:28:35.207: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:28:35.207: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+[casca] dock → {'y': 26, 'x': 540.7999877929688, 'tipo': 'regiao', 'l': 454.6000061035156, 'a': 88}
+[casca] dock → {'l': 454.6000061035156, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26, 'a': 88}
+[casca] dock → {'y': 26, 'a': 88, 'tipo': 'regiao', 'x': 540.7999877929688, 'l': 454.6000061035156}
+[casca] dock → {'x': 540.7999877929688, 'l': 454.6000061035156, 'a': 88, 'tipo': 'regiao', 'y': 26}
+[casca] dock → {'x': 540.7999877929688, 'y': 26, 'l': 454.6000061035156, 'a': 88, 'tipo': 'regiao'}
+[casca] dock → {'x': 540.7999877929688, 'a': 88, 'tipo': 'regiao', 'l': 454.6000061035156, 'y': 26}
+[casca] dock → {'tipo': 'regiao', 'a': 88, 'y': 26, 'x': 540.7999877929688, 'l': 454.6000061035156}
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] dock → {'tipo': 'regiao', 'y': 26, 'l': 454.6000061035156, 'x': 540.7999877929688, 'a': 88}
+[casca] dock → {'y': 26, 'tipo': 'regiao', 'x': 540.7999877929688, 'l': 454.6000061035156, 'a': 88}
+[casca] dock → {'tipo': 'regiao', 'x': 540.7999877929688, 'y': 26, 'l': 454.6000061035156, 'a': 88}
+[casca] dock → {'tipo': 'regiao', 'y': 26, 'x': 540.7999877929688, 'a': 88, 'l': 454.6000061035156}
+[casca] dock → {'a': 88, 'tipo': 'regiao', 'l': 454.6000061035156, 'y': 26, 'x': 540.7999877929688}
+[casca] dock → {'y': 26, 'l': 454.6000061035156, 'a': 88, 'tipo': 'regiao', 'x': 540.7999877929688}
+[casca] dock → {'l': 454.6000061035156, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26, 'a': 88}
+[casca] dock → {'y': 26, 'tipo': 'regiao', 'x': 540.7999877929688, 'l': 454.6000061035156, 'a': 88}
+[casca] dock → {'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26, 'a': 88, 'l': 454.6000061035156}
+[casca] dock → {'x': 540.7999877929688, 'tipo': 'regiao', 'a': 88, 'l': 454.6000061035156, 'y': 26}
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] dock → {'a': 88, 'l': 454.6000061035156, 'y': 26, 'tipo': 'regiao', 'x': 540.7999877929688}
+[casca] dock → {'l': 454.6000061035156, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26, 'a': 88}
+[casca] barra → {'tipo': 'painel', 'qual': 'calendario'}
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:15.560: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:15.561: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+[casca] dock → {'x': 540.7999877929688, 'a': 88, 'y': 26, 'tipo': 'regiao', 'l': 454.6000061035156}
+[casca] dock → {'x': 540.7999877929688, 'l': 454.6000061035156, 'y': 26, 'tipo': 'regiao', 'a': 88}
+[casca] barra → {'tipo': 'painel', 'qual': 'calendario'}
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:18.860: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:18.860: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+[casca] barra → {'qual': 'central', 'tipo': 'painel'}
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:18.911: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:18.911: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] dock → {'tipo': 'regiao', 'a': 88, 'x': 540.7999877929688, 'y': 26, 'l': 454.6000061035156}
+[casca] dock → {'l': 454.6000061035156, 'tipo': 'regiao', 'x': 540.7999877929688, 'a': 88, 'y': 26}
+[casca] barra → {'tipo': 'painel', 'qual': 'central'}
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:22.159: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+
+(alba-casca:1619): Gdk-WARNING **: 18:29:22.159: (../gtk/gdk/wayland/gdktoplevel-wayland.c:486):gdk_wayland_toplevel_compute_size: runtime check failed: (size.width > 0)
+[casca] dock → {'a': 88, 'y': 26, 'l': 454.6000061035156, 'x': 540.7999877929688, 'tipo': 'regiao'}
+[casca] dock → {'y': 26, 'tipo': 'regiao', 'l': 454.6000061035156, 'a': 88, 'x': 540.7999877929688}
+[casca] dock → {'x': 540.7999877929688, 'tipo': 'regiao', 'a': 88, 'l': 454.6000061035156, 'y': 26}
+[casca] dock → {'a': 88, 'tipo': 'regiao', 'x': 540.7999877929688, 'l': 454.6000061035156, 'y': 26}
+[casca] dock → {'y': 26, 'a': 88, 'tipo': 'regiao', 'l': 454.6000061035156, 'x': 540.7999877929688}
+[casca] dock → {'l': 454.6000061035156, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26, 'a': 88}
+[casca] dock → {'l': 454.6000061035156, 'a': 88, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26}
+[casca] dock → {'tipo': 'regiao', 'y': 26, 'x': 540.7999877929688, 'a': 88, 'l': 454.6000061035156}
+[casca] fundo: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] barra: visível=True 1920x45 view=1920x45 pronta=True
+[casca] dock: visível=True 1920x155 view=1920x155 pronta=True
+[casca] sobre: visível=True 1920x1080 view=1920x1080 pronta=True
+[casca] dock → {'x': 540.7999877929688, 'tipo': 'regiao', 'l': 454.6000061035156, 'y': 26, 'a': 88}
+[casca] dock → {'tipo': 'regiao', 'a': 88, 'x': 540.7999877929688, 'l': 454.6000061035156, 'y': 26}
+[casca] dock → {'l': 454.6000061035156, 'a': 88, 'x': 540.7999877929688, 'tipo': 'regiao', 'y': 26}
+CONSOLE NETWORK ERROR WebSocket connection to 'ws://127.0.0.1:7070/ws/eventos' failed: WebSocket network error: Network process crashed.
+CONSOLE NETWORK ERROR WebSocket connection to 'ws://127.0.0.1:7070/ws/eventos' failed: WebSocket network error: Network process crashed.
+CONSOLE NETWORK ERROR WebSocket connection to 'ws://127.0.0.1:7070/ws/eventos' failed: WebSocket network error: Network process crashed.
+CONSOLE NETWORK ERROR WebSocket connection to 'ws://127.0.0.1:7070/ws/eventos' failed: WebSocket network error: Network process crashed.
+Terminated                 python3 /usr/share/alba/casca/casca.py "$@"
+alba-casca: a casca saiu (código 143).
