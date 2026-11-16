@@ -95,7 +95,7 @@ def publicar(evento: dict) -> None:
 class Pagina:
     """Uma página da interface do Alba num WebKit sem cara de navegador."""
 
-    def __init__(self, consulta: dict, ao_receber, transparente: bool = True):
+    def __init__(self, consulta: dict, ao_receber, transparente: bool = True, carregar_ja: bool = True):
         self.ao_receber = ao_receber
         self.pronta = False
         self.fila: list[dict] = []
@@ -119,7 +119,16 @@ class Pagina:
         self.view.connect("web-process-terminated", lambda *_a: GLib.timeout_add(800, self._recarregar))
         q = urllib.parse.urlencode({"t": TOKEN, "casca": "1", **consulta})
         self.endereco = f"{URL}/?{q}"
-        self.view.load_uri(self.endereco)
+        self.carregada = False
+        if carregar_ja:
+            self.carregar()
+
+    def carregar(self):
+        """Carrega a página (nas camadas, só depois da janela ter tamanho: com 0x0 o WebKit não se recupera)."""
+        if not self.carregada:
+            self.carregada = True
+            self.view.load_uri(self.endereco)
+        return False
 
     def _recarregar(self):
         self.view.load_uri(self.endereco)

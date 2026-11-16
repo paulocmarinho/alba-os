@@ -60,10 +60,19 @@ class Superficie:
         Camada.set_keyboard_mode(self.janela, teclado)
         if reserva is None:
             Camada.set_exclusive_zone(self.janela, -1)  # ignora barra e dock: ocupa a tela toda
-        self.pagina = Pagina({"superficie": nome}, lambda m: casca.mensagem(self, m))
+        self.pagina = Pagina({"superficie": nome}, lambda m: casca.mensagem(self, m), carregar_ja=False)
         self.janela.set_child(self.pagina.view)
-        self.janela.connect("map", lambda *_a: GLib.idle_add(self._aplicar_regiao))
+        self.janela.connect("map", self._mapeada)
         self.redimensionar()
+
+    def _mapeada(self, *_a):
+        GLib.idle_add(self._aplicar_regiao)
+        GLib.timeout_add(150, self._carregar_com_tamanho)
+
+    def _carregar_com_tamanho(self):
+        if self.pagina.view.get_width() > 0 and self.pagina.view.get_height() > 0:
+            return self.pagina.carregar()
+        return True  # tenta de novo até a janela ter tamanho
 
     def redimensionar(self):
         z = escala()
