@@ -8,17 +8,18 @@ import { Instalador } from "./apps/Instalador";
 import { Notas, Visualizador } from "./apps/Notas";
 import { Musica, type Tocando } from "./apps/Musica";
 import { Terminal } from "./apps/Terminal";
-import { BarraSuperior, Dock } from "./componentes/Barra";
+import { BarraSuperior, Dock, type Painel } from "./componentes/Barra";
+import { PainelCalendario, PainelSom } from "./componentes/Paineis";
 import { Central } from "./componentes/Central";
 import { Icone } from "./componentes/Icone";
 import { Janela } from "./componentes/Janela";
 import { TelaBloqueio } from "./componentes/TelaBloqueio";
 
-type Dialogo =
+export type Dialogo =
   | { tipo: "confirmar"; titulo: string; texto?: string; ok?: string; perigo?: boolean; resolver: (v: boolean) => void }
   | { tipo: "perguntar"; titulo: string; texto?: string; valor?: string; ok?: string; resolver: (v: string | null) => void };
 
-function Papel() {
+export function Papel() {
   return (
     <div className="wallpaper" aria-hidden="true">
       <span className="forma forma-1" />
@@ -30,7 +31,7 @@ function Papel() {
   );
 }
 
-function CaixaDialogo({ d, fechar }: { d: Dialogo; fechar: () => void }) {
+export function CaixaDialogo({ d, fechar }: { d: Dialogo; fechar: () => void }) {
   const [valor, setValor] = useState(d.tipo === "perguntar" ? d.valor ?? "" : "");
   const campo = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -86,7 +87,7 @@ export function Alba() {
   const [bloqueado, setBloqueado] = useState(true);
   const [agora, setAgora] = useState(new Date());
   const [janelas, setJanelas] = useState<DadosJanela[]>([]);
-  const [central, setCentral] = useState(false);
+  const [painel, setPainel] = useState<Painel | null>(null);
   const [dialogo, setDialogo] = useState<Dialogo | null>(null);
   const [tocando, definirTocando] = useState<Tocando | null>(null);
   const [avisos, setAvisos] = useState<{ id: number; texto: string }[]>([]);
@@ -128,7 +129,7 @@ export function Alba() {
   }, []);
 
   const abrir = useCallback((app: IdApp, props: Record<string, any> = {}) => {
-    setCentral(false);
+    setPainel(null);
     setJanelas((js) => {
       const def = APPS[app];
       if (def.unico) {
@@ -173,7 +174,7 @@ export function Alba() {
   }, [aviso]);
 
   const bloquear = useCallback(() => {
-    setCentral(false);
+    setPainel(null);
     setBloqueado(true);
   }, []);
 
@@ -306,8 +307,12 @@ export function Alba() {
           <TelaBloqueio aoDesbloquear={() => setBloqueado(false)} />
         ) : (
           <>
-            <BarraSuperior janelaAtiva={ativa} centralAberta={central} alternarCentral={() => setCentral(!central)} />
-            <section className="workspace" aria-label="Área de trabalho" onPointerDown={(e) => e.target === e.currentTarget && setCentral(false)}>
+            <BarraSuperior
+              nomeAtivo={ativa ? APPS[ativa.app].nome : "Alba"}
+              painel={painel}
+              aoPainel={(q) => setPainel(painel === q ? null : q)}
+            />
+            <section className="workspace" aria-label="Área de trabalho" onPointerDown={(e) => e.target === e.currentTarget && setPainel(null)}>
               {janelas.map((j) => (
                 <Janela
                   key={j.id}
@@ -325,7 +330,9 @@ export function Alba() {
                   {conteudo(j)}
                 </Janela>
               ))}
-              {central && <Central fechar={() => setCentral(false)} />}
+              {painel === "central" && <Central fechar={() => setPainel(null)} />}
+              {painel === "som" && <PainelSom />}
+              {painel === "calendario" && <PainelCalendario />}
             </section>
             <Dock janelas={janelas} aoClicar={cliqueDock} live={sistema!.live} />
           </>

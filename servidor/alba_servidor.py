@@ -419,7 +419,9 @@ def api_config_ler(_q, _c):
 
 
 def api_config_gravar(_q, c):
-    return {"config": gravar_config(c)}
+    cfg = gravar_config(c)
+    publicar_de_fora({"tipo": "config", "config": cfg})
+    return {"config": cfg}
 
 
 def api_recarregar(_q, c):
@@ -659,6 +661,7 @@ ROTAS = {
     ("GET", "/api/config"): api_config_ler,
     ("POST", "/api/config"): api_config_gravar,
     ("POST", "/api/recarregar"): api_recarregar,
+    ("POST", "/api/evento"): lambda q, c: api_evento(q, c),
     ("GET", "/api/atualizacao"): api_atualizacao_ver,
     ("POST", "/api/atualizacao"): api_atualizacao_instalar,
     ("GET", "/api/musica/biblioteca"): api_musica_biblioteca,
@@ -922,7 +925,46 @@ async def ws_instalar(ws: WebSocket):
     await ws.fechar()
 
 
-WEBSOCKETS = {"/ws/terminal": ws_terminal, "/ws/instalar": ws_instalar}
+# ---------------------------------------------------------------- eventos entre as partes do Alba
+# A barra, o dock, os painéis e cada app são páginas separadas. Elas conversam por aqui:
+# quem publica um evento (config mudou, música tocando, abrir algo…) faz todos os outros receberem.
+OUVINTES: set = set()
+LACO = None
+
+
+async def publicar(evento: dict, origem=None):
+    texto = json.dumps(evento, ensure_ascii=False)
+    for ouvinte in list(OUVINTES):
+        if ouvinte is not origem and ouvinte.aberto:
+            await ouvinte.enviar(texto)
+
+
+def publicar_de_fora(evento: dict):
+    """Publica a partir de uma rota comum (que roda numa thread)."""
+    if LACO is not None:
+        asyncio.run_coroutine_threadsafe(publicar(evento), LACO)
+
+
+async def ws_eventos(ws: WebSocket):
+    OUVINTES.add(ws)
+    try:
+        while (texto := await ws.receber()) is not None:
+            try:
+                evento = json.loads(texto)
+            except ValueError:
+                continue
+            if isinstance(evento, dict):
+                await publicar(evento, origem=ws)
+    finally:
+        OUVINTES.discard(ws)
+
+
+def api_evento(_q, c):
+    publicar_de_fora(c if isinstance(c, dict) else {})
+    return {"ok": True}
+
+
+WEBSOCKETS = {"/ws/terminal": ws_terminal, "/ws/instalar": ws_instalar, "/ws/eventos": ws_eventos}
 
 
 async def atender(leitor, escritor):
@@ -983,6 +1025,8 @@ async def atender(leitor, escritor):
 
 
 async def principal():
+    global LACO
+    LACO = asyncio.get_running_loop()
     preparar_pastas()
     servidor = await asyncio.start_server(atender, "127.0.0.1", ARGS.porta)
     print(f"Alba: servidor em http://127.0.0.1:{ARGS.porta}", flush=True)

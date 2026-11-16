@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Gerenciador de janelas do Alba OS (labwc). -->
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+    <gap>6</gap>
+    <reuseOutputMode>yes</reuseOutputMode>
+  </core>
+
+  <placement>
+    <policy>center</policy>
+  </placement>
+
+  <theme>
+    <name>Alba</name>
+    <cornerRadius>12</cornerRadius>
+    <keepBorder>yes</keepBorder>
+    <dropShadows>yes</dropShadows>
+    <titlebar>
+      <layout>:iconify,max,close</layout>
+      <showTitle>yes</showTitle>
+    </titlebar>
+    <font place="ActiveWindow"><name>DM Sans</name><size>10</size><weight>bold</weight></font>
+    <font place="InactiveWindow"><name>DM Sans</name><size>10</size><weight>bold</weight></font>
+    <font place="MenuHeader"><name>DM Sans</name><size>10</size><weight>bold</weight></font>
+    <font place="MenuItem"><name>DM Sans</name><size>10</size></font>
+    <font place="OnScreenDisplay"><name>DM Sans</name><size>11</size></font>
+  </theme>
+
+  <windowSwitcher show="yes" preview="yes" outlines="yes">
+    <fields>
+      <field content="icon" width="8%" />
+      <field content="title" width="92%" />
+    </fields>
+  </windowSwitcher>
+
+  <desktops number="1" />
+
+  <focus>
+    <followMouse>no</followMouse>
+    <raiseOnFocus>no</raiseOnFocus>
+  </focus>
+
+  <snapping>
+    <range>12</range>
+    <overlay><enabled>yes</enabled></overlay>
+    <topMaximize>yes</topMaximize>
+  </snapping>
+
+  <keyboard>
+    <default />
+    <keybind key="W-l"><action name="Execute" command="alba-enviar bloquear" /></keybind>
+    <keybind key="C-A-l"><action name="Execute" command="alba-enviar bloquear" /></keybind>
+    <keybind key="C-A-t"><action name="Execute" command="alba-app terminal" /></keybind>
+    <keybind key="W-e"><action name="Execute" command="alba-app arquivos" /></keybind>
+    <keybind key="W-Up"><action name="ToggleMaximize" /></keybind>
+    <keybind key="W-Down"><action name="Iconify" /></keybind>
+    <keybind key="W-Left"><action name="SnapToEdge" direction="left" /></keybind>
+    <keybind key="W-Right"><action name="SnapToEdge" direction="right" /></keybind>
+    <keybind key="W-d"><action name="ToggleShowDesktop" /></keybind>
+    <keybind key="XF86AudioRaiseVolume"><action name="Execute" command="wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+" /></keybind>
+    <keybind key="XF86AudioLowerVolume"><action name="Execute" command="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-" /></keybind>
+    <keybind key="XF86AudioMute"><action name="Execute" command="wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle" /></keybind>
+  </keyboard>
+
+  <mouse>
+    <default />
+    <!-- Clique com o botão direito na área de trabalho não abre menu de outro sistema. -->
+    <context name="Root">
+      <mousebind button="Left" action="Press" />
+      <mousebind button="Right" action="Press" />
+      <mousebind button="Middle" action="Press" />
+    </context>
+  </mouse>
+</labwc_config>

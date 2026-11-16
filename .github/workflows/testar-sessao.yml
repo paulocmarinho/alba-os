@@ -8,7 +8,7 @@ on:
     inputs:
       script:
         description: "Script de teste"
-        default: "testes/sonda.sh"
+        default: "testes/casca.sh"
 
 permissions:
   contents: write
@@ -22,11 +22,15 @@ jobs:
     steps:
       - name: Pacotes
         run: |
-          pacman -Syu --noconfirm --needed git nodejs npm labwc gtk4-layer-shell webkitgtk-6.0 python-gobject python-pywayland wlr-protocols grim wlr-randr foot ttf-dejavu noto-fonts mesa python-cairo xorg-xwayland firefox python-mutagen playerctl libcap
+          pacman -Syu --noconfirm --needed git nodejs npm labwc gtk4-layer-shell webkitgtk-6.0 python-gobject python-pywayland wlr-protocols grim wlr-randr foot ttf-dejavu noto-fonts mesa python-cairo xorg-xwayland firefox python-mutagen playerctl libcap python-cairo xorg-xwayland adwaita-icon-theme adwaita-cursors wtype dbus curl firefox-i18n-pt-br
           setcap -r /usr/bin/labwc || true
       - uses: actions/checkout@v4
+      - name: Interface
+        run: |
+          git clone --depth 1 https://github.com/paulocmarinho/sleeve web/sleeve-src
+          cd web && npm install --no-audit --no-fund && npm run build
       - name: Rodar
-        run: bash "${{ inputs.script || 'testes/sonda.sh' }}" || true
+        run: bash "${{ inputs.script || 'testes/casca.sh' }}" || true
       - name: Publicar capturas no ramo testes-capturas
         if: always()
         run: |

@@ -37,3 +37,19 @@ efibootmgr
 python-mutagen
 playerctl
 curl
+# Compositor de janelas e casca do Alba (0.4)
+labwc
+gtk4-layer-shell
+webkitgtk-6.0
+python-gobject
+python-cairo
+python-pywayland
+wlr-protocols
+xorg-xwayland
+adwaita-icon-theme
+adwaita-cursors
+xdg-desktop-portal-wlr
+xdg-desktop-portal-gtk
+# Navegador padrão
+firefox
+firefox-i18n-pt-br

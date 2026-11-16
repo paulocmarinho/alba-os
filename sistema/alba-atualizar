@@ -31,7 +31,9 @@ tar -xzf "$TMP/$PACOTE" -C "$TMP/x" --no-same-owner --no-same-permissions --dela
 while IFS= read -r -d '' item; do
   rel="${item#"$TMP/x/"}"
   case "$rel" in
-    usr|usr/share|usr/share/alba|usr/share/alba/*|usr/bin|usr/bin/alba-sessao|usr/local|usr/local/bin|usr/local/bin/alba-*) ;;
+    usr|usr/share|usr/share/alba|usr/share/alba/*|usr/bin|usr/bin/alba-*|usr/local|usr/local/bin|usr/local/bin/alba-*) ;;
+    usr/share/themes|usr/share/themes/Alba|usr/share/themes/Alba/*) ;;
+    etc/xdg|etc/xdg/labwc|etc/xdg/labwc/*|etc/xdg/mimeapps.list) ;;
     etc|etc/pacman.d|etc/pacman.d/hooks|etc/pacman.d/hooks/alba-*|etc/profile.d|etc/profile.d/alba.sh) ;;
     etc/chromium|etc/chromium/policies|etc/chromium/policies/managed|etc/chromium/policies/managed/alba.json) ;;
     etc/sudoers.d|etc/sudoers.d/20-alba-atualizar) ;;
@@ -43,9 +45,18 @@ if [[ -f "$TMP/x/etc/sudoers.d/20-alba-atualizar" ]]; then
   visudo -cqf "$TMP/x/etc/sudoers.d/20-alba-atualizar" || falhar "regra de permissão inválida no pacote."
 fi
 
+# Programas novos que esta versão precisa (ex.: o compositor de janelas).
+if [[ -f "$TMP/x/usr/share/alba/pacotes.txt" ]]; then
+  mapfile -t faltando < <(grep -vE '^\s*(#|$)' "$TMP/x/usr/share/alba/pacotes.txt" | while read -r p; do pacman -Qq "$p" >/dev/null 2>&1 || echo "$p"; done)
+  if (( ${#faltando[@]} )); then
+    echo "Instalando programas novos: ${faltando[*]}"
+    pacman -Syu --needed --noconfirm "${faltando[@]}" || falhar "não consegui instalar os programas novos (${faltando[*]})."
+  fi
+fi
+
 echo "Instalando…"
 A=/usr/share/alba
-for parte in web servidor; do
+for parte in web servidor casca; do
   rm -rf "$A/$parte.velho"
   [[ -d "$A/$parte" ]] && mv "$A/$parte" "$A/$parte.velho"
 done
@@ -53,9 +64,9 @@ done
 (cd "$TMP/x" && find . -type f -print0) | while IFS= read -r -d '' f; do
   install -D -o root -g root -m 644 "$TMP/x/$f" "/${f#./}"
 done
-chmod 755 /usr/bin/alba-sessao /usr/local/bin/alba-* "$A/sistema/instalar.sh"
+chmod 755 /usr/bin/alba-* /usr/local/bin/alba-* "$A/sistema/instalar.sh"
 [[ -f /etc/sudoers.d/20-alba-atualizar ]] && chmod 440 /etc/sudoers.d/20-alba-atualizar
-rm -rf "$A/web.velho" "$A/servidor.velho"
+rm -rf "$A/web.velho" "$A/servidor.velho" "$A/casca.velho"
 
 versao="$(python3 -c 'import json;d=json.load(open("/usr/share/alba/compilacao.json"));print(d.get("versao",""), d.get("commit","")[:7])' 2>/dev/null || true)"
 echo "Pronto: Alba OS ${versao:-atualizado}."

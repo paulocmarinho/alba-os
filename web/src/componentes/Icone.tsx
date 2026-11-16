@@ -29,6 +29,8 @@ export type NomeIcone =
   | "skip"
   | "pause"
   | "chevron"
+  | "mute"
+  | "globe"
   | "plus"
   | "file"
   | "shield"
@@ -170,6 +172,18 @@ export function Icone({
       <>
         <path d="M4 10v4h4l5 4V6L8 10Z" />
         <path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a8 8 0 0 1 0 11" />
+      </>
+    ),
+    mute: (
+      <>
+        <path d="M4 10v4h4l5 4V6L8 10Z" />
+        <path d="m17 9.5 5 5M22 9.5l-5 5" />
+      </>
+    ),
+    globe: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
       </>
     ),
     monitor: (

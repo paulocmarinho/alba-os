@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Manda um evento para a interface do Alba (usado pelos atalhos de teclado).
+#   alba-enviar bloquear
+#   alba-enviar '{"tipo": "painel", "qual": "calendario"}'
+[[ -n "${ALBA_URL:-}" && -n "${ALBA_TOKEN:-}" ]] || exit 1
+corpo="${1:-}"
+[[ "$corpo" == "{"* ]] || corpo="{\"tipo\": \"$corpo\"}"
+exec curl -fsS -m 3 -X POST -H "X-Alba-Token: $ALBA_TOKEN" -H "Content-Type: application/json" \
+  -d "$corpo" "$ALBA_URL/api/evento" >/dev/null

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Menus do gerenciador de janelas, em português. -->
+<openbox_menu>
+  <menu id="client-menu">
+    <item label="Minimizar"><action name="Iconify" /></item>
+    <item label="Maximizar"><action name="ToggleMaximize" /></item>
+    <item label="Sempre na frente"><action name="ToggleAlwaysOnTop" /></item>
+    <item label="Mover"><action name="Move" /></item>
+    <item label="Redimensionar"><action name="Resize" /></item>
+    <separator />
+    <item label="Fechar"><action name="Close" /></item>
+  </menu>
+  <menu id="root-menu" />
+</openbox_menu>

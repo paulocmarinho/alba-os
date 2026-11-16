@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Janela } from "../contexto";
 import { useAlba } from "../contexto";
 import { alturaTela, emCss, larguraTela } from "../escala";
+import { naCasca, ouvirEventos, paraCasca, publicarEvento } from "../ponte";
 
 /** Controle da janela que a área de trabalho entrega ao Sleeve (ele desenha a própria barra). */
 export type ControleJanela = {
@@ -19,6 +20,7 @@ export type Tocando = { titulo: string; artista: string; tocando: boolean; capa:
 // O Sleeve é único: guardamos a janela dele para a central de controle mandar play/pausa.
 let quadroAtual: HTMLIFrameElement | null = null;
 export function comandoMusica(tecla: "toggle" | "next" | "previous") {
+  if (naCasca && !quadroAtual) return publicarEvento({ tipo: "musica-comando", tecla });
   quadroAtual?.contentWindow?.postMessage({ alba: { tipo: "media-key", tecla } }, location.origin);
 }
 
@@ -30,7 +32,7 @@ const MIN_A = 96;
  * Roda num quadro sem moldura: a barra, os botões de janela e as bordas são do próprio Sleeve,
  * e esta casca faz o papel do gerenciador de janelas que ele espera.
  */
-export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: { caminhos: string[]; vez: number } }) {
+export function Musica({ controle, abrir }: { controle: ControleJanela | null; abrir?: { caminhos: string[]; vez: number } }) {
   const { config, perguntar, aviso, definirTocando } = useAlba();
   const quadro = useRef<HTMLIFrameElement>(null);
   const ctl = useRef(controle);
@@ -48,6 +50,7 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
   const gesto = useRef<((dx: number, dy: number) => void) | null>(null);
 
   function arrastar() {
+    if (!ctl.current) return;
     const { janela } = ctl.current;
     if (janela.maximizada) return;
     const x0 = janela.x;
@@ -60,6 +63,7 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
   }
 
   function redimensionar(borda: string) {
+    if (!ctl.current) return;
     const j = ctl.current.janela;
     if (j.maximizada) return;
     const ini = { x: j.x, y: j.y, l: j.largura, a: j.altura };
@@ -80,6 +84,7 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
   }
 
   function alternarMini() {
+    if (!ctl.current) return;
     const j = ctl.current.janela;
     if (antesMini.current) {
       const v = antesMini.current;
@@ -100,6 +105,7 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
       if (!m) return;
       switch (m.type) {
         case "arrastando":
+          if (naCasca) break;
           gesto.current?.(emCss(Number(m.dx) || 0), emCss(Number(m.dy) || 0));
           break;
         case "arrastou":
@@ -110,6 +116,13 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
           for (const c of pendentes.current.splice(0)) enviar({ tipo: "abrir", caminhos: c });
           break;
         case "window":
+          if (naCasca) {
+            // Janela de verdade no compositor: quem move, redimensiona e fecha é o sistema.
+            const acao = m.action === "drag" ? "mover" : m.action === "resize" ? "redimensionar" : m.action === "maximize" ? "maximizar" : m.action === "minimize" ? "minimizar" : m.action === "close" ? "fechar" : m.action;
+            paraCasca({ tipo: acao, borda: m.edge, x: m.x, y: m.y });
+            break;
+          }
+          if (!ctl.current) break;
           ctl.current.focar();
           if (m.action === "drag") arrastar();
           else if (m.action === "resize") redimensionar(String(m.edge || "bottomright"));
@@ -120,8 +133,8 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
           } else if (m.action === "mini") alternarMini();
           else if (m.action === "close") {
             // Como na bandeja do Windows: se estiver tocando, só esconde e a música continua.
-            if (tocando.current) ctl.current.minimizar();
-            else ctl.current.fechar();
+            if (tocando.current) ctl.current!.minimizar();
+            else ctl.current!.fechar();
           }
           break;
         case "local":
@@ -155,6 +168,11 @@ export function Musica({ controle, abrir }: { controle: ControleJanela; abrir?: 
   useEffect(() => {
     enviar({ tipo: "tema", escuro });
   }, [escuro]);
+
+  useEffect(() => {
+    if (!naCasca) return;
+    return ouvirEventos((m) => m.tipo === "musica-comando" && enviar({ tipo: "media-key", tecla: m.tecla }));
+  }, []);
 
   // Músicas abertas pelo Arquivos com o Sleeve já aberto
   const ultimaVez = useRef(abrir?.vez ?? 0);

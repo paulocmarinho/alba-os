@@ -1009,3 +1009,232 @@ body {
   height: auto;
   min-height: 0;
 }
+
+/* ------------------------------------------------------------------ casca (Alba no compositor) */
+html.na-casca,
+html.na-casca body {
+  background: transparent;
+}
+
+html.na-casca .desktop.casca {
+  background: transparent;
+  min-height: 0;
+}
+
+.casca-barra .topbar {
+  position: absolute;
+  inset: 0;
+  height: auto;
+}
+
+.casca-dock .dock {
+  bottom: 14px;
+}
+
+.casca-dock .dock > button.ativo::after {
+  width: 6px;
+  background: rgba(29, 39, 58, 0.85);
+}
+
+.dock-icon.externo {
+  background: transparent;
+  box-shadow: none;
+}
+
+.dock-icon.externo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgba(35, 42, 83, 0.25));
+}
+
+.sobre-fundo {
+  position: fixed;
+  inset: 0;
+}
+
+.sobre-painel {
+  position: absolute;
+  top: 44px;
+  right: 12px;
+}
+
+.sobre-painel .control-center {
+  position: relative;
+  top: 0;
+  right: 0;
+}
+
+.sobre-menu {
+  left: 10px;
+  right: auto;
+}
+
+.menu-casca {
+  position: relative !important;
+  top: 0 !important;
+}
+
+/* App sozinho numa janela do compositor: a moldura é do sistema, o conteúdo ocupa tudo. */
+html.na-casca .casca-app {
+  background: #eef2fa;
+}
+
+html.na-casca .casca-app.dark {
+  background: #1b1d31;
+}
+
+.window.avulsa {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.window.avulsa .janela-conteudo {
+  height: 100%;
+}
+
+html.na-casca .casca-app.janela-sem-fundo,
+html.na-casca .casca-app:has(.sem-moldura) {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ painéis de som e calendário */
+.painel-flutuante {
+  width: 300px;
+  padding: 14px;
+  color: var(--ink);
+  background: rgba(236, 244, 249, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  box-shadow:
+    0 22px 55px rgba(34, 33, 73, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+}
+
+.desktop .workspace .painel-flutuante {
+  position: absolute;
+  z-index: 20;
+  top: 10px;
+  right: 12px;
+}
+
+.painel-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.painel-cabecalho strong {
+  font-size: 13px;
+}
+
+.painel-cabecalho .mes {
+  text-transform: capitalize;
+}
+
+.painel-nota {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.painel-calendario .painel-nota::first-letter {
+  text-transform: uppercase;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cal-nav button {
+  height: 26px;
+  min-width: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  color: var(--ink);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cal-nav button:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cal-grade {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.cal-semana {
+  padding-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cal-dia {
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cal-dia.fora {
+  opacity: 0.35;
+}
+
+.cal-dia.hoje {
+  color: #fff;
+  background: var(--destaque);
+  font-weight: 700;
+}
+
+.desktop.dark .painel-flutuante {
+  background: rgba(28, 30, 52, 0.84);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.desktop.dark .cal-nav button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.status-menu button.date-time {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+
+.status-menu > button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+}
+
+.status-menu > button.desligado {
+  opacity: 0.5;
+}

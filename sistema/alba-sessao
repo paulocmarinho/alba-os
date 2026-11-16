@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Sessão gráfica do Alba OS.
-# Roda no login do tty1: liga o servidor do sistema e abre a interface do Alba
-# em tela cheia. O motor de exibição (Chromium em modo quiosque, com tudo de
-# navegador desligado por política em /etc/chromium/policies/managed/alba.json)
-# fica invisível: só a interface do Alba aparece. Se a interface fechar, ela volta.
+# Roda no login do tty1: liga o servidor do sistema e abre o compositor de janelas (labwc)
+# com a casca do Alba (fundo, barra, dock e painéis). Programas como o Firefox abrem em
+# janelas normais. Se o compositor não conseguir abrir três vezes seguidas, o Alba volta
+# para o modo de segurança (interface única em tela cheia, sem programas externos).
 set -u
 
 ALBA=/usr/share/alba
@@ -37,41 +37,52 @@ case "$teclado" in
   gb) export XKB_DEFAULT_LAYOUT=gb ;;
 esac
 
-MOTOR="$(command -v chromium || command -v chromium-browser)"
-URL="http://127.0.0.1:$PORTA/?t=$TOKEN"
-PERFIL="$CACHE/motor"
+export ALBA_URL="http://127.0.0.1:$PORTA" ALBA_TOKEN="$TOKEN"
+export XDG_CURRENT_DESKTOP="Alba:wlroots" XDG_SESSION_DESKTOP=alba XDG_SESSION_TYPE=wayland
+export MOZ_ENABLE_WAYLAND=1 GDK_BACKEND="wayland,x11" QT_QPA_PLATFORM="wayland;xcb" SDL_VIDEODRIVER="wayland,x11"
+export XCURSOR_THEME=Adwaita XCURSOR_SIZE=24
+export WLR_NO_HARDWARE_CURSORS=1
+if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -S "${XDG_RUNTIME_DIR:-/run/user/$UID}/bus" ]]; then
+  export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR:-/run/user/$UID}/bus"
+fi
+# Sem placa de vídeo de verdade (ex.: Hyper-V): desenho por software, que é o que funciona lá.
+if ! compgen -G "/dev/dri/renderD*" >/dev/null; then
+  export WLR_RENDERER=pixman WEBKIT_DISABLE_DMABUF_RENDERER=1 LIBGL_ALWAYS_SOFTWARE=1
+fi
 
+# ---------------------------------------------------------------- modo de segurança (antigo)
+quiosque() {
+  local motor url perfil
+  motor="$(command -v chromium || command -v chromium-browser)" || return 1
+  url="http://127.0.0.1:$PORTA/?t=$TOKEN"
+  perfil="$CACHE/motor"
+  rm -rf "$perfil"
+  cage -s -d -- "$motor" --kiosk "$url" --ozone-platform=wayland --user-data-dir="$perfil" \
+    --force-device-scale-factor=1 --no-first-run --no-default-browser-check --noerrdialogs \
+    --disable-infobars --disable-session-crashed-bubble --disable-translate --password-store=basic \
+    --disable-sync --disable-extensions --disable-features=Translate,PasswordManagerOnboarding \
+    --overscroll-history-navigation=0 --disable-pinch --lang=pt-BR &
+}
 
 falhas=0
+modo=casca
 while true; do
   rm -f "$CACHE/recarregar"
-  # Perfil do motor descartável: nada de histórico, senhas ou estado de navegador.
-  rm -rf "$PERFIL"
   inicio=$(date +%s)
-  cage -s -d -- "$MOTOR" \
-    --kiosk "$URL" \
-    --ozone-platform=wayland \
-    --user-data-dir="$PERFIL" \
-    --force-device-scale-factor=1 \
-    --no-first-run --no-default-browser-check --noerrdialogs --disable-infobars \
-    --disable-session-crashed-bubble --disable-translate --password-store=basic \
-    --disable-sync --disable-extensions --disable-default-apps --disable-component-update \
-    --disable-background-networking --disable-client-side-phishing-detection \
-    --disable-spell-checking --disable-print-preview --disable-notifications \
-    --disable-features=Translate,MediaRouter,HardwareMediaKeyHandling,PasswordManagerOnboarding,AutofillServerCommunication,DownloadBubble,GlobalMediaControls,TabHoverCards,PrivacySandboxSettings4 \
-    --enable-features=OverlayScrollbar \
-    --autoplay-policy=no-user-gesture-required \
-    --overscroll-history-navigation=0 --disable-pinch \
-    --lang=pt-BR &
-  CAGE=$!
-  while kill -0 "$CAGE" 2>/dev/null; do
+  if [[ "$modo" == casca ]]; then
+    labwc -s /usr/bin/alba-casca >"$CACHE/compositor.log" 2>&1 &
+  else
+    quiosque
+  fi
+  PID=$!
+  while kill -0 "$PID" 2>/dev/null; do
     if [[ -f "$CACHE/recarregar" ]]; then
-      kill "$CAGE" 2>/dev/null
+      kill "$PID" 2>/dev/null
       break
     fi
-    sleep 0.4
+    sleep 0.5
   done
-  wait "$CAGE" 2>/dev/null
+  wait "$PID" 2>/dev/null
   # Depois de uma atualização, a sessão inteira recomeça (servidor e script novos).
   if [[ "$(cat "$CACHE/recarregar" 2>/dev/null)" == "sessao" ]]; then
     rm -f "$CACHE/recarregar"
@@ -79,9 +90,14 @@ while true; do
     wait "$SERVIDOR" 2>/dev/null
     exec /usr/bin/alba-sessao
   fi
-  if (( $(date +%s) - inicio < 5 )); then
+  if (( $(date +%s) - inicio < 10 )); then
     falhas=$((falhas + 1))
-    echo "Interface fechou rápido demais ($falhas)."
+    echo "Sessão fechou rápido demais ($falhas, modo $modo)."
+    if [[ "$modo" == casca && $falhas -ge 3 ]]; then
+      echo "Compositor não abriu: entrando no modo de segurança."
+      modo=quiosque
+      falhas=0
+    fi
     sleep $(( falhas > 5 ? 5 : 1 ))
   else
     falhas=0

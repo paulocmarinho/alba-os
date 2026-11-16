@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type Rede, type Som } from "../api";
 import { APPS, type IdApp, type Janela, dataLonga, hora, useAlba } from "../contexto";
+
 import { Icone } from "./Icone";
 
 /** Barra superior completa: menu do Alba à esquerda, status, data por extenso e hora à direita. */
+export type Painel = "central" | "som" | "calendario";
+
 export function BarraSuperior({
-  janelaAtiva,
-  centralAberta,
-  alternarCentral,
+  nomeAtivo,
+  painel,
+  aoPainel,
+  menuAberto,
+  aoMenu,
 }: {
-  janelaAtiva: Janela | null;
-  centralAberta: boolean;
-  alternarCentral: () => void;
+  nomeAtivo: string;
+  painel: Painel | null;
+  aoPainel: (qual: Painel) => void;
+  /** Na casca, o menu do Alba abre na camada de painéis (a barra tem só 36px de altura). */
+  menuAberto?: boolean;
+  aoMenu?: () => void;
 }) {
   const { agora, abrir, bloquear, energia, sistema } = useAlba();
   const [menu, setMenu] = useState(false);
@@ -54,7 +62,7 @@ export function BarraSuperior({
     <header className="topbar">
       <nav className="app-menu" aria-label="Menu do sistema">
         <div className="menu-alba" ref={ref}>
-          <button className="brand-button" aria-label="Menu Alba" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+          <button className="brand-button" aria-label="Menu Alba" aria-expanded={menu || !!menuAberto} onClick={() => (aoMenu ? aoMenu() : setMenu(!menu))}>
             <Icone name="logo" size={19} strokeWidth={1.6} />
           </button>
           {menu && (
@@ -68,23 +76,33 @@ export function BarraSuperior({
             </div>
           )}
         </div>
-        <strong>{janelaAtiva ? APPS[janelaAtiva.app].nome : "Alba"}</strong>
+        <strong>{nomeAtivo}</strong>
       </nav>
       <nav className="status-menu" aria-label="Status do sistema">
-        <span title={rede?.online ? "Conectado" : "Sem conexão"} className={rede?.online ? "" : "desligado"}>
+        <button
+          title={rede?.online ? "Conectado" : "Sem conexão"}
+          className={`${rede?.online ? "" : "desligado"} ${painel === "central" ? "active" : ""}`}
+          aria-label="Rede"
+          onClick={() => aoPainel("central")}
+        >
           <Icone name="wifi" size={18} />
-        </span>
+        </button>
         {som?.disponivel && (
-          <span title={som.mudo ? "Sem som" : `Volume ${som.volume}%`} className={som.mudo ? "desligado" : ""}>
-            <Icone name="volume" size={18} />
-          </span>
+          <button
+            title={som.mudo ? "Sem som" : `Volume ${som.volume}%`}
+            className={`${som.mudo ? "desligado" : ""} ${painel === "som" ? "active" : ""}`}
+            aria-label="Som"
+            onClick={() => aoPainel("som")}
+          >
+            <Icone name={som.mudo ? "mute" : "volume"} size={18} />
+          </button>
         )}
-        <button className={centralAberta ? "active" : ""} aria-label="Central de controle" onClick={alternarCentral}>
+        <button className={painel === "central" ? "active" : ""} aria-label="Central de controle" onClick={() => aoPainel("central")}>
           <Icone name="control" size={20} />
         </button>
-        <strong className="date-time">
+        <button className={`date-time ${painel === "calendario" ? "active" : ""}`} aria-label="Calendário" onClick={() => aoPainel("calendario")}>
           <span>{dataLonga(agora)}</span> {hora(agora)}
-        </strong>
+        </button>
       </nav>
     </header>
   );
@@ -123,7 +141,7 @@ export function Dock({
 }
 
 /** Marca do Sleeve (duas linhas paralelas), para o ícone no dock. */
-function MarcaSleeve() {
+export function MarcaSleeve() {
   return (
     <svg viewBox="0 0 120 120" width="30" height="30" aria-hidden="true">
       <g stroke="currentColor" strokeWidth="17" strokeLinecap="round">

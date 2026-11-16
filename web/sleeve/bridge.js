@@ -188,7 +188,11 @@ window.addEventListener('message', (e) => {
 // Arrastar e redimensionar: enquanto o botão está apertado, o navegador continua mandando o
 // movimento do mouse para este quadro (mesmo fora dele). Repassamos o deslocamento para o Alba.
 let ultimoPonteiro = { x: 0, y: 0 };
-document.addEventListener('pointerdown', (e) => { ultimoPonteiro = { x: e.screenX, y: e.screenY }; }, true);
+let ultimoClique = { x: 0, y: 0 };
+document.addEventListener('pointerdown', (e) => {
+  ultimoPonteiro = { x: e.screenX, y: e.screenY };
+  ultimoClique = { x: e.clientX, y: e.clientY };
+}, true);
 function seguirMouse() {
   const origem = { ...ultimoPonteiro };
   const mover = (e) => {
@@ -232,7 +236,7 @@ export const host = {
           api('POST', '/api/musica/config', { pinned }).catch(() => {});
           emit({ type: 'settings', pinned });
         }
-        paraAlba(msg);
+        paraAlba({ ...msg, x: ultimoClique.x, y: ultimoClique.y });
         break;
       case 'spotify':
         await api('POST', '/api/musica/spotify', { acao: msg.action, posicao: msg.position }).catch(() => {});

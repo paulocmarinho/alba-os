@@ -1,0 +1,9 @@
+{
+  "policies": {
+    "DontCheckDefaultBrowser": true,
+    "DisableDefaultBrowserAgent": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "RequestedLocales": ["pt-BR"]
+  }
+}

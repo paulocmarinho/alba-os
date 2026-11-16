@@ -24,6 +24,19 @@ else
 fi
 
 install -Dm755 "$RAIZ/sistema/alba-sessao" "$D/usr/bin/alba-sessao"
+for prog in alba-casca alba-app alba-enviar; do
+  install -Dm755 "$RAIZ/sistema/$prog" "$D/usr/bin/$prog"
+done
+mkdir -p "$L/casca"
+cp -a "$RAIZ/sistema/casca/comum.py" "$RAIZ/sistema/casca/casca.py" "$RAIZ/sistema/casca/app.py" "$RAIZ/sistema/casca/janelas.py" "$L/casca/"
+for f in rc.xml menu.xml autostart; do
+  install -Dm644 "$RAIZ/sistema/labwc/$f" "$D/etc/xdg/labwc/$f"
+done
+mkdir -p "$D/usr/share/themes/Alba/labwc"
+cp -a "$RAIZ/sistema/tema-labwc/." "$D/usr/share/themes/Alba/labwc/"
+install -Dm644 "$RAIZ/sistema/mimeapps.list" "$D/etc/xdg/mimeapps.list"
+# Pacotes que esta versão do Alba precisa (o atualizador instala os que faltarem).
+install -Dm644 "$RAIZ/iso/pacotes.txt" "$L/pacotes.txt"
 install -Dm755 "$RAIZ/sistema/alba-atualizar" "$D/usr/local/bin/alba-atualizar"
 install -Dm755 "$RAIZ/sistema/alba-identidade" "$D/usr/local/bin/alba-identidade"
 install -Dm644 "$RAIZ/sistema/alba-identidade.hook" "$D/etc/pacman.d/hooks/alba-identidade.hook"

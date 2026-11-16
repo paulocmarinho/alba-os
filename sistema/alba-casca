@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Casca do Alba (fundo, barra, dock e painéis) dentro do compositor.
+export LD_PRELOAD="/usr/lib/libgtk4-layer-shell.so${LD_PRELOAD:+:$LD_PRELOAD}"
+exec python3 /usr/share/alba/casca/casca.py "$@"

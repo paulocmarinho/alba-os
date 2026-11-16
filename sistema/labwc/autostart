@@ -1,0 +1,2 @@
+# Deixa os serviços do usuário (portais, som) saberem qual é a tela do Alba.
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE ALBA_URL ALBA_TOKEN >/dev/null 2>&1 &

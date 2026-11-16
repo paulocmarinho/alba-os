@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Abre um app do Alba numa janela própria: alba-app <arquivos|terminal|notas|ajustes|musica|...> [props-json]
+exec python3 /usr/share/alba/casca/app.py "$@"
