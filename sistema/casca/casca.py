@@ -67,6 +67,11 @@ class Superficie:
 
     def _mapeada(self, *_a):
         GLib.idle_add(self._aplicar_regiao)
+        try:
+            r = self.janela.get_renderer()
+            print(f"alba-casca: desenho da tela: {type(r).__name__}", file=sys.stderr, flush=True)
+        except Exception:
+            pass
         GLib.timeout_add(150, self._carregar_com_tamanho)
 
     def _carregar_com_tamanho(self):

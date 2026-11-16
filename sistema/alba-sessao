@@ -51,6 +51,9 @@ if ! compgen -G "/dev/dri/renderD*" >/dev/null; then
   # A tela do Hyper-V só mostra os pedaços que o compositor avisa que mudaram, e esses avisos
   # se perdem (a tela ficava "se revelando" onde o mouse passava). Redesenha a tela inteira.
   export WLR_SCENE_DEBUG_DAMAGE=rerender
+  # O GTK precisa desenhar por OpenGL (mesmo de software): no modo sem OpenGL as páginas
+  # chegam pela metade na tela (piscando). Não deixa o GTK escolher sozinho.
+  export GSK_RENDERER=ngl
 fi
 
 # ---------------------------------------------------------------- modo de segurança (antigo)
