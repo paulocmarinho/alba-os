@@ -22,10 +22,10 @@ labwc -s /usr/bin/alba-casca > saida/compositor.log 2>&1 &
 sleep 4
 export WAYLAND_DISPLAY=$(ls $XDG_RUNTIME_DIR | grep -m1 "^wayland-[0-9]$")
 wlr-randr --output HEADLESS-1 --custom-mode 1920x1080
-sleep 18
+sleep 25
 grim saida/1-bloqueio.png
 wtype teste123; sleep 0.5; wtype -k Return
-sleep 6
+sleep 8
 grim saida/2-mesa.png
 alba-app arquivos &
 sleep 10
