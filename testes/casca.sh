@@ -25,7 +25,10 @@ wlr-randr --output HEADLESS-1 --custom-mode 1920x1080
 sleep 25
 grim saida/1-bloqueio.png
 wtype teste123; sleep 0.5; wtype -k Return
-sleep 8
+sleep 4
+grim saida/1b-senha.png
+alba-enviar desbloquear-teste
+sleep 4
 grim saida/2-mesa.png
 alba-app arquivos &
 sleep 10

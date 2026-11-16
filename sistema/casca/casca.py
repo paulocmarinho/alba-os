@@ -306,6 +306,9 @@ class Casca(Gtk.Application):
         elif tipo == "bloquear" and not LIVE:
             self.bloqueada = True
             self.abrir_sobre("bloqueio")
+        elif tipo == "desbloquear-teste" and os.environ.get("ALBA_DEPURAR") == "1":
+            self.bloqueada = False  # só nos testes automáticos (sem teclado de verdade)
+            self.fechar_sobre()
         elif tipo == "desbloqueado":
             self.bloqueada = False
             self.fechar_sobre()

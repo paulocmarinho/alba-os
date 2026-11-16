@@ -62,7 +62,7 @@ export function AlbaCasca() {
         if (superficie === "barra" || appAvulso) paraCasca({ tipo: "escala" });
       } else if (m.tipo === "tocando") {
         setTocando(m.dados ?? null);
-      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item")) {
+      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "desbloquear-teste")) {
         paraCasca(m); // atalhos de teclado e scripts chegam pelo servidor e a barra repassa à casca
       }
     });
