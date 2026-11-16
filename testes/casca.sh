@@ -2,6 +2,7 @@
 # Teste da sessão do Alba num compositor sem tela (roda no container Arch do GitHub).
 if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then exec dbus-run-session -- bash "$0" "$@"; fi
 set -x
+export HOME=/root ALBA_DEPURAR=1
 mkdir -p saida
 R="$PWD"
 export XDG_RUNTIME_DIR=/tmp/xdg; mkdir -p $XDG_RUNTIME_DIR; chmod 700 $XDG_RUNTIME_DIR
@@ -44,3 +45,4 @@ alba-app musica &
 sleep 10
 grim saida/7-sleeve.png
 cp ~/.cache/alba/*.log saida/ 2>/dev/null
+python3 -m pywayland.scanner --help > saida/scanner.txt 2>&1

@@ -28,8 +28,10 @@ def _modulos():
     if not alvo.exists():
         pacote.mkdir(parents=True, exist_ok=True)
         (pacote / "__init__.py").write_text("")
-        subprocess.run([sys.executable, "-m", "pywayland.scanner", "-i", XML_WAYLAND, XML_TOPLEVEL, "-o", str(pacote)],
-                       check=True, capture_output=True)
+        r = subprocess.run([sys.executable, "-m", "pywayland.scanner", "-i", XML_WAYLAND, XML_TOPLEVEL, "-o", str(pacote)],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(f"scanner do pywayland falhou: {r.stderr.strip() or r.stdout.strip()}")
     if str(PASTA) not in sys.path:
         sys.path.insert(0, str(PASTA))
     toplevel = importlib.import_module("albaproto.wlr_foreign_toplevel_management_unstable_v1")

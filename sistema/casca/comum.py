@@ -104,7 +104,9 @@ class Pagina:
         gerenciador.connect("script-message-received::alba", self._mensagem)
         self.view = WebKit.WebView(user_content_manager=gerenciador)
         ajustes = self.view.get_settings()
-        ajustes.set_enable_developer_extras(os.environ.get("ALBA_DEPURAR") == "1")
+        depurar = os.environ.get("ALBA_DEPURAR") == "1"
+        ajustes.set_enable_developer_extras(depurar)
+        ajustes.set_enable_write_console_messages_to_stdout(depurar)
         ajustes.set_enable_back_forward_navigation_gestures(False)
         ajustes.set_media_playback_requires_user_gesture(False)
         ajustes.set_javascript_can_access_clipboard(True)

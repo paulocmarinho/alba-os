@@ -27,7 +27,8 @@
     <font place="OnScreenDisplay"><name>DM Sans</name><size>11</size></font>
   </theme>
 
-  <windowSwitcher show="yes" preview="yes" outlines="yes">
+  <windowSwitcher preview="yes" outlines="yes">
+    <osd show="yes" />
     <fields>
       <field content="icon" width="8%" />
       <field content="title" width="92%" />
@@ -42,7 +43,7 @@
   </focus>
 
   <snapping>
-    <range>12</range>
+    <range inner="12" outer="12" />
     <overlay><enabled>yes</enabled></overlay>
     <topMaximize>yes</topMaximize>
   </snapping>
