@@ -48,6 +48,9 @@ fi
 # Sem placa de vídeo de verdade (ex.: Hyper-V): desenho por software, que é o que funciona lá.
 if ! compgen -G "/dev/dri/renderD*" >/dev/null; then
   export WLR_RENDERER=pixman WEBKIT_DISABLE_DMABUF_RENDERER=1 LIBGL_ALWAYS_SOFTWARE=1
+  # A tela do Hyper-V só mostra os pedaços que o compositor avisa que mudaram, e esses avisos
+  # se perdem (a tela ficava "se revelando" onde o mouse passava). Redesenha a tela inteira.
+  export WLR_SCENE_DEBUG_DAMAGE=rerender
 fi
 
 # ---------------------------------------------------------------- modo de segurança (antigo)
