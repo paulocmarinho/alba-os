@@ -74,6 +74,9 @@ falhas=0
 modo=casca
 while true; do
   rm -f "$CACHE/recarregar"
+  # Nada da sessão anterior pode sobrar (casca ou apps com a senha antiga).
+  pkill -u "$(id -u)" -f "/usr/bin/alba-casca" 2>/dev/null
+  pkill -u "$(id -u)" -f "/usr/share/alba/casca/" 2>/dev/null
   inicio=$(date +%s)
   if [[ "$modo" == casca ]]; then
     rm -f "$CACHE/casca-falhou"

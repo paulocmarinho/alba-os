@@ -8,6 +8,12 @@ mkdir -p "$CACHE"
 rm -f "$CACHE/casca-falhou"
 falhas=0
 while true; do
+  # A casca pertence a este compositor. Se ele já fechou (sessão reiniciada depois de uma
+  # atualização), não reabre: senão uma casca velha, com a senha da sessão antiga, se
+  # prenderia ao compositor novo ("Sessão inválida" por cima da tela).
+  if [[ -n "${LABWC_PID:-}" ]] && ! kill -0 "$LABWC_PID" 2>/dev/null; then
+    exit 0
+  fi
   inicio=$(date +%s)
   python3 /usr/share/alba/casca/casca.py "$@"
   codigo=$?
