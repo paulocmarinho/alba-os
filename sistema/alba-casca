@@ -1,4 +1,27 @@
 #!/usr/bin/env bash
 # Casca do Alba (fundo, barra, dock e painéis) dentro do compositor.
+# Se a casca cair, ela volta. Se cair três vezes seguidas logo ao abrir, o Alba desiste do
+# compositor e a sessão entra no modo de segurança (em vez de deixar a tela preta).
 export LD_PRELOAD="/usr/lib/libgtk4-layer-shell.so${LD_PRELOAD:+:$LD_PRELOAD}"
-exec python3 /usr/share/alba/casca/casca.py "$@"
+CACHE="$HOME/.cache/alba"
+mkdir -p "$CACHE"
+rm -f "$CACHE/casca-falhou"
+falhas=0
+while true; do
+  inicio=$(date +%s)
+  python3 /usr/share/alba/casca/casca.py "$@"
+  codigo=$?
+  echo "alba-casca: a casca saiu (código $codigo)." >&2
+  if (( $(date +%s) - inicio < 15 )); then
+    falhas=$((falhas + 1))
+  else
+    falhas=0
+  fi
+  if (( falhas >= 3 )); then
+    echo "alba-casca: a casca não consegue abrir; voltando ao modo de segurança." >&2
+    touch "$CACHE/casca-falhou"
+    [[ -n "${LABWC_PID:-}" ]] && kill "$LABWC_PID"
+    exit 1
+  fi
+  sleep 1
+done

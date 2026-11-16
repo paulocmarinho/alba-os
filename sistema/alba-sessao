@@ -70,7 +70,13 @@ while true; do
   rm -f "$CACHE/recarregar"
   inicio=$(date +%s)
   if [[ "$modo" == casca ]]; then
-    labwc -s /usr/bin/alba-casca >"$CACHE/compositor.log" 2>&1 &
+    rm -f "$CACHE/casca-falhou"
+    if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
+      labwc -s /usr/bin/alba-casca >"$CACHE/compositor.log" 2>&1 &
+    else
+      # Sem barramento de sessão (os apps do Alba precisam de um): cria um só para a sessão.
+      dbus-run-session -- labwc -s /usr/bin/alba-casca >"$CACHE/compositor.log" 2>&1 &
+    fi
   else
     quiosque
   fi
@@ -89,6 +95,13 @@ while true; do
     kill "$SERVIDOR" 2>/dev/null
     wait "$SERVIDOR" 2>/dev/null
     exec /usr/bin/alba-sessao
+  fi
+  if [[ "$modo" == casca && -f "$CACHE/casca-falhou" ]]; then
+    echo "A casca do Alba não abriu: entrando no modo de segurança."
+    cp "$CACHE/compositor.log" "$CACHE/compositor-falhou.log" 2>/dev/null
+    modo=quiosque
+    falhas=0
+    continue
   fi
   if (( $(date +%s) - inicio < 10 )); then
     falhas=$((falhas + 1))

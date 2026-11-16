@@ -45,7 +45,8 @@ class AppAlba(Gtk.Application):
         z = escala()
         janela = Gtk.ApplicationWindow(application=self, title=self.definicao["nome"])
         janela.set_default_size(round(self.definicao["largura"] * z), round(self.definicao["altura"] * z))
-        sem_moldura = bool(self.definicao.get("sem_moldura"))
+        instalando = self.app == "instalador" and LIVE
+        sem_moldura = bool(self.definicao.get("sem_moldura")) or instalando
         if sem_moldura:
             janela.set_decorated(False)
         pagina = Pagina({"app": self.app, "props": json.dumps(props, ensure_ascii=False)},
@@ -54,11 +55,13 @@ class AppAlba(Gtk.Application):
         janela.set_child(pagina.view)
         janela.connect("close-request", self.ao_fechar)
         self.paginas[janela] = pagina
-        if self.app == "instalador" and Path("/run/archiso").is_dir():
-            janela.maximize()
+        if instalando:
+            janela.fullscreen()
         janela.present()
 
     def ao_fechar(self, janela):
+        if self.app == "instalador" and LIVE:
+            return True  # o instalador não fecha: é a única coisa na tela durante a instalação
         pagina = self.paginas.get(janela)
         if pagina is not None and self.app == "musica" and getattr(janela, "_tocando", False):
             janela.minimize()  # como a bandeja do Windows: a música continua
@@ -90,7 +93,8 @@ class AppAlba(Gtk.Application):
             self.paginas.pop(janela, None)
             janela.destroy()
         elif tipo == "minimizar":
-            janela.minimize()
+            if not (self.app == "instalador" and LIVE):
+                janela.minimize()
         elif tipo == "maximizar":
             janela.unmaximize() if janela.is_maximized() else janela.maximize()
         elif tipo == "mover":
@@ -122,7 +126,12 @@ class AppAlba(Gtk.Application):
             publicar(m.get("evento") or {})
 
 
+LIVE = Path("/run/archiso").is_dir()
+
+
 def main():
+    if LIVE and len(sys.argv) > 1 and sys.argv[1] != "instalador":
+        sys.exit(0)  # durante a instalação nenhum outro programa abre
     if len(sys.argv) < 2 or sys.argv[1] not in APPS:
         print("Uso: alba-app <" + "|".join(APPS) + "> [props-json]", file=sys.stderr)
         sys.exit(2)

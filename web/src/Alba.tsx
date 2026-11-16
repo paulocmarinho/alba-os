@@ -308,7 +308,7 @@ export function Alba() {
   return (
     <CtxAlba.Provider value={ctx}>
       <main
-        className={`desktop ${config.tema === "escuro" ? "dark" : ""}`}
+        className={`desktop ${config.tema === "escuro" ? "dark" : ""} ${sistema.live ? "modo-instalacao" : ""}`}
         style={{ "--destaque": config.destaque } as React.CSSProperties}
       >
         <Papel />

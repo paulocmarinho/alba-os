@@ -26,6 +26,7 @@ from gi.repository import Gtk4LayerShell as Camada  # noqa: E402
 from comum import APPS, Pagina, abrir_app, css_transparente, escala, lancar_desktop  # noqa: E402
 
 LIVE = Path("/run/archiso").is_dir()
+# Durante a instalação, o computador mostra só o papel de parede e o instalador.
 FIXOS = [
     {"chave": "arquivos", "tipo": "alba", "app": "arquivos"},
     {"chave": "musica", "tipo": "alba", "app": "musica"},
@@ -34,8 +35,6 @@ FIXOS = [
     {"chave": "notas", "tipo": "alba", "app": "notas"},
     {"chave": "ajustes", "tipo": "alba", "app": "ajustes"},
 ]
-if LIVE:
-    FIXOS.append({"chave": "instalador", "tipo": "alba", "app": "instalador"})
 
 ALTURA_BARRA = 36
 ALTURA_DOCK = 124  # inclui o espaço das dicas acima dos ícones
@@ -141,7 +140,8 @@ class Casca(Gtk.Application):
         self.sobre.clicavel = self.bloqueada
         if not self.bloqueada:
             Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.NONE)
-        for s in (self.fundo, self.barra, self.dock, self.sobre):
+        partes = (self.fundo,) if LIVE else (self.fundo, self.barra, self.dock, self.sobre)
+        for s in partes:
             s.mostrar()
         try:
             from janelas import Janelas
@@ -150,6 +150,7 @@ class Casca(Gtk.Application):
             print("Alba: sem lista de janelas:", e, flush=True)
         if LIVE:
             GLib.timeout_add(1200, lambda: abrir_app("instalador") and False)
+            GLib.timeout_add_seconds(3, self.vigiar_instalador)
         if os.environ.get("ALBA_DEPURAR") == "1":
             def relatar():
                 for s in (self.fundo, self.barra, self.dock, self.sobre):
@@ -247,7 +248,21 @@ class Casca(Gtk.Application):
         return {"tipo": "janelas", "itens": itens, "extras": list(extras.values()), "live": LIVE,
                 "ativa": {"titulo": ativa["titulo"], "app": nome_ativo or ativa["app"]} if ativa else None}
 
+    def vigiar_instalador(self):
+        """Modo de instalação: o instalador está sempre aberto e na frente."""
+        lista = self.janelas.todas() if self.janelas else []
+        instalador = [j for j in lista if j["app"] == "org.alba.instalador"]
+        if not instalador:
+            abrir_app("instalador")
+        else:
+            for j in instalador:
+                if j["minimizada"] or not j["ativa"]:
+                    self.janelas.ativar(j["id"])
+        return True
+
     def janelas_mudaram(self):
+        if LIVE:
+            return
         e = self.estado()
         self.barra.pagina.enviar(e)
         self.dock.pagina.enviar(e)
