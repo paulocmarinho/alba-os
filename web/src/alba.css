@@ -1539,3 +1539,30 @@ html.na-casca .casca-app .window.avulsa.sem-moldura {
   color: #fff;
   background: linear-gradient(145deg, #5c6074, #2f3245);
 }
+
+/* Avisos do sistema e notificações: canto de cima, à direita, como no macOS. */
+.casca-sobre .avisos {
+  top: 48px;
+  right: 14px;
+  bottom: auto;
+  left: auto;
+  align-items: flex-end;
+  transform: none;
+}
+
+.casca-sobre .aviso {
+  max-width: 360px;
+  padding: 12px 16px;
+  color: #15223e;
+  background: rgba(244, 247, 252, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 14px;
+  box-shadow: 0 12px 34px rgba(20, 24, 60, 0.22);
+  line-height: 1.35;
+}
+
+.casca-sobre.dark .aviso {
+  color: #eef0f8;
+  background: rgba(30, 32, 54, 0.97);
+  border-color: rgba(255, 255, 255, 0.12);
+}

@@ -26,6 +26,14 @@ from gi.repository import Gtk4LayerShell as Camada  # noqa: E402
 from comum import APPS, Pagina, abrir_app, css_transparente, escala, lancar_desktop  # noqa: E402
 
 LIVE = Path("/run/archiso").is_dir()
+# Programas que o Arch instala como dependência e que não fazem sentido no Launchpad.
+ESCONDIDOS_LAUNCHPAD = {
+    "foot", "footclient", "foot-server", "org.codeberg.dnkl.foot", "org.codeberg.dnkl.footclient",
+    "org.codeberg.dnkl.foot-server", "qv4l2", "qvidcap", "avahi-discover", "bssh", "bvnc", "lstopo",
+    "nm-connection-editor", "xdg-desktop-portal-gtk", "cmake-gui", "electron", "jconsole", "jshell",
+    "vim", "nvim", "htop", "btop", "org.freedesktop.IBus.Setup", "ibus-setup", "rofi", "rofi-theme-selector",
+    "uxterm", "xterm", "assistant", "designer", "linguist", "qdbusviewer",
+}
 # Durante a instalação, o computador mostra só o papel de parede e o instalador.
 FIXOS = [
     {"chave": "arquivos", "tipo": "alba", "app": "arquivos"},
@@ -333,6 +341,8 @@ class Casca(Gtk.Application):
                 ident = info.get_id() or ""
                 if not ident or ident.startswith("org.alba.") or ident in vistos:
                     continue
+                if ident.removesuffix(".desktop") in ESCONDIDOS_LAUNCHPAD:
+                    continue  # utilitários técnicos que vêm junto com o sistema
                 if info.get_boolean("Terminal"):
                     continue  # programas de terminal (htop, vim…) não abrem sozinhos
                 vistos.add(ident)
