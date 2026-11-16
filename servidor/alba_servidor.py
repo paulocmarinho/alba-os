@@ -645,6 +645,23 @@ def api_musica_config(_q, c):
     return {"pinned": cfg["pinned"]}
 
 
+def api_musica_letra(_q, c):
+    return musica.letra(
+        str(c.get("caminho") or "") or None, str(c.get("titulo", "")), str(c.get("artista", "")),
+        str(c.get("album", "")), int(float(c.get("duracao") or 0)), bool(c.get("online", True)),
+    )
+
+
+def capa_do_spotify(req):
+    try:
+        dados, tipo = musica.baixar_capa_spotify(req.query.get("url", ""))
+    except ValueError as e:
+        raise ErroApi(400, str(e)) from e
+    except Exception as e:  # noqa: BLE001  (sem internet)
+        raise ErroApi(502, "Não deu para baixar a capa.") from e
+    return resposta(200, dados, tipo, ["Cache-Control: max-age=86400"])
+
+
 def faixa_de_audio(req):
     """Áudio com suporte a Range, para o player poder pular para qualquer ponto da música."""
     p = Path(req.query.get("caminho", ""))
@@ -731,6 +748,7 @@ ROTAS = {
     ("POST", "/api/musica/abrir"): api_musica_abrir,
     ("GET", "/api/musica/spotify"): api_musica_spotify,
     ("POST", "/api/musica/spotify"): api_musica_spotify_acao,
+    ("POST", "/api/musica/letra"): api_musica_letra,
     ("POST", "/api/musica/config"): api_musica_config,
     ("GET", "/api/som"): api_som_ler,
     ("POST", "/api/som"): api_som_gravar,
@@ -1058,6 +1076,8 @@ async def atender(leitor, escritor):
                             dados = await asyncio.get_running_loop().run_in_executor(None, faixa_de_audio, req)
                         elif req.caminho == "/api/musica/capa" and req.metodo == "GET":
                             dados = capa_de_album(req)
+                        elif req.caminho == "/api/musica/capa-spotify" and req.metodo == "GET":
+                            dados = await asyncio.get_running_loop().run_in_executor(None, capa_do_spotify, req)
                         else:
                             func = ROTAS.get((req.metodo, req.caminho))
                             if func is None:

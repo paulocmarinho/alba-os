@@ -154,9 +154,17 @@ async function abrirArquivos(caminhos) {
 
 // ---------- Spotify (quando estiver aberto no Alba) ----------
 let spotifyAnterior = 'null';
+const coresSpotify = {}; // capa do Spotify -> cor (só enquanto o Sleeve está aberto)
 async function olharSpotify() {
   try {
     const { info } = await api('GET', '/api/musica/spotify');
+    if (info?.cover && /^https:/.test(info.cover)) {
+      // A capa passa pelo servidor do Alba: assim dá para tirar a cor dela para o fundo
+      const original = info.cover;
+      info.cover = '/api/musica/capa-spotify?url=' + encodeURIComponent(original);
+      if (!(original in coresSpotify)) coresSpotify[original] = await corDaCapa(info.cover);
+      info.color = coresSpotify[original];
+    }
     const texto = JSON.stringify(info);
     if (texto !== spotifyAnterior) {
       spotifyAnterior = texto;
@@ -273,6 +281,16 @@ export const host = {
       case 'volume':
         await api('POST', '/api/musica/spotify', { acao: 'volume', volume: msg.value }).catch(() => {});
         break;
+      case 'lyrics': {
+        // Arquivo da biblioteca: o caminho vem no endereço do áudio
+        let caminho = null;
+        try { if (msg.url) caminho = new URL(msg.url, location.origin).searchParams.get('caminho'); } catch { /* sem caminho */ }
+        const r = await api('POST', '/api/musica/letra', {
+          caminho, titulo: msg.title, artista: msg.artist, album: msg.album, duracao: msg.duration, online: msg.online,
+        }).catch(() => ({}));
+        emit({ type: 'lyrics', key: msg.key, synced: r.synced || null, plain: r.plain || null });
+        break;
+      }
       case 'local': {
         const extra = capaPorFaixa.get(`${msg.title}\u0000${msg.artist}`) || {};
         paraAlba({ type: 'local', title: msg.title, artist: msg.artist, playing: msg.playing, cover: extra.capa || null, color: extra.cor || null });

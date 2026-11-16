@@ -17,6 +17,7 @@ import subprocess
 import threading
 import time
 import urllib.parse
+import urllib.request
 from pathlib import Path
 
 try:  # o mutagen vem no Alba OS; sem ele, títulos saem do nome do arquivo
@@ -39,6 +40,7 @@ CASA = Path.home()
 CONFIG = CASA / ".config" / "alba" / "sleeve.json"
 CACHE = CASA / ".cache" / "alba" / "sleeve"
 CAPAS = CACHE / "capas"
+LETRAS = CACHE / "letras"
 _trava = threading.Lock()
 _estado = {"lendo": False, "contagem": 0}
 
@@ -391,7 +393,7 @@ def spotify() -> dict | None:
     except ValueError:
         vol = 1.0
     return {
-        "title": titulo, "artist": artista, "album": album, "cover": capa or None, "color": None,
+        "title": titulo, "artist": artista, "album": album, "cover": capa_spotify_grande(capa) or None, "color": None,
         "playing": status == "Playing", "position": micro(posicao), "duration": micro(duracao),
         "canSeek": True, "canPrevious": True, "canNext": True, "source": "Spotify", "volume": vol,
     }
@@ -407,6 +409,147 @@ def spotify_acao(acao: str, posicao: float | None = None, volume: float | None =
     if acao == "volume" and volume is not None:
         return _playerctl("volume", str(min(1.0, max(0.0, float(volume))))) is not None
     return False
+
+
+# ---------------------------------------------------------------- capa do Spotify
+# O MPRIS entrega a capa em 300 px. A mesma imagem existe em 640 px no CDN do Spotify.
+_TAMANHOS_SPOTIFY = ("ab67616d00001e02", "ab67616d00004851")
+_HOSTS_CAPA = ("i.scdn.co", "mosaic.scdn.co", "image-cdn-ak.spotifycdn.com", "image-cdn-fa.spotifycdn.com")
+_capas_spotify: dict[str, tuple[bytes, str]] = {}
+
+
+def capa_spotify_grande(url: str) -> str:
+    if not url:
+        return ""
+    url = url.replace("https://open.spotify.com/image/", "https://i.scdn.co/image/")
+    for pequeno in _TAMANHOS_SPOTIFY:
+        url = url.replace("/image/" + pequeno, "/image/ab67616d0000b273")
+    return url
+
+
+def baixar_capa_spotify(url: str) -> tuple[bytes, str]:
+    """Baixa a capa do Spotify pelo servidor, para o Sleeve poder tirar a cor dela (mesma origem)."""
+    partes = urllib.parse.urlsplit(url)
+    if partes.scheme != "https" or partes.hostname not in _HOSTS_CAPA:
+        raise ValueError("Endereço de capa não permitido.")
+    if url in _capas_spotify:
+        return _capas_spotify[url]
+    pedido = urllib.request.Request(url, headers={"User-Agent": "AlbaOS-Sleeve"})
+    with urllib.request.urlopen(pedido, timeout=8) as r:
+        dados = r.read(4 * 1024 * 1024)
+    tipo = tipo_imagem(dados)
+    if not tipo.startswith("image/"):
+        raise ValueError("Não é uma imagem.")
+    if len(_capas_spotify) > 40:
+        _capas_spotify.pop(next(iter(_capas_spotify)))
+    _capas_spotify[url] = (dados, tipo)
+    return dados, tipo
+
+
+# ---------------------------------------------------------------- letras
+def _letra_embutida(caminho: Path) -> str:
+    if mutagen is None:
+        return ""
+    try:
+        f = mutagen.File(caminho)
+    except Exception:  # noqa: BLE001
+        return ""
+    tags = getattr(f, "tags", None)
+    if not tags:
+        return ""
+    try:
+        if hasattr(tags, "getall"):  # MP3 (ID3)
+            for quadro in tags.getall("USLT"):
+                if str(quadro.text).strip():
+                    return str(quadro.text)
+            return ""
+        if hasattr(tags, "get"):
+            for chave in ("\xa9lyr", "lyrics", "LYRICS", "unsyncedlyrics", "UNSYNCEDLYRICS"):
+                v = tags.get(chave)
+                if v:
+                    v = v[0] if isinstance(v, list) else v
+                    if str(v).strip():
+                        return str(v)
+    except Exception:  # noqa: BLE001
+        return ""
+    return ""
+
+
+def _sincronizada(texto: str) -> bool:
+    return re.search(r"^\s*\[\d+:\d+", texto, re.MULTILINE) is not None
+
+
+def _embrulhar(texto: str) -> dict | None:
+    if not texto or not texto.strip():
+        return None
+    return {"synced": texto, "plain": None} if _sincronizada(texto) else {"synced": None, "plain": texto}
+
+
+def _lrclib(caminho_api: str, params: dict):
+    url = "https://lrclib.net/api/" + caminho_api + "?" + urllib.parse.urlencode(params)
+    pedido = urllib.request.Request(url, headers={"User-Agent": "Sleeve-AlbaOS (+https://github.com/paulocmarinho/sleeve)"})
+    try:
+        with urllib.request.urlopen(pedido, timeout=8) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except Exception:  # noqa: BLE001  (404 = não achou; sem internet = não achou)
+        return None
+
+
+def _ler_lrclib(item) -> dict | None:
+    if not isinstance(item, dict):
+        return None
+    sinc = (item.get("syncedLyrics") or "").strip() or None
+    simples = (item.get("plainLyrics") or "").strip() or None
+    if not sinc and not simples:
+        return None
+    return {"synced": sinc, "plain": None if sinc else simples}
+
+
+def letra(caminho: str | None, titulo: str, artista: str, album: str, duracao: int, online: bool) -> dict:
+    """Letra: .lrc ao lado do arquivo, letra gravada no arquivo e, se permitido, o LRCLIB."""
+    if caminho:
+        p = Path(caminho)
+        if permitido(p):
+            lrc = p.with_suffix(".lrc")
+            try:
+                if lrc.is_file():
+                    achou = _embrulhar(lrc.read_text(encoding="utf-8", errors="replace"))
+                    if achou:
+                        return achou
+            except OSError:
+                pass
+            achou = _embrulhar(_letra_embutida(p))
+            if achou:
+                return achou
+    if not online or not titulo.strip():
+        return {"synced": None, "plain": None}
+
+    arquivo = LETRAS / (_id(f"{artista}|{titulo}|{album}".lower()) + ".json")
+    try:
+        return json.loads(arquivo.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+
+    params = {"track_name": titulo, "artist_name": artista}
+    if album:
+        params["album_name"] = album
+    if duracao > 0:
+        params["duration"] = duracao
+    achou = _ler_lrclib(_lrclib("get", params))
+    if not achou:
+        principal = re.split(r",|&| feat\.? | ft\.? | x ", artista, flags=re.IGNORECASE)[0].strip()
+        lista = _lrclib("search", {"track_name": titulo, "artist_name": principal}) or []
+        perto = [x for x in lista if isinstance(x, dict) and (duracao <= 0 or abs(float(x.get("duration") or duracao) - duracao) <= 4)]
+        escolhido = next((x for x in perto if x.get("syncedLyrics")), None) or next((x for x in perto if x.get("plainLyrics")), None)
+        achou = _ler_lrclib(escolhido)
+    if achou:
+        try:
+            LETRAS.mkdir(parents=True, exist_ok=True)
+            arquivo.write_text(json.dumps(achou), encoding="utf-8")
+        except OSError:
+            pass
+        return achou
+    return {"synced": None, "plain": None}
 
 
 if __name__ == "__main__":  # teste rápido: python3 musica.py
