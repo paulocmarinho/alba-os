@@ -8,6 +8,7 @@ R="$PWD"
 export XDG_RUNTIME_DIR=/tmp/xdg; mkdir -p $XDG_RUNTIME_DIR; chmod 700 $XDG_RUNTIME_DIR
 export WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 WLR_HEADLESS_OUTPUTS=1
 export WEBKIT_DISABLE_DMABUF_RENDERER=1 LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
+export WLR_SCENE_DEBUG_DAMAGE=rerender GSK_RENDERER=cairo GDK_DISABLE=gl  # igual à sessão sem placa de vídeo
 export XKB_DEFAULT_LAYOUT=br
 
 # Instala o Alba no próprio container (como numa máquina de verdade)
