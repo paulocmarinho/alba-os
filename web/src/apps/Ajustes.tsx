@@ -4,11 +4,13 @@ import { useAlba } from "../contexto";
 import { creditoDoPapel, PAPEIS } from "../papeis";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
+import { AjustesApps, AtualizarTudo } from "./AjustesApps";
 
-type Secao = "aparencia" | "rede" | "som" | "teclado" | "sobre";
+type Secao = "aparencia" | "apps" | "rede" | "som" | "teclado" | "sobre";
 
 const SECOES: { id: Secao; nome: string; icone: NomeIcone }[] = [
   { id: "aparencia", nome: "Aparência", icone: "palette" },
+  { id: "apps", nome: "Apps", icone: "grid" },
   { id: "rede", nome: "Rede", icone: "wifi" },
   { id: "som", nome: "Som", icone: "volume" },
   { id: "teclado", nome: "Teclado", icone: "keyboard" },
@@ -38,7 +40,7 @@ function duracao(segundos: number) {
   return h ? `${h} h ${m} min` : `${m} min`;
 }
 
-export function Ajustes({ secao: inicial, vez }: { secao?: Secao; vez?: number }) {
+export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: number; app?: string }) {
   const { config, mudarConfig, sistema, perguntar } = useAlba();
 
   async function escolherImagem() {
@@ -94,6 +96,7 @@ export function Ajustes({ secao: inicial, vez }: { secao?: Secao; vez?: number }
       </nav>
 
       <div className="ajustes-conteudo">
+        {secao === "apps" && <AjustesApps buscaInicial={app} />}
         {secao === "aparencia" && (
           <>
             <h2>Aparência</h2>
@@ -285,7 +288,7 @@ export function Ajustes({ secao: inicial, vez }: { secao?: Secao; vez?: number }
                 <p>Um novo dia para o Linux · versão {sistema.versao}</p>
               </div>
             </div>
-            {!sistema.live && <Atualizacoes />}
+            {!sistema.live && <AtualizarTudo />}
             <div className="ajuste-grupo">
               {[
                 ["Computador", sistema.maquina],

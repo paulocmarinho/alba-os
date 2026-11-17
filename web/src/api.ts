@@ -162,6 +162,40 @@ export const monitor = {
   urlIcone: (nome: string) => `/api/icone?nome=${encodeURIComponent(nome)}`,
 };
 
+export type AppInstalado = {
+  id: string;
+  desktop: string;
+  nome: string;
+  icone: string;
+  origem: "sistema" | "loja";
+  pacote: string | null;
+  versao: string;
+  tamanho: number;
+  protegido: boolean;
+  motivo: string;
+};
+export type AppPadrao = { nome: string; atual: string | null; opcoes: { desktop: string; nome: string; icone: string }[] };
+export type AppAutoinicio = { id: string; nome: string; alba?: string; icone?: string; ligado: boolean };
+export type TudoAtualizacao = {
+  alba: InfoAtualizacao;
+  sistema?: { pendentes: number | null; pacotes: string[]; nucleo?: boolean; erro?: string };
+  loja?: { pendentes: number; apps: string[] };
+  reiniciar?: boolean;
+};
+
+export const gerenciarApps = {
+  listar: () => pedir<{ apps: AppInstalado[]; tarefas: Record<string, TarefaLoja> }>("GET", "/api/apps"),
+  desinstalar: (a: AppInstalado, senha?: string) =>
+    pedir("POST", "/api/apps/desinstalar", { origem: a.origem, pacote: a.pacote, nome: a.nome, senha }),
+  padroes: () => pedir<Record<string, AppPadrao>>("GET", "/api/apps/padrao"),
+  definirPadrao: (categoria: string, desktop: string) => pedir<Record<string, AppPadrao>>("POST", "/api/apps/padrao", { categoria, desktop }),
+  autoinicio: () => pedir<{ apps: AppAutoinicio[] }>("GET", "/api/apps/autoinicio"),
+  definirAutoinicio: (id: string, ligado: boolean) => pedir<{ apps: AppAutoinicio[] }>("POST", "/api/apps/autoinicio", { id, ligado }),
+  atualizacoes: (forcar = false) => pedir<TudoAtualizacao>("GET", `/api/atualizacao/tudo${forcar ? "?forcar=1" : ""}`),
+  atualizar: (partes: ("alba" | "sistema" | "loja")[]) =>
+    pedir<{ ok: boolean; alba: boolean; sistema: boolean; loja: boolean; reiniciar: boolean }>("POST", "/api/atualizacao", { partes }),
+};
+
 export const loja = {
   vitrine: () => pedir<Vitrine>("GET", "/api/loja/vitrine"),
   buscar: (termo: string) => pedir<{ apps: AppLoja[] }>("GET", `/api/loja/buscar?q=${encodeURIComponent(termo)}`),

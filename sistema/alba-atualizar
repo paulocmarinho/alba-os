@@ -27,6 +27,46 @@ aplicar_ajustes() {
   [[ -x /usr/local/bin/alba-abertura ]] && /usr/local/bin/alba-abertura || true
 }
 
+# Programas que o Alba precisa para funcionar: não podem ser removidos pela interface.
+PROTEGIDOS_BASE="base linux linux-firmware linux-lts systemd pacman sudo bash glibc grub efibootmgr mkinitcpio networkmanager
+polkit dbus pipewire wireplumber python python-gobject flatpak plymouth"
+protegido() {
+  local p="$1"
+  [[ " $(echo $PROTEGIDOS_BASE) " == *" $p "* ]] && return 0
+  grep -qxF "$p" /usr/share/alba/pacotes.txt 2>/dev/null && return 0
+  return 1
+}
+
+# "alba-atualizar --sistema": atualiza o Linux por baixo (pacman -Syu). Uma linha por passo.
+if [[ "${1:-}" == "--sistema" ]]; then
+  [[ -e /var/lib/pacman/db.lck ]] && pgrep -x pacman >/dev/null && falhar "outro programa está instalando algo agora; tente daqui a pouco."
+  rm -f /var/lib/pacman/db.lck
+  echo "ETAPA Conferindo as chaves de segurança…"
+  pacman -Sy --needed --noconfirm --noprogressbar archlinux-keyring || falhar "não consegui falar com os servidores do Arch Linux (sem internet?)."
+  echo "ETAPA Atualizando o sistema…"
+  pacman -Su --noconfirm --noprogressbar || falhar "a atualização do sistema não terminou. Nada foi perdido; tente de novo mais tarde."
+  paccache -rk2 >/dev/null 2>&1 || true   # guarda só as 2 últimas versões baixadas (economiza disco)
+  aplicar_ajustes
+  [[ -d "/usr/lib/modules/$(uname -r)" ]] || echo "REINICIAR"
+  echo "Pronto: sistema atualizado."
+  exit 0
+fi
+
+# "alba-atualizar --remover PACOTE": desinstala um programa do sistema (a interface já pediu a senha).
+if [[ "${1:-}" == "--remover" ]]; then
+  pacote="${2:-}"
+  [[ "$pacote" =~ ^[a-z0-9@._+-]+$ ]] || falhar "programa inválido."
+  pacman -Qq "$pacote" >/dev/null 2>&1 || falhar "esse programa não está instalado."
+  protegido "$pacote" && falhar "esse programa faz parte do Alba e não pode ser removido."
+  dependentes="$(pacman -Qi "$pacote" | sed -n 's/^Required By *: *//p')"
+  if [[ -n "$dependentes" && "$dependentes" != "None" ]]; then
+    falhar "outros programas precisam dele: $dependentes."
+  fi
+  pacman -Rns --noconfirm --noprogressbar "$pacote" || falhar "não consegui remover."
+  echo "Pronto: removido."
+  exit 0
+fi
+
 if [[ "${1:-}" == "--ajustes" ]]; then
   aplicar_ajustes
   exit 0

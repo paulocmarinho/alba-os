@@ -99,6 +99,23 @@ alba-app loja '{"app": "com.spotify.Client"}' &
 sleep 10
 grim saida/13-loja-spotify.png
 curl -s -b "alba=$ALBA_TOKEN" -H "X-Alba-Token: $ALBA_TOKEN" "$ALBA_URL/api/loja/buscar?q=video" > saida/loja-busca.json
+# ---- Ajustes › Apps e atualizações
+H=(-H "X-Alba-Token: $ALBA_TOKEN")
+curl -s "${H[@]}" "$ALBA_URL/api/apps" > saida/apps.json
+curl -s "${H[@]}" "$ALBA_URL/api/apps/padrao" > saida/apps-padrao.json
+curl -s "${H[@]}" "$ALBA_URL/api/atualizacao/tudo" > saida/atualizacao-tudo.json
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"id": "alba.notas", "ligado": true}' "$ALBA_URL/api/apps/autoinicio" > saida/autoinicio.json
+ls ~/.config/autostart >> saida/autoinicio.json 2>&1
+{ /usr/local/bin/alba-atualizar --remover firefox; echo "codigo $?"
+  pacman -S --noconfirm --needed cowsay >/dev/null 2>&1; /usr/local/bin/alba-atualizar --remover cowsay; echo "codigo $?"
+  pacman -Qq cowsay; echo "ainda instalado? $?"; } > saida/remover.txt 2>&1
+alba-app ajustes '{"secao": "apps"}' &
+sleep 8
+grim saida/24-apps.png
+alba-app ajustes '{"secao": "sobre"}' &
+sleep 12
+grim saida/25-atualizacoes.png
+
 # ---- Monitor de Atividade
 alba-app ajustes '{"secao": "aparencia"}' &
 sleep 6

@@ -44,7 +44,7 @@ export type Contexto = {
   renomearJanela: (id: number, titulo: string) => void;
   aviso: (texto: string) => void;
   confirmar: (opcoes: { titulo: string; texto?: string; ok?: string; perigo?: boolean }) => Promise<boolean>;
-  perguntar: (opcoes: { titulo: string; texto?: string; valor?: string; ok?: string }) => Promise<string | null>;
+  perguntar: (opcoes: { titulo: string; texto?: string; valor?: string; ok?: string; senha?: boolean; perigo?: boolean }) => Promise<string | null>;
   bloquear: () => void;
   tocando: Tocando | null;
   definirTocando: (t: Tocando | null) => void;

@@ -120,7 +120,7 @@ export function AlbaCasca() {
     [],
   );
   const perguntar = useCallback(
-    (o: { titulo: string; texto?: string; valor?: string; ok?: string }) =>
+    (o: { titulo: string; texto?: string; valor?: string; ok?: string; senha?: boolean; perigo?: boolean }) =>
       new Promise<string | null>((resolver) => setDialogo({ tipo: "perguntar", ...o, resolver })),
     [],
   );
@@ -421,7 +421,7 @@ function AppAvulso({ app }: { app: IdApp }) {
       conteudo = <Visualizador caminho={props.caminho} />;
       break;
     case "ajustes":
-      conteudo = <Ajustes secao={props.secao} vez={props._vez} />;
+      conteudo = <Ajustes secao={props.secao} vez={props._vez} app={props.app} />;
       break;
     case "loja":
       conteudo = <Loja abrirApp={props.app} vez={props._vez} />;

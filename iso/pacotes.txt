@@ -60,3 +60,5 @@ xdg-user-dirs
 flatpak
 udisks2
 plymouth
+pacman-contrib
+fakeroot

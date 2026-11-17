@@ -38,6 +38,7 @@ import rede  # noqa: E402
 import notificacoes  # noqa: E402
 import busca  # noqa: E402
 import monitor  # noqa: E402
+import apps  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
@@ -45,7 +46,7 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.7.0"
+VERSAO = "0.8.0"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -507,6 +508,55 @@ def api_atualizacao_ver(_q, _c):
     return {"atual": atual, "nova": nova, "disponivel": disponivel, "live": False}
 
 
+def api_atualizacao_tudo(q, _c):
+    """Alba, sistema (pacman) e apps da loja (Flatpak), para o "Atualizar tudo"."""
+    alba = api_atualizacao_ver(q, _c)
+    if alba.get("live"):
+        return {"alba": alba}
+    sistema = apps.pendentes_sistema(forcar=q.get("forcar") == "1")
+    try:
+        da_loja = loja.atualizacoes()
+    except Exception:  # noqa: BLE001
+        da_loja = []
+    return {"alba": alba, "sistema": sistema, "loja": {"pendentes": len(da_loja), "apps": da_loja},
+            "reiniciar": apps.precisa_reiniciar()}
+
+
+def _rodar_com_progresso(cmd, etapa, tempo=7200):
+    """Roda um passo da atualização mandando cada linha para a interface (barra de progresso)."""
+    import time as _t
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+                            env={**os.environ, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"})
+    linhas, ultimo, reiniciar = [], 0.0, False
+    inicio = _t.monotonic()
+    for linha in proc.stdout:
+        linha = linha.rstrip()
+        if not linha:
+            continue
+        linhas.append(linha)
+        if linha == "REINICIAR":
+            reiniciar = True
+            continue
+        texto = linha.removeprefix("ETAPA ")
+        m = re.search(r"\(\s*(\d+)/(\d+)\)\s+(upgrading|installing|reinstalling)\s+(\S+)", linha)
+        progresso = None
+        if m:
+            progresso = int(m.group(1)) / max(1, int(m.group(2)))
+            texto = f"Atualizando {m.group(4)} ({m.group(1)} de {m.group(2)})"
+        agora = _t.monotonic()
+        if agora - ultimo > 0.3 or m or linha.startswith("ETAPA"):
+            ultimo = agora
+            publicar_de_fora({"tipo": "atualizacao-progresso", "etapa": etapa, "texto": texto[:160], "progresso": progresso})
+        if agora - inicio > tempo:
+            proc.kill()
+            raise ErroApi(500, "A atualização demorou demais.")
+    codigo = proc.wait()
+    if codigo != 0:
+        ultima = next((l for l in reversed(linhas) if l.startswith("ERRO")), linhas[-1] if linhas else "A atualização falhou.")
+        raise ErroApi(500, ultima.replace("ERRO: ", ""))
+    return reiniciar
+
+
 def ajustes_do_sistema():
     """Ajustes que precisam de administrador (ex.: permissão de Wi-Fi e pendrives).
     Uma atualização feita por um atualizador antigo pode não ter aplicado: aplica agora."""
@@ -520,9 +570,12 @@ def ajustes_do_sistema():
                          stderr=subprocess.DEVNULL, start_new_session=True)
 
 
-def api_atualizacao_instalar(_q, _c):
+def api_atualizacao_instalar(_q, c):
     if ARGS and ARGS.live:
         raise ErroApi(409, "A sessão de instalação não se atualiza.")
+    partes = c.get("partes") if isinstance(c.get("partes"), list) else None
+    if partes is not None:
+        return _atualizar_partes(partes)
     cmd = ["/usr/local/bin/alba-atualizar"]
     if os.getuid() != 0:
         cmd = ["sudo", "-n", *cmd]
@@ -535,6 +588,46 @@ def api_atualizacao_instalar(_q, _c):
         ultima = saida.splitlines()[-1] if saida else "A atualização falhou."
         raise ErroApi(500, ultima.replace("ERRO: ", ""))
     return {"ok": True, "saida": saida, "atual": compilacao_atual()}
+
+
+def _atualizar_partes(partes):
+    sudo = [] if os.getuid() == 0 else ["sudo", "-n"]
+    feito = {"alba": False, "sistema": False, "loja": False, "reiniciar": False}
+    if "alba" in partes:
+        publicar_de_fora({"tipo": "atualizacao-progresso", "etapa": "alba", "texto": "Atualizando o Alba…", "progresso": None})
+        _rodar_com_progresso([*sudo, "/usr/local/bin/alba-atualizar"], "alba")
+        feito["alba"] = True
+    if "sistema" in partes:
+        feito["reiniciar"] = _rodar_com_progresso([*sudo, "/usr/local/bin/alba-atualizar", "--sistema"], "sistema")
+        feito["sistema"] = True
+        apps.pendentes_sistema(forcar=True)
+    if "loja" in partes and shutil.which("flatpak"):
+        publicar_de_fora({"tipo": "atualizacao-progresso", "etapa": "loja", "texto": "Atualizando os apps da loja…", "progresso": None})
+        _rodar_com_progresso(["flatpak", "update", "--user", "-y", "--noninteractive"], "loja")
+        feito["loja"] = True
+    feito["reiniciar"] = feito["reiniciar"] or apps.precisa_reiniciar()
+    publicar_de_fora({"tipo": "atualizacao-progresso", "etapa": "fim", "texto": "Pronto.", "progresso": 1})
+    return {"ok": True, **feito, "atual": compilacao_atual()}
+
+
+# ---------------------------------------------------------------- gerenciar apps
+def _apps(func):
+    def rota(q, c):
+        try:
+            return func(q, c)
+        except (apps.ErroApps, loja.ErroLoja) as e:
+            raise ErroApi(400, str(e)) from e
+    return rota
+
+
+def api_apps_desinstalar(_q, c):
+    if c.get("origem") == "sistema":
+        # Programa do sistema: confirma que é você (como o macOS pede a senha para apagar apps do sistema)
+        if pam is None or not pam.autenticar(pwd.getpwuid(os.getuid()).pw_name, str(c.get("senha", ""))):
+            raise ErroApi(403, "Senha incorreta.")
+    r = apps.desinstalar(c)
+    publicar_de_fora({"tipo": "apps-mudaram"})
+    return r
 
 
 def api_som_ler(_q, _c):
@@ -960,6 +1053,13 @@ ROTAS = {
     ("POST", "/api/notificacoes/acao"): api_notificacoes_acao,
     ("GET", "/api/monitor"): lambda q, c: monitor.amostra(),
     ("POST", "/api/monitor/encerrar"): lambda q, c: {"encerrados": monitor.encerrar([int(x) for x in (c.get("pids") or [])][:200], bool(c.get("forcar")))},
+    ("GET", "/api/atualizacao/tudo"): api_atualizacao_tudo,
+    ("GET", "/api/apps"): _apps(lambda q, c: apps.listar()),
+    ("POST", "/api/apps/desinstalar"): _apps(api_apps_desinstalar),
+    ("GET", "/api/apps/padrao"): _apps(lambda q, c: apps.padroes()),
+    ("POST", "/api/apps/padrao"): _apps(lambda q, c: apps.definir_padrao(str(c.get("categoria", "")), str(c.get("desktop", "")))),
+    ("GET", "/api/apps/autoinicio"): _apps(lambda q, c: apps.autoinicio()),
+    ("POST", "/api/apps/autoinicio"): _apps(lambda q, c: apps.definir_autoinicio(str(c.get("id", "")), bool(c.get("ligado")))),
     ("GET", "/api/busca/arquivos"): lambda q, c: {"arquivos": busca.buscar(q.get("q", ""))},
     ("GET", "/api/sistema"): api_sistema,
     ("GET", "/api/locais"): api_locais,

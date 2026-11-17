@@ -13,7 +13,7 @@ LIVE="${2:-}"
 L="$D/usr/share/alba"
 mkdir -p "$L/web" "$L/servidor" "$L/sistema"
 cp -a "$RAIZ/web/dist/." "$L/web/"
-cp -a "$RAIZ/servidor/alba_servidor.py" "$RAIZ/servidor/pam.py" "$RAIZ/servidor/musica.py" "$RAIZ/servidor/loja.py" "$RAIZ/servidor/rede.py" "$RAIZ/servidor/notificacoes.py" "$RAIZ/servidor/busca.py" "$RAIZ/servidor/monitor.py" "$L/servidor/"
+cp -a "$RAIZ/servidor/alba_servidor.py" "$RAIZ/servidor/pam.py" "$RAIZ/servidor/musica.py" "$RAIZ/servidor/loja.py" "$RAIZ/servidor/rede.py" "$RAIZ/servidor/notificacoes.py" "$RAIZ/servidor/busca.py" "$RAIZ/servidor/monitor.py" "$RAIZ/servidor/apps.py" "$L/servidor/"
 install -m755 "$RAIZ/sistema/instalar.sh" "$L/sistema/instalar.sh"
 
 # Identidade da compilação (versão + commit + data), usada para saber se há atualização.

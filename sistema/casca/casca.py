@@ -134,7 +134,8 @@ class Casca(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="org.alba.casca", flags=Gio.ApplicationFlags.NON_UNIQUE)
         self.janelas = None
-        self.bloqueada = not LIVE and not self._acabou_de_atualizar()
+        self.recarregada = self._acabou_de_atualizar()
+        self.bloqueada = not LIVE and not self.recarregada
         self.painel = None
         self.icones: dict[str, str | None] = {}
         self._ultimo_painel, self._ultimo_painel_t = None, 0
@@ -152,6 +153,25 @@ class Casca(Gtk.Application):
         except OSError:
             return False
 
+    def abrir_autoinicio(self):
+        """Apps marcados em Ajustes › Apps › "Abrir ao ligar" (~/.config/autostart/alba-*.desktop)."""
+        pasta = Path.home() / ".config" / "autostart"
+        for arq in sorted(pasta.glob("alba-*.desktop")) if pasta.is_dir() else []:
+            try:
+                info = Gio.DesktopAppInfo.new_from_filename(str(arq))
+                if info is None:
+                    continue
+                execu = info.get_commandline() or ""
+                if execu.startswith("alba-app "):
+                    abrir_app(execu.split()[1])
+                else:
+                    contexto = Gdk.Display.get_default().get_app_launch_context()
+                    contexto.unsetenv("LD_PRELOAD")
+                    info.launch([], contexto)
+            except (GLib.Error, TypeError, IndexError) as e:
+                print("alba-casca: não abriu ao ligar:", arq.name, e, file=sys.stderr, flush=True)
+        return False
+
     def aplicar_tema_janelas(self):
         try:
             import tema_janelas
@@ -166,6 +186,8 @@ class Casca(Gtk.Application):
         css_transparente()
         if not LIVE:
             GLib.idle_add(self.aplicar_tema_janelas)
+            if not self.recarregada:
+                GLib.timeout_add(2500, self.abrir_autoinicio)
         A = Camada.Edge
         self.fundo = Superficie(self, "fundo", Camada.Layer.BACKGROUND, [A.TOP, A.BOTTOM, A.LEFT, A.RIGHT])
         self.barra = Superficie(self, "barra", Camada.Layer.TOP, [A.TOP, A.LEFT, A.RIGHT], altura=ALTURA_BARRA, reserva=ALTURA_BARRA)

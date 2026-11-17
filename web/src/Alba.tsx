@@ -22,7 +22,7 @@ import { TelaBloqueio } from "./componentes/TelaBloqueio";
 
 export type Dialogo =
   | { tipo: "confirmar"; titulo: string; texto?: string; ok?: string; perigo?: boolean; resolver: (v: boolean) => void }
-  | { tipo: "perguntar"; titulo: string; texto?: string; valor?: string; ok?: string; resolver: (v: string | null) => void };
+  | { tipo: "perguntar"; titulo: string; texto?: string; valor?: string; ok?: string; senha?: boolean; perigo?: boolean; resolver: (v: string | null) => void };
 
 export function Papel() {
   const config = useContext(CtxAlba)?.config;
@@ -60,7 +60,7 @@ export function CaixaDialogo({ d, fechar }: { d: Dialogo; fechar: () => void }) 
   };
   const confirmar = () => {
     if (d.tipo === "confirmar") d.resolver(true);
-    else d.resolver(valor.trim() || null);
+    else d.resolver((d.senha ? valor : valor.trim()) || null);
     fechar();
   };
   return (
@@ -79,12 +79,22 @@ export function CaixaDialogo({ d, fechar }: { d: Dialogo; fechar: () => void }) 
       >
         <h2>{d.titulo}</h2>
         {d.texto && <p>{d.texto}</p>}
-        {d.tipo === "perguntar" && <input ref={campo} value={valor} onChange={(e) => setValor(e.target.value)} aria-label={d.titulo} />}
+        {d.tipo === "perguntar" && (
+          <input
+            ref={campo}
+            type={d.senha ? "password" : "text"}
+            placeholder={d.senha ? "Sua senha" : undefined}
+            autoComplete="off"
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            aria-label={d.titulo}
+          />
+        )}
         <div className="dialogo-acoes">
           <button type="button" onClick={cancelar} autoFocus={d.tipo === "confirmar"}>
             Cancelar
           </button>
-          <button type="submit" className={`primario ${d.tipo === "confirmar" && d.perigo ? "perigo" : ""}`}>
+          <button type="submit" className={`primario ${d.perigo ? "perigo" : ""}`}>
             {d.ok || "OK"}
           </button>
         </div>
@@ -132,7 +142,7 @@ export function Alba() {
   );
 
   const perguntar = useCallback(
-    (o: { titulo: string; texto?: string; valor?: string; ok?: string }) =>
+    (o: { titulo: string; texto?: string; valor?: string; ok?: string; senha?: boolean; perigo?: boolean }) =>
       new Promise<string | null>((resolver) => setDialogo({ tipo: "perguntar", ...o, resolver })),
     [],
   );

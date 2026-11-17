@@ -2282,3 +2282,43 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
 .credito-apoiar { color: #fff; background: var(--destaque, #e0662f); }
 .ajuste-grupo.credito-papel { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 12px; text-align: left; }
 .ajuste-grupo.credito-papel .credito-texto { align-items: flex-start; }
+
+/* ---------------------------------------------------------------- Ajustes › Apps e atualizações */
+.botao-secundario, .botao-destaque, .botao-perigo { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.botao-perigo { flex: none; padding: 8px 14px; color: #c2410c; font: inherit; font-size: 12px; font-weight: 700; background: rgba(194, 65, 12, 0.08); border: 0; border-radius: 9px; }
+.botao-perigo:disabled { color: var(--muted); background: rgba(60, 80, 140, 0.06); cursor: default; }
+.pequeno { padding: 5px 10px !important; font-size: 11.5px !important; }
+.apps-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.apps-busca { display: flex; flex: 1; align-items: center; gap: 7px; padding: 7px 10px; color: var(--muted); background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(70, 80, 120, 0.14); border-radius: 9px; }
+.dark .apps-busca { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+.apps-busca input { flex: 1; min-width: 0; color: var(--ink); font: inherit; font-size: 13px; background: transparent; border: 0; outline: none; }
+.dark .apps-busca input { color: #eef0f8; }
+.ajuste-grupo.apps-lista { display: flex; flex-direction: column; gap: 0; padding: 4px 0; }
+.apps-linha { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid rgba(60, 80, 140, 0.07); }
+.apps-linha:last-of-type { border-bottom: 0; }
+.apps-icone { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 9px; object-fit: contain; }
+.apps-icone.vazio { color: #fff; font-size: 14px; font-weight: 700; background: linear-gradient(145deg, #9aa6c4, #5d6a8a); }
+.apps-texto { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.apps-texto strong { overflow: hidden; font-size: 13px; white-space: nowrap; text-overflow: ellipsis; }
+.apps-texto small { color: var(--muted); font-size: 11.5px; }
+.apps-protegido { display: inline-flex; flex: none; align-items: center; gap: 4px; min-width: 92px; color: var(--muted); font-size: 11px; justify-content: center; }
+.apps-vazio { margin: 0; padding: 14px; color: var(--muted); font-size: 12.5px; text-align: center; }
+.apps-rodape { margin: 0; padding: 10px 14px 6px; color: var(--muted); font-size: 11.5px; text-align: right; }
+.apps-select { min-width: 200px; padding: 6px 10px; color: var(--ink); font: inherit; font-size: 12.5px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(70, 80, 120, 0.16); border-radius: 8px; }
+.dark .apps-select { color: #eef0f8; background: #24283f; border-color: #30354f; }
+.apps-auto { display: inline-flex; align-items: center; gap: 10px; }
+.apps-auto .apps-icone { width: 24px; height: 24px; border-radius: 7px; }
+.apps-mais { align-self: flex-start; margin: 6px 0 2px; padding: 4px 0; color: var(--destaque, #e0662f); font: inherit; font-size: 12px; font-weight: 700; background: transparent; border: 0; cursor: pointer; }
+.atualizacao-detalhes { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 6px; }
+.atualizacao-linha { display: flex; align-items: flex-start; gap: 10px; }
+.atualizacao-linha span:last-child { display: flex; flex-direction: column; }
+.atualizacao-linha strong { font-size: 12.5px; }
+.atualizacao-linha small { color: var(--muted); font-size: 11.5px; }
+.atualizacao-ponto { flex: none; width: 8px; height: 8px; margin-top: 5px; background: #2f9c6f; border-radius: 50%; }
+.atualizacao-ponto.pendente { background: var(--destaque, #e0662f); }
+.atualizacao-reiniciar { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 10px 12px; font-size: 12.5px; background: color-mix(in srgb, var(--destaque, #e0662f) 10%, transparent); border-radius: 10px; }
+.atualizacao-reiniciar span { flex: 1; }
+.launchpad-fundo-menu { position: fixed; inset: 0; z-index: 30; }
+.launchpad-menu { position: fixed; min-width: 190px; color: var(--ink); background: #f4f7fc; }
+.launchpad-menu .perigo { color: #c2410c; }
+.launchpad-menu-nota { display: block; padding: 6px 12px 8px; color: var(--muted); font-size: 11.5px; }

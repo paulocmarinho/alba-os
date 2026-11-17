@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Pacotes
         run: |
-          pacman -Syu --noconfirm --needed git nodejs npm labwc gtk4-layer-shell webkitgtk-6.0 python-gobject python-pywayland wlr-protocols grim wlr-randr foot ttf-dejavu noto-fonts mesa python-cairo xorg-xwayland firefox python-mutagen playerctl libcap python-cairo xorg-xwayland adwaita-icon-theme adwaita-cursors wtype dbus curl firefox-i18n-pt-br flatpak
+          pacman -Syu --noconfirm --needed git nodejs npm labwc gtk4-layer-shell webkitgtk-6.0 python-gobject python-pywayland wlr-protocols grim wlr-randr foot ttf-dejavu noto-fonts mesa python-cairo xorg-xwayland firefox python-mutagen playerctl libcap python-cairo xorg-xwayland adwaita-icon-theme adwaita-cursors wtype dbus curl firefox-i18n-pt-br flatpak pacman-contrib fakeroot
           setcap -r /usr/bin/labwc || true
       - uses: actions/checkout@v4
       - name: Interface

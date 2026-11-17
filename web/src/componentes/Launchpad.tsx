@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { APPS, type IdApp } from "../contexto";
 import { MarcaSleeve } from "./Barra";
 import { Icone } from "./Icone";
+import { paraCasca } from "../ponte";
 
 export type AppLista = {
   chave: string;
@@ -38,6 +39,7 @@ export function IconeApp({ app, pequeno }: { app: AppLista; pequeno?: boolean })
 export function Launchpad({ apps, abrir, fechar }: { apps: AppLista[]; abrir: (a: AppLista) => void; fechar: () => void }) {
   const [busca, setBusca] = useState("");
   const [sel, setSel] = useState(0);
+  const [menu, setMenu] = useState<{ app: AppLista; x: number; y: number } | null>(null);
   const campo = useRef<HTMLInputElement>(null);
   const lista = useMemo(() => {
     const q = semAcento(busca.trim());
@@ -87,13 +89,45 @@ export function Launchpad({ apps, abrir, fechar }: { apps: AppLista[]; abrir: (a
       </label>
       <div className="launchpad-grade" onPointerDown={(e) => e.target === e.currentTarget && fechar()}>
         {lista.map((a, i) => (
-          <button key={a.chave} className={i === sel && busca ? "selecionado" : ""} onClick={() => abrir(a)} title={a.nome}>
+          <button
+            key={a.chave}
+            className={i === sel && busca ? "selecionado" : ""}
+            onClick={() => abrir(a)}
+            title={a.nome}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenu({ app: a, x: e.clientX, y: e.clientY });
+            }}
+          >
             <IconeApp app={a} />
             <span>{a.nome}</span>
           </button>
         ))}
         {lista.length === 0 && <p className="launchpad-vazio">Nenhum aplicativo encontrado.</p>}
       </div>
+      {menu && (
+        <div className="launchpad-fundo-menu" onPointerDown={() => setMenu(null)} onContextMenu={(e) => (e.preventDefault(), setMenu(null))}>
+          <div className="menu-suspenso launchpad-menu" style={{ left: menu.x, top: menu.y }} onPointerDown={(e) => e.stopPropagation()}>
+            <button onClick={() => (setMenu(null), abrir(menu.app))}>
+              <Icone name="chevron" size={15} /> Abrir
+            </button>
+            {menu.app.tipo === "externo" ? (
+              <button
+                className="perigo"
+                onClick={() => {
+                  setMenu(null);
+                  paraCasca({ tipo: "abrir", app: "ajustes", props: { secao: "apps", app: menu.app.nome } });
+                  fechar();
+                }}
+              >
+                <Icone name="trash" size={15} /> Desinstalar…
+              </button>
+            ) : (
+              <span className="launchpad-menu-nota">Faz parte do Alba</span>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
