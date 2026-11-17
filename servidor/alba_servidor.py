@@ -667,8 +667,9 @@ def faixa_de_audio(req):
     p = Path(req.query.get("caminho", ""))
     if not musica.permitido(p):
         raise ErroApi(403, "Esse arquivo não pode ser tocado.")
-    total = p.stat().st_size
     tipo = musica.tipo_audio(p)
+    p = musica.arquivo_tocavel(p)  # FLAC com etiqueta defeituosa sai consertado
+    total = p.stat().st_size
     faixa = req.cabecalhos.get("range", "")
     extras = ["Accept-Ranges: bytes"]
     if faixa.startswith("bytes="):

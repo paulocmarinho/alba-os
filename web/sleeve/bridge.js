@@ -281,6 +281,10 @@ export const host = {
       case 'volume':
         await api('POST', '/api/musica/spotify', { acao: 'volume', volume: msg.value }).catch(() => {});
         break;
+      case 'repair':
+        // No Alba o servidor já entrega o arquivo consertado; se ainda assim não abriu, não tem conserto
+        emit({ type: 'repaired', id: msg.id, url: null });
+        break;
       case 'lyrics': {
         // Arquivo da biblioteca: o caminho vem no endereço do áudio
         let caminho = null;

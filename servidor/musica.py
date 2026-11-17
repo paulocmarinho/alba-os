@@ -41,6 +41,7 @@ CONFIG = CASA / ".config" / "alba" / "sleeve.json"
 CACHE = CASA / ".cache" / "alba" / "sleeve"
 CAPAS = CACHE / "capas"
 LETRAS = CACHE / "letras"
+REPARADOS = CACHE / "reparados"
 _trava = threading.Lock()
 _estado = {"lendo": False, "contagem": 0}
 
@@ -409,6 +410,76 @@ def spotify_acao(acao: str, posicao: float | None = None, volume: float | None =
     if acao == "volume" and volume is not None:
         return _playerctl("volume", str(min(1.0, max(0.0, float(volume))))) is not None
     return False
+
+
+# ---------------------------------------------------------------- FLAC que o Chromium recusa
+# Alguns FLAC tocam em qualquer player, mas o Chromium recusa o arquivo inteiro por um defeito nas
+# etiquetas: capa gravada sem o tipo da imagem, ou etiquetas ID3 antes do FLAC. O áudio vai sem esses
+# pedaços (uma cópia em ~/.cache/alba/sleeve/reparados); o arquivo original fica intacto.
+_tocaveis: dict[tuple, Path] = {}
+
+
+def _imagem_ok(dados: bytes) -> bool:
+    if len(dados) < 32:
+        return False
+    tam = int.from_bytes(dados[4:8], "big")
+    return 0 < tam and 8 + tam <= len(dados)
+
+
+def arquivo_tocavel(caminho: Path) -> Path:
+    if caminho.suffix.lower() != ".flac":
+        return caminho
+    try:
+        st = caminho.stat()
+    except OSError:
+        return caminho
+    chave = (str(caminho), st.st_size, st.st_mtime_ns)
+    if chave in _tocaveis:
+        return _tocaveis[chave]
+    destino = REPARADOS / (_id("|".join(map(str, chave))) + ".flac")
+    resultado = caminho
+    try:
+        if destino.is_file():
+            resultado = destino
+        else:
+            with open(caminho, "rb") as f:
+                cab = f.read(10)
+                mudou = False
+                if cab[:3] == b"ID3":
+                    tam = (cab[6] << 21) | (cab[7] << 14) | (cab[8] << 7) | cab[9]
+                    f.seek(10 + tam + (10 if cab[5] & 0x10 else 0))
+                    cab = f.read(4)
+                    mudou = True
+                else:
+                    f.seek(4)
+                if cab[:4] == b"fLaC":
+                    blocos, ultimo = [], False
+                    while not ultimo:
+                        h = f.read(4)
+                        if len(h) < 4:
+                            break
+                        ultimo = bool(h[0] & 0x80)
+                        tipo = h[0] & 0x7F
+                        dados = f.read(int.from_bytes(h[1:4], "big"))
+                        if tipo == 6 and not _imagem_ok(dados):
+                            mudou = True
+                            continue
+                        blocos.append((tipo, dados))
+                    if mudou and blocos and blocos[0][0] == 0:
+                        REPARADOS.mkdir(parents=True, exist_ok=True)
+                        temp = destino.with_suffix(".tmp")
+                        with open(temp, "wb") as saida:
+                            saida.write(b"fLaC")
+                            for i, (tipo, dados) in enumerate(blocos):
+                                saida.write(bytes([tipo | (0x80 if i == len(blocos) - 1 else 0)]) + len(dados).to_bytes(3, "big"))
+                                saida.write(dados)
+                            shutil.copyfileobj(f, saida, 1024 * 1024)
+                        temp.replace(destino)
+                        resultado = destino
+    except OSError:
+        resultado = caminho
+    _tocaveis[chave] = resultado
+    return resultado
 
 
 # ---------------------------------------------------------------- capa do Spotify
