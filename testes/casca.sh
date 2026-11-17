@@ -100,6 +100,9 @@ sleep 10
 grim saida/13-loja-spotify.png
 curl -s -b "alba=$ALBA_TOKEN" -H "X-Alba-Token: $ALBA_TOKEN" "$ALBA_URL/api/loja/buscar?q=video" > saida/loja-busca.json
 # ---- Monitor de Atividade
+alba-app ajustes '{"secao": "aparencia"}' &
+sleep 6
+grim saida/23-papel-credito.png
 alba-app monitor &
 sleep 2; alba-app arquivos &
 sleep 9

@@ -2265,3 +2265,18 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
 .mon-legenda i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .mon-legenda i:not(:first-child) { margin-left: 8px; }
 .mon-rodape { display: flex; gap: 18px; padding: 8px 16px; color: var(--muted); font-size: 12px; border-top: 1px solid rgba(60, 80, 140, 0.1); }
+
+/* ---------------------------------------------------------------- crédito da foto do papel de parede */
+.bloqueio-credito { position: absolute; top: 26px; right: 30px; display: grid; grid-template-columns: auto; justify-items: end; gap: 2px; max-width: 320px; color: #fff; text-align: right; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45); }
+.bloqueio-credito-icone { display: grid; place-items: center; width: 30px; height: 30px; margin-bottom: 4px; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 50%; }
+.bloqueio-credito strong { font-size: 13px; font-weight: 600; }
+.bloqueio-credito small { font-size: 11.5px; opacity: 0.8; }
+.credito-papel { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px 14px; }
+.credito-icone { display: grid; flex: none; place-items: center; width: 34px; height: 34px; color: var(--destaque, #e0662f); background: color-mix(in srgb, var(--destaque, #e0662f) 12%, transparent); border-radius: 10px; }
+.credito-texto { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.credito-texto strong { font-size: 13px; }
+.credito-texto small { color: var(--muted); font-size: 11.5px; }
+.credito-link, .credito-apoiar { display: inline-flex; flex: none; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; text-decoration: none; border-radius: 999px; }
+.credito-link { color: var(--ink); background: rgba(60, 80, 140, 0.08); }
+.dark .credito-link { color: #eef0f8; background: rgba(255, 255, 255, 0.08); }
+.credito-apoiar { color: #fff; background: var(--destaque, #e0662f); }

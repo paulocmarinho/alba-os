@@ -188,7 +188,10 @@ class Pagina:
             if not uri.startswith(URL) and not uri.startswith("about:"):
                 decisao.ignore()
                 if uri.startswith(("http://", "https://")):
-                    Gio.AppInfo.launch_default_for_uri(uri, None)  # links da internet abrem no navegador
+                    # links da internet abrem no navegador (sem a biblioteca da camada, que derruba o Firefox)
+                    contexto = Gdk.Display.get_default().get_app_launch_context()
+                    contexto.unsetenv("LD_PRELOAD")
+                    Gio.AppInfo.launch_default_for_uri(uri, contexto)
                 return True
         return False
 

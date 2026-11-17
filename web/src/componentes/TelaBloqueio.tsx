@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { dataSemAno, hora, iniciais, useAlba } from "../contexto";
+import { creditoDoPapel } from "../papeis";
 import { Icone } from "./Icone";
 
 /** Tela de bloqueio do Alba: data em cima, hora grande, usuário e senha embaixo. */
 export function TelaBloqueio({ aoDesbloquear }: { aoDesbloquear: () => void }) {
-  const { agora, sistema, energia } = useAlba();
+  const { agora, sistema, energia, config } = useAlba();
+  const credito = creditoDoPapel(config);
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState(false);
   const [conferindo, setConferindo] = useState(false);
@@ -39,6 +41,17 @@ export function TelaBloqueio({ aoDesbloquear }: { aoDesbloquear: () => void }) {
 
   return (
     <section className="tela-bloqueio" aria-label="Tela de bloqueio">
+      {credito && (
+        <div className="bloqueio-credito" aria-label="Sobre esta foto">
+          <span className="bloqueio-credito-icone">
+            <Icone name="pin" size={15} />
+          </span>
+          <strong>{credito.local}</strong>
+          <small>
+            Foto de {credito.autor} · {credito.fonte}
+          </small>
+        </div>
+      )}
       <div className="bloqueio-relogio">
         <span className="bloqueio-data">{dataSemAno(agora)}</span>
         <span className="bloqueio-hora">{hora(agora)}</span>

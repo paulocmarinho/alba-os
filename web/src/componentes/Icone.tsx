@@ -62,7 +62,10 @@ export type NomeIcone =
   | "eject"
   | "usb"
   | "calc"
-  | "activity";
+  | "activity"
+  | "pin"
+  | "heart"
+  | "camera";
 
 export function Icone({
   name,
@@ -196,6 +199,19 @@ export function Icone({
       <>
         <rect x="7" y="9" width="10" height="12" rx="2" />
         <path d="M9 9V3h6v6M10.5 5.5h0M13.5 5.5h0" />
+      </>
+    ),
+    pin: (
+      <>
+        <path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 0 0-13 0c0 5.4 6.5 11 6.5 11Z" />
+        <circle cx="12" cy="10" r="2.3" />
+      </>
+    ),
+    heart: <path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z" />,
+    camera: (
+      <>
+        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.8l1.5-2h4.4l1.5 2h1.8A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5Z" />
+        <circle cx="12" cy="12.5" r="3.4" />
       </>
     ),
     activity: <path d="M3 12.5h4l2.5-6 4 12 2.6-6.5H21" />,

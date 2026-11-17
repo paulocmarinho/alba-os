@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type InfoAtualizacao, type Rede, type Som, type Teclado, tamanhoLegivel } from "../api";
 import { useAlba } from "../contexto";
-import { PAPEIS } from "../papeis";
+import { creditoDoPapel, PAPEIS } from "../papeis";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
 
@@ -119,6 +119,30 @@ export function Ajustes({ secao: inicial, vez }: { secao?: Secao; vez?: number }
                 Sua imagem…
               </button>
             </div>
+            {creditoDoPapel(config) && (() => {
+              const c = creditoDoPapel(config)!;
+              return (
+                <div className="ajuste-grupo credito-papel">
+                  <span className="credito-icone">
+                    <Icone name="camera" size={18} />
+                  </span>
+                  <span className="credito-texto">
+                    <strong>Foto de {c.autor}</strong>
+                    <small>
+                      {c.local} · {c.fonte}
+                    </small>
+                  </span>
+                  <a className="credito-link" href={c.perfil} target="_blank" rel="noreferrer">
+                    Ver mais fotos
+                  </a>
+                  {c.doacao && (
+                    <a className="credito-apoiar" href={c.doacao} target="_blank" rel="noreferrer">
+                      <Icone name="heart" size={14} /> Apoiar o fotógrafo
+                    </a>
+                  )}
+                </div>
+              );
+            })()}
             <h3>Tema</h3>
             <div className="ajuste-grupo">
               <div className="tema-opcoes">
