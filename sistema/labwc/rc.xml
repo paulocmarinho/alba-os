@@ -76,6 +76,8 @@
     <keybind key="W-S-4"><action name="Execute" command="alba-captura area" /></keybind>
     <!-- Fechar janela como no Mac, além do Alt+F4 -->
     <keybind key="W-q"><action name="Close" /></keybind>
+    <!-- Monitor de Atividade (gerenciador de tarefas) -->
+    <keybind key="C-S-Escape"><action name="Execute" command="alba-app monitor" /></keybind>
     <keybind key="XF86AudioRaiseVolume"><action name="Execute" command="wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+" /></keybind>
     <keybind key="XF86AudioLowerVolume"><action name="Execute" command="wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-" /></keybind>
     <keybind key="XF86AudioMute"><action name="Execute" command="wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle" /></keybind>

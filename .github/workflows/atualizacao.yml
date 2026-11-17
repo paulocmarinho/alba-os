@@ -67,7 +67,7 @@ jobs:
       - name: Testar os scripts
         if: env.SEGUIR == '1'
         run: |
-          python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py servidor/loja.py servidor/rede.py servidor/notificacoes.py servidor/busca.py
+          python3 -m py_compile servidor/alba_servidor.py servidor/pam.py servidor/musica.py servidor/loja.py servidor/rede.py servidor/notificacoes.py servidor/busca.py servidor/monitor.py
           for f in sistema/alba-sessao sistema/alba-atualizar sistema/instalar.sh sistema/montar-arquivos.sh iso/construir-iso.sh; do bash -n "$f"; done
 
       - name: Identificar a compilação

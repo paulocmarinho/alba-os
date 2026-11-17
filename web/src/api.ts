@@ -135,6 +135,33 @@ export const arquivosExtra = {
   buscar: (q: string) => pedir<{ arquivos: ArquivoAchado[] }>("GET", `/api/busca/arquivos?q=${encodeURIComponent(q)}`),
 };
 
+export type AppMonitor = {
+  pid: number;
+  pids: number[];
+  nome: string;
+  icone: string;
+  alba: string | null;
+  desktop: string | null;
+  processos: number;
+  cpu: number;
+  memoria: number;
+  protegido: boolean;
+};
+export type AmostraMonitor = {
+  cpu: { total: number; nucleos: number[]; carga: number[] };
+  memoria: { total: number; usada: number; cache: number; swap_total: number; swap_usada: number };
+  disco: { leitura: number; escrita: number };
+  rede: { recebendo: number; enviando: number };
+  apps: AppMonitor[];
+  sistema: AppMonitor[];
+  total_processos: number;
+};
+export const monitor = {
+  amostra: () => pedir<AmostraMonitor>("GET", "/api/monitor"),
+  encerrar: (pids: number[], forcar = false) => pedir<{ encerrados: number }>("POST", "/api/monitor/encerrar", { pids, forcar }),
+  urlIcone: (nome: string) => `/api/icone?nome=${encodeURIComponent(nome)}`,
+};
+
 export const loja = {
   vitrine: () => pedir<Vitrine>("GET", "/api/loja/vitrine"),
   buscar: (termo: string) => pedir<{ apps: AppLoja[] }>("GET", `/api/loja/buscar?q=${encodeURIComponent(termo)}`),

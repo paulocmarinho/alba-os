@@ -7,6 +7,7 @@ import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
 import { Instalador } from "./apps/Instalador";
 import { Loja } from "./apps/Loja";
+import { Monitor } from "./apps/Monitor";
 import { Notas, Visualizador } from "./apps/Notas";
 import { Musica, type Tocando } from "./apps/Musica";
 import { Terminal } from "./apps/Terminal";
@@ -292,6 +293,8 @@ export function Alba() {
         return <Instalador />;
       case "loja":
         return <Loja />;
+      case "monitor":
+        return <Monitor />;
       case "musica":
         return (
           <Musica

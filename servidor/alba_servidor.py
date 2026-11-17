@@ -37,6 +37,7 @@ import loja  # noqa: E402
 import rede  # noqa: E402
 import notificacoes  # noqa: E402
 import busca  # noqa: E402
+import monitor  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
@@ -44,7 +45,7 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.6.1"
+VERSAO = "0.7.0"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -741,6 +742,14 @@ def faixa_de_audio(req):
     return resposta(200, p.read_bytes(), tipo, extras)
 
 
+def icone_de_app(req):
+    p = monitor.caminho_icone(req.query.get("nome", ""))
+    if p is None:
+        raise ErroApi(404, "Sem ícone.")
+    tipo = "image/svg+xml" if p.suffix == ".svg" else "image/png"
+    return resposta(200, p.read_bytes(), tipo, ["Cache-Control: max-age=86400"])
+
+
 def capa_de_album(req):
     p = musica.caminho_capa(req.query.get("id", ""))
     if p is None:
@@ -946,6 +955,8 @@ ROTAS = {
     ("GET", "/api/notificacoes"): lambda q, c: notificacoes.listar(),
     ("POST", "/api/notificacoes"): api_notificacoes_criar,
     ("POST", "/api/notificacoes/acao"): api_notificacoes_acao,
+    ("GET", "/api/monitor"): lambda q, c: monitor.amostra(),
+    ("POST", "/api/monitor/encerrar"): lambda q, c: {"encerrados": monitor.encerrar([int(x) for x in (c.get("pids") or [])][:200], bool(c.get("forcar")))},
     ("GET", "/api/busca/arquivos"): lambda q, c: {"arquivos": busca.buscar(q.get("q", ""))},
     ("GET", "/api/sistema"): api_sistema,
     ("GET", "/api/locais"): api_locais,
@@ -1303,6 +1314,8 @@ async def atender(leitor, escritor):
                             dados = arquivo_bruto(req)
                         elif req.caminho == "/api/musica/audio" and req.metodo == "GET":
                             dados = await asyncio.get_running_loop().run_in_executor(None, faixa_de_audio, req)
+                        elif req.caminho == "/api/icone" and req.metodo == "GET":
+                            dados = icone_de_app(req)
                         elif req.caminho == "/api/musica/capa" and req.metodo == "GET":
                             dados = capa_de_album(req)
                         elif req.caminho == "/api/musica/artista" and req.metodo == "GET":

@@ -7,6 +7,7 @@ import { Ajustes } from "./apps/Ajustes";
 import { Arquivos } from "./apps/Arquivos";
 import { Instalador } from "./apps/Instalador";
 import { Loja } from "./apps/Loja";
+import { Monitor } from "./apps/Monitor";
 import { Musica, type Tocando } from "./apps/Musica";
 import { Notas, Visualizador } from "./apps/Notas";
 import { Terminal } from "./apps/Terminal";
@@ -89,6 +90,12 @@ export function AlbaCasca() {
   useEffect(() => {
     if (sistema && config) paraCasca({ tipo: "pronto" });
   }, [!!sistema && !!config]);
+
+  // Caixa de diálogo na camada de cima (ex.: "Reiniciar o computador?"): a camada precisa receber
+  // cliques enquanto ela estiver aberta, mesmo que o menu que a abriu já tenha fechado.
+  useEffect(() => {
+    if (superficie === "sobre") paraCasca({ tipo: "dialogo", aberto: !!dialogo });
+  }, [!!dialogo]);
 
   // Na camada de cima, os avisos de notificação recebem cliques (o resto da tela continua livre).
   useEffect(() => {
@@ -371,7 +378,7 @@ function Sobre() {
     );
   if (modo.modo === "alternar" && alt) return <Alternador key={alt.vez} janelas={alt.janelas} inicial={alt.inicial} />;
   if (modo.modo === "busca") return <Busca key={vez} apps={apps} fechar={fechar} />;
-  if (modo.modo !== "painel") return null;
+  if (modo.modo !== "painel" || modo.qual === ("dialogo" as PainelCasca)) return null;
   return (
     <section className="sobre-fundo" onPointerDown={(e) => e.target === e.currentTarget && fechar()}>
       <div className={`sobre-painel sobre-${modo.qual}`} onPointerDown={(e) => e.stopPropagation()}>
@@ -418,6 +425,9 @@ function AppAvulso({ app }: { app: IdApp }) {
       break;
     case "loja":
       conteudo = <Loja abrirApp={props.app} vez={props._vez} />;
+      break;
+    case "monitor":
+      conteudo = <Monitor key={props._vez} abaInicial={props.aba} />;
       break;
     case "instalador":
       conteudo = <Instalador />;

@@ -35,6 +35,7 @@ APPS = {
     "visualizador": {"nome": "Visualizador", "largura": 900, "altura": 640, "unico": False},
     "ajustes": {"nome": "Ajustes", "largura": 900, "altura": 620, "unico": True},
     "musica": {"nome": "Sleeve", "largura": 1120, "altura": 720, "unico": True, "sem_moldura": True},
+    "monitor": {"nome": "Monitor de Atividade", "largura": 980, "altura": 660, "unico": True},
     "loja": {"nome": "Alba Store", "largura": 1100, "altura": 720, "unico": True},
     "instalador": {"nome": "Instalar o Alba OS", "largura": 900, "altura": 640, "unico": True},
 }

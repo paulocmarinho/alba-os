@@ -61,7 +61,8 @@ export type NomeIcone =
   | "paste"
   | "eject"
   | "usb"
-  | "calc";
+  | "calc"
+  | "activity";
 
 export function Icone({
   name,
@@ -197,6 +198,7 @@ export function Icone({
         <path d="M9 9V3h6v6M10.5 5.5h0M13.5 5.5h0" />
       </>
     ),
+    activity: <path d="M3 12.5h4l2.5-6 4 12 2.6-6.5H21" />,
     calc: (
       <>
         <rect x="5" y="3" width="14" height="18" rx="2.5" />

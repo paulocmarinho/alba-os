@@ -11,4 +11,7 @@ polkit.addRule(function (action, subject) {
     "org.freedesktop.udisks2.power-off-drive",
   ];
   if (pendrive.indexOf(action.id) >= 0) return polkit.Result.YES;
+  // Reiniciar e desligar pelo menu do Alba, mesmo com outra sessão aberta (ex.: um terminal no tty2).
+  if (action.id.indexOf("org.freedesktop.login1.reboot") === 0 || action.id.indexOf("org.freedesktop.login1.power-off") === 0)
+    return polkit.Result.YES;
 });

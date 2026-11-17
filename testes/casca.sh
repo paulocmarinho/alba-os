@@ -99,6 +99,15 @@ alba-app loja '{"app": "com.spotify.Client"}' &
 sleep 10
 grim saida/13-loja-spotify.png
 curl -s -b "alba=$ALBA_TOKEN" -H "X-Alba-Token: $ALBA_TOKEN" "$ALBA_URL/api/loja/buscar?q=video" > saida/loja-busca.json
+# ---- Monitor de Atividade
+alba-app monitor &
+sleep 9
+grim saida/20-monitor.png
+alba-app monitor '{"aba": "desempenho"}' &
+sleep 8
+grim saida/21-monitor-desempenho.png
+curl -s -H "X-Alba-Token: $ALBA_TOKEN" "$ALBA_URL/api/monitor" > saida/monitor.json
+
 # Recarga leve depois de atualizar: a casca volta sem tela de bloqueio e as janelas continuam.
 mkdir -p ~/.cache/alba && touch ~/.cache/alba/manter-desbloqueado
 pkill -f /usr/share/alba/casca/casca.py
@@ -107,3 +116,8 @@ grim saida/19-recarregada.png
 ls -la ~/.config/labwc ~/.local/share/themes/Alba/labwc > saida/tema.txt 2>&1
 cp ~/.cache/alba/*.log saida/ 2>/dev/null
 python3 -m pywayland.scanner --help > saida/scanner.txt 2>&1
+
+# ---- Reiniciar pela busca: a caixa de confirmação precisa deixar a camada de cima clicável
+alba-enviar busca; sleep 2; wtype "Reiniciar"; sleep 2; wtype -k Return; sleep 3
+grim saida/22-confirmar-reiniciar.png
+grep -o "sobre → {[^}]*dialogo[^}]*}" saida/compositor.log > saida/dialogo.txt 2>/dev/null || true

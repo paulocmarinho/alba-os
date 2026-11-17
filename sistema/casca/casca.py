@@ -409,7 +409,7 @@ class Casca(Gtk.Application):
     def lista_apps(self) -> list[dict]:
         """Tudo que dá para abrir: os apps do Alba e os programas instalados (.desktop)."""
         apps = [{"chave": a, "tipo": "alba", "app": a, "nome": APPS[a]["nome"]}
-                for a in ("arquivos", "musica", "terminal", "notas", "loja", "ajustes")]
+                for a in ("arquivos", "musica", "terminal", "notas", "loja", "monitor", "ajustes")]
         vistos = set()
         for info in Gio.AppInfo.get_all():
             try:
@@ -427,7 +427,7 @@ class Casca(Gtk.Application):
                              "icone": self.icone(ident), "busca": " ".join(filter(None, [info.get_generic_name(), " ".join(info.get_keywords() or [])]))})
             except (TypeError, GLib.Error):
                 continue
-        alba, externos = apps[:6], sorted(apps[6:], key=lambda a: a["nome"].casefold())
+        alba, externos = apps[:7], sorted(apps[7:], key=lambda a: a["nome"].casefold())
         return alba + externos
 
     def abrir_launchpad(self):
@@ -511,6 +511,12 @@ class Casca(Gtk.Application):
                 self.fechar_sobre()
             else:
                 self.abrir_sobre("painel", qual)
+        elif tipo == "dialogo" and origem is self.sobre and not self.bloqueada:
+            if m.get("aberto"):
+                if not self.sobre_ativo:
+                    self.abrir_sobre("painel", "dialogo")
+            elif self.sobre_ativo and self.painel == "dialogo":
+                self.fechar_sobre()
         elif tipo == "fecharSobre":
             self.fechar_sobre()
         elif tipo == "bloquear" and not LIVE:

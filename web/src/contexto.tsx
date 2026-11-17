@@ -3,7 +3,7 @@ import type { Config, Sistema } from "./api";
 import type { NomeIcone } from "./componentes/Icone";
 import type { Tocando } from "./apps/Musica";
 
-export type IdApp = "arquivos" | "terminal" | "notas" | "ajustes" | "visualizador" | "instalador" | "musica" | "loja";
+export type IdApp = "arquivos" | "terminal" | "notas" | "ajustes" | "visualizador" | "instalador" | "musica" | "loja" | "monitor";
 
 export const APPS: Record<
   IdApp,
@@ -15,6 +15,7 @@ export const APPS: Record<
   ajustes: { nome: "Ajustes", icone: "settings", classe: "settings", largura: 880, altura: 600, unico: true },
   visualizador: { nome: "Imagem", icone: "image", classe: "viewer", largura: 820, altura: 600, unico: false },
   musica: { nome: "Sleeve", icone: "music", classe: "music", largura: 1120, altura: 720, unico: true, semMoldura: true },
+  monitor: { nome: "Monitor de Atividade", icone: "activity", classe: "monitor", largura: 980, altura: 660, unico: true },
   loja: { nome: "Alba Store", icone: "store", classe: "store", largura: 1100, altura: 720, unico: true },
   instalador: { nome: "Instalar o Alba OS", icone: "install", classe: "install", largura: 900, altura: 640, unico: true },
 };
