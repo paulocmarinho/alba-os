@@ -253,8 +253,10 @@ def amostra() -> dict:
     filhos: dict[int, list[int]] = {}
     for pid, p in procs.items():
         filhos.setdefault(p["ppid"], []).append(pid)
+    # Processos "de passagem": o que eles abrem aparece separado (um app aberto por um terminal
+    # ou por um atalho de teclado aparece com o próprio nome, não dentro do "sh").
     sessao = {pid for pid, p in meus.items()
-              if p["comm"] in ("labwc", "systemd", "alba-sessao", "dbus-daemon", "dbus-broker")
+              if p["comm"] in ("labwc", "systemd", "alba-sessao", "dbus-daemon", "dbus-broker", "sh", "bash", "dash", "zsh", "fish")
               or re.search(r"casca/casca\.py|alba-casca|alba_servidor", " ".join(p["cmd"]))}
     sessao.add(1)
 
