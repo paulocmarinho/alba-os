@@ -33,7 +33,7 @@ ESCONDIDOS_LAUNCHPAD = {
     "org.codeberg.dnkl.foot-server", "qv4l2", "qvidcap", "avahi-discover", "bssh", "bvnc", "lstopo",
     "nm-connection-editor", "xdg-desktop-portal-gtk", "cmake-gui", "electron", "jconsole", "jshell",
     "vim", "nvim", "htop", "btop", "org.freedesktop.IBus.Setup", "ibus-setup", "rofi", "rofi-theme-selector",
-    "uxterm", "xterm", "assistant", "designer", "linguist", "qdbusviewer",
+    "uxterm", "xterm", "assistant", "designer", "linguist", "qdbusviewer", "stoken-gui", "stoken-gui-small",
 }
 # Durante a instalação, o computador mostra só o papel de parede e o instalador.
 FIXOS = [

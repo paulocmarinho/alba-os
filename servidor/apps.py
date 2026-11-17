@@ -30,7 +30,8 @@ ESCONDIDOS = {"foot", "footclient", "foot-server", "org.codeberg.dnkl.foot", "or
               "org.codeberg.dnkl.foot-server", "qv4l2", "qvidcap", "avahi-discover", "bssh", "bvnc", "lstopo",
               "nm-connection-editor", "xdg-desktop-portal-gtk", "cmake-gui", "electron", "jconsole", "jshell", "vim",
               "nvim", "htop", "btop", "org.freedesktop.IBus.Setup", "ibus-setup", "rofi", "rofi-theme-selector",
-              "uxterm", "xterm", "assistant", "designer", "linguist", "qdbusviewer", "gvim"}
+              "uxterm", "xterm", "assistant", "designer", "linguist", "qdbusviewer", "gvim",
+              "stoken-gui", "stoken-gui-small"}
 
 CATEGORIAS = {
     "navegador": {"nome": "Navegador", "tipos": ["x-scheme-handler/http", "x-scheme-handler/https", "text/html",
