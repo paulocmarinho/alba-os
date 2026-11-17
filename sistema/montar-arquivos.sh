@@ -43,6 +43,16 @@ install -Dm644 "$RAIZ/sistema/alba-identidade.hook" "$D/etc/pacman.d/hooks/alba-
 install -Dm644 "$RAIZ/sistema/alba-perfil.sh" "$D/etc/profile.d/alba.sh"
 install -Dm644 "$RAIZ/iso/airootfs/etc/chromium/policies/managed/alba.json" "$D/etc/chromium/policies/managed/alba.json"
 install -Dm440 "$RAIZ/sistema/alba-atualizar.sudoers" "$D/etc/sudoers.d/20-alba-atualizar"
+# Tela de abertura (Plymouth): o tema vai junto com o Alba; alba-abertura o instala no sistema.
+install -Dm755 "$RAIZ/sistema/alba-abertura" "$D/usr/local/bin/alba-abertura"
+for f in "$RAIZ"/sistema/plymouth/alba/*; do
+  install -Dm644 "$f" "$D/usr/share/alba/sistema/plymouth/alba/$(basename "$f")"
+  [[ "${2:-}" == "--com-live" ]] && install -Dm644 "$f" "$D/usr/share/plymouth/themes/alba/$(basename "$f")"
+done
+if [[ "${2:-}" == "--com-live" ]]; then
+  install -d "$D/etc/plymouth"
+  printf '[Daemon]\nTheme=alba\nShowDelay=0\nDeviceTimeout=8\n' >"$D/etc/plymouth/plymouthd.conf"
+fi
 # A regra de permissão vai junto com o Alba; o atualizador (e a ISO) a põe em /etc/polkit-1.
 install -Dm644 "$RAIZ/sistema/alba-polkit.rules" "$D/usr/share/alba/sistema/50-alba.rules"
 if [[ "${2:-}" == "--com-live" ]]; then

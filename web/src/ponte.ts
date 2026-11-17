@@ -52,11 +52,30 @@ const ouvintesEventos = new Set<Ouvinte>();
 let socket: WebSocket | null = null;
 let pendentes: string[] = [];
 
+let compilacaoVista: string | null = null;
+let caiu = false;
+
+/** Depois de uma atualização o servidor volta com a versão nova: as páginas abertas recarregam
+ *  sozinhas (menos o Sleeve, para não cortar a música; ele pega a versão nova ao ser reaberto). */
+function conferirVersao() {
+  fetch("/api/sistema", { headers: { "X-Alba-Token": new URLSearchParams(location.search).get("t") || "" }, credentials: "same-origin" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((s) => {
+      const c = s?.compilacao ?? null;
+      if (c === null) return;
+      if (compilacaoVista === null) compilacaoVista = c;
+      else if (c !== compilacaoVista && appAvulso !== "musica") location.reload();
+    })
+    .catch(() => {});
+}
+
 function conectar() {
   socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/eventos`);
   socket.onopen = () => {
     pendentes.forEach((t) => socket!.send(t));
     pendentes = [];
+    if (caiu || compilacaoVista === null) conferirVersao();
+    caiu = false;
   };
   socket.onmessage = (e) => {
     try {
@@ -66,7 +85,10 @@ function conectar() {
       /* ignora */
     }
   };
-  socket.onclose = () => window.setTimeout(conectar, 1500);
+  socket.onclose = () => {
+    caiu = true;
+    window.setTimeout(conectar, 1500);
+  };
 }
 
 export function ouvirEventos(fn: Ouvinte) {

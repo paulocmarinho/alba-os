@@ -99,6 +99,11 @@ alba-app loja '{"app": "com.spotify.Client"}' &
 sleep 10
 grim saida/13-loja-spotify.png
 curl -s -b "alba=$ALBA_TOKEN" -H "X-Alba-Token: $ALBA_TOKEN" "$ALBA_URL/api/loja/buscar?q=video" > saida/loja-busca.json
+# Recarga leve depois de atualizar: a casca volta sem tela de bloqueio e as janelas continuam.
+mkdir -p ~/.cache/alba && touch ~/.cache/alba/manter-desbloqueado
+pkill -f /usr/share/alba/casca/casca.py
+sleep 10
+grim saida/19-recarregada.png
 ls -la ~/.config/labwc ~/.local/share/themes/Alba/labwc > saida/tema.txt 2>&1
 cp ~/.cache/alba/*.log saida/ 2>/dev/null
 python3 -m pywayland.scanner --help > saida/scanner.txt 2>&1

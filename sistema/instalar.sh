@@ -157,6 +157,9 @@ systemctl enable NetworkManager.service systemd-timesyncd.service >/dev/null 2>&
 systemctl disable systemd-networkd.service iwd.service >/dev/null 2>&1 || true
 systemctl set-default multi-user.target >/dev/null
 
+# Tela de abertura (o sol nascendo) no lugar das mensagens do boot
+/usr/local/bin/alba-abertura --so-tema || true
+
 # Chaves do pacman para atualizações
 rm -rf /etc/pacman.d/gnupg
 pacman-key --init >/dev/null 2>&1
@@ -171,7 +174,8 @@ arch-chroot "$ALVO" mkinitcpio -P
 progresso 93 "Instalando o carregador de boot"
 sed -i -e 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="Alba OS"/' \
        -e 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' \
-       -e 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/' \
+       -e 's/^#\?GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' \
+       -e 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3 rd.udev.log_level=3 systemd.show_status=auto vt.global_cursor_default=0"/' \
        "$ALVO/etc/default/grub"
 if [[ $UEFI == 1 ]]; then
   arch-chroot "$ALVO" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=alba --removable

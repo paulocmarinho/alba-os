@@ -23,6 +23,8 @@ aplicar_ajustes() {
     chown root:polkitd /etc/polkit-1/rules.d 2>/dev/null || true
     cmp -s "$S/50-alba.rules" /etc/polkit-1/rules.d/50-alba.rules || install -m 644 "$S/50-alba.rules" /etc/polkit-1/rules.d/50-alba.rules
   fi
+  # Tela de abertura (refaz a inicialização só na primeira vez; volta atrás se falhar)
+  [[ -x /usr/local/bin/alba-abertura ]] && /usr/local/bin/alba-abertura || true
 }
 
 if [[ "${1:-}" == "--ajustes" ]]; then

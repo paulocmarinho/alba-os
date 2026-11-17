@@ -44,7 +44,7 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.6.0"
+VERSAO = "0.6.1"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -273,6 +273,7 @@ def api_sistema(_q, _c):
         "ligado_segundos": int(ligado),
         "live": bool(ARGS and ARGS.live),
         "casa": str(CASA),
+        "compilacao": compilacao_atual().get("commit", ""),
     }
 
 
@@ -461,7 +462,8 @@ def api_recarregar(_q, c):
     """Fecha a interface para a sessão abrir de novo (escala nova; ou, com "sessao", depois de atualizar)."""
     caminho = CASA / ".cache" / "alba" / "recarregar"
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    caminho.write_text("sessao" if c.get("sessao") else "1")
+    leve = os.environ.get("ALBA_SESSAO_VERSAO", "1") >= "2"
+    caminho.write_text(("leve" if leve else "sessao") if c.get("sessao") else "1")
     return {"ok": True}
 
 
@@ -507,6 +509,8 @@ def ajustes_do_sistema():
     if ARGS.live or os.getuid() == 0:
         return
     falta = Path("/usr/share/alba/sistema/50-alba.rules").exists() and not Path("/etc/polkit-1/rules.d/50-alba.rules").exists()
+    falta = falta or (Path("/usr/bin/plymouth-set-default-theme").exists() and Path("/usr/local/bin/alba-abertura").exists()
+                      and not Path("/etc/alba/abertura-1").exists())
     if falta and Path("/usr/local/bin/alba-atualizar").exists():
         subprocess.Popen(["sudo", "-n", "/usr/local/bin/alba-atualizar", "--ajustes"], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, start_new_session=True)

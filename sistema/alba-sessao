@@ -16,15 +16,21 @@ TOKEN="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 40)"
 MODO=()
 [[ -d /run/archiso ]] && MODO=(--live)
 
-python3 "$ALBA/servidor/alba_servidor.py" --porta "$PORTA" --token "$TOKEN" --web "$ALBA/web" "${MODO[@]}" \
-  >"$CACHE/servidor.log" 2>&1 &
-SERVIDOR=$!
-trap 'kill "$SERVIDOR" 2>/dev/null' EXIT
+# Esta sessão sabe recarregar "leve" depois de uma atualização: troca o servidor e a casca
+# sem fechar as janelas nem passar pela tela de bloqueio.
+export ALBA_SESSAO_VERSAO=2
 
-for _ in $(seq 1 100); do
-  (exec 3<>"/dev/tcp/127.0.0.1/$PORTA") 2>/dev/null && break
-  sleep 0.1
-done
+ligar_servidor() {
+  python3 "$ALBA/servidor/alba_servidor.py" --porta "$PORTA" --token "$TOKEN" --web "$ALBA/web" "${MODO[@]}" \
+    >"$CACHE/servidor.log" 2>&1 &
+  SERVIDOR=$!
+  for _ in $(seq 1 100); do
+    (exec 3<>"/dev/tcp/127.0.0.1/$PORTA") 2>/dev/null && break
+    sleep 0.1
+  done
+}
+ligar_servidor
+trap 'kill "$SERVIDOR" 2>/dev/null' EXIT
 
 # Teclado escolhido nos Ajustes (ou na instalação).
 teclado="$(cat "$HOME/.config/alba/teclado" 2>/dev/null || cat /etc/alba/teclado 2>/dev/null || echo br)"
@@ -94,6 +100,17 @@ while true; do
   PID=$!
   while kill -0 "$PID" 2>/dev/null; do
     if [[ -f "$CACHE/recarregar" ]]; then
+      if [[ "$(cat "$CACHE/recarregar" 2>/dev/null)" == "leve" && "$modo" == casca ]]; then
+        # Atualização: servidor e casca novos; as janelas abertas continuam, sem bloquear a tela.
+        rm -f "$CACHE/recarregar"
+        echo "Recarregando o Alba depois da atualização (sem fechar as janelas)."
+        kill "$SERVIDOR" 2>/dev/null
+        wait "$SERVIDOR" 2>/dev/null
+        ligar_servidor
+        touch "$CACHE/manter-desbloqueado"
+        pkill -u "$(id -u)" -f "/usr/share/alba/casca/casca.py" 2>/dev/null  # o vigia reabre a casca nova
+        continue
+      fi
       kill "$PID" 2>/dev/null
       break
     fi

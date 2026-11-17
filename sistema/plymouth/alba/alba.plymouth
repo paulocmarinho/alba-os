@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Alba OS
+Description=O sol nascendo: tela de abertura do Alba OS
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/alba
+ScriptFile=/usr/share/plymouth/themes/alba/alba.script

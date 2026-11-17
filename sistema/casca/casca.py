@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import os
+import time
 import sys
 from pathlib import Path
 
@@ -133,13 +134,24 @@ class Casca(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="org.alba.casca", flags=Gio.ApplicationFlags.NON_UNIQUE)
         self.janelas = None
-        self.bloqueada = not LIVE
+        self.bloqueada = not LIVE and not self._acabou_de_atualizar()
         self.painel = None
         self.icones: dict[str, str | None] = {}
         self._ultimo_painel, self._ultimo_painel_t = None, 0
         self.connect("activate", self.ativar)
 
     # ------------------------------------------------------------ montagem
+    @staticmethod
+    def _acabou_de_atualizar() -> bool:
+        """Casca reaberta logo depois de uma atualização: continua desbloqueada, como estava."""
+        marca = Path.home() / ".cache" / "alba" / "manter-desbloqueado"
+        try:
+            recente = time.time() - marca.stat().st_mtime < 120
+            marca.unlink()
+            return recente
+        except OSError:
+            return False
+
     def aplicar_tema_janelas(self):
         try:
             import tema_janelas

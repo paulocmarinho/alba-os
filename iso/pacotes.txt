@@ -59,3 +59,4 @@ wl-clipboard
 xdg-user-dirs
 flatpak
 udisks2
+plymouth

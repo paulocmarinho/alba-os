@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Tela de abertura do Alba OS (Plymouth): o sol nascendo no lugar das mensagens de texto do boot.
+#   alba-abertura            instala o tema e refaz a inicialização (initramfs e GRUB)
+#   alba-abertura --so-tema  só instala o tema e ajusta os arquivos (o instalador refaz o resto)
+# Roda como administrador. Se refazer a inicialização falhar, volta tudo como estava.
+set -uo pipefail
+
+TEMA=/usr/share/alba/sistema/plymouth/alba
+MARCA=/etc/alba/abertura-1
+SO_TEMA=0
+[[ "${1:-}" == "--so-tema" ]] && SO_TEMA=1
+
+[[ $EUID -eq 0 ]] || { echo "precisa rodar como administrador" >&2; exit 1; }
+[[ -d /run/archiso ]] && exit 0                       # a ISO tem a abertura própria
+command -v plymouth-set-default-theme >/dev/null || exit 0   # Plymouth ainda não instalado
+[[ -f "$TEMA/alba.script" ]] || exit 0
+
+# 1. Tema
+install -d /usr/share/plymouth/themes/alba
+install -m 644 "$TEMA"/* /usr/share/plymouth/themes/alba/
+install -d /etc/plymouth
+cat >/etc/plymouth/plymouthd.conf <<'CONF'
+[Daemon]
+Theme=alba
+ShowDelay=0
+DeviceTimeout=8
+CONF
+
+# Até aqui é seguro repetir. O resto (inicialização) só uma vez por versão da abertura.
+[[ -f "$MARCA" && $SO_TEMA == 0 ]] && exit 0
+
+# 2. Plymouth dentro da inicialização (initramfs), logo depois do systemd/udev
+CONF_INIT=/etc/mkinitcpio.conf
+cp -a "$CONF_INIT" "$CONF_INIT.antes-da-abertura" 2>/dev/null
+if [[ -f "$CONF_INIT" ]] && ! grep -Eq '^HOOKS=\(.*\bplymouth\b' "$CONF_INIT"; then
+  if grep -Eq '^HOOKS=\(.*\bsystemd\b' "$CONF_INIT"; then
+    sed -i -E '/^HOOKS=\(/ s/\bsystemd\b/systemd plymouth/' "$CONF_INIT"
+  elif grep -Eq '^HOOKS=\(.*\budev\b' "$CONF_INIT"; then
+    sed -i -E '/^HOOKS=\(/ s/\budev\b/udev plymouth/' "$CONF_INIT"
+  fi
+fi
+
+# 3. Boot silencioso: sem mensagens do kernel, sem cursor piscando, menu do GRUB escondido
+GRUB=/etc/default/grub
+cp -a "$GRUB" "$GRUB.antes-da-abertura" 2>/dev/null
+if [[ -f "$GRUB" ]]; then
+  atual="$(sed -n -E 's/^GRUB_CMDLINE_LINUX_DEFAULT="(.*)"/\1/p' "$GRUB" | head -1)"
+  novo="$atual"
+  for p in quiet splash loglevel=3 rd.udev.log_level=3 systemd.show_status=auto vt.global_cursor_default=0; do
+    [[ " $novo " == *" $p "* ]] || novo="$novo $p"
+  done
+  novo="$(echo "$novo" | xargs)"
+  sed -i -E "s|^GRUB_CMDLINE_LINUX_DEFAULT=.*|GRUB_CMDLINE_LINUX_DEFAULT=\"$novo\"|" "$GRUB"
+  grep -q '^GRUB_TIMEOUT_STYLE=' "$GRUB" && sed -i 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' "$GRUB" \
+    || echo 'GRUB_TIMEOUT_STYLE=hidden' >>"$GRUB"
+fi
+
+# 4. Entre a abertura e a área de trabalho: sem texto do login automático na tela
+AUTO=/etc/systemd/system/getty@tty1.service.d/autologin.conf
+if [[ -f "$AUTO" ]] && ! grep -q -- '--noissue' "$AUTO"; then
+  sed -i 's/--noclear/--noclear --noissue --nohostname/' "$AUTO"
+fi
+install -d /etc/systemd/system/plymouth-quit.service.d
+cat >/etc/systemd/system/plymouth-quit.service.d/alba.conf <<'CONF'
+[Service]
+# A imagem do sol fica na tela até a área de trabalho do Alba aparecer.
+ExecStart=
+ExecStart=-/usr/bin/plymouth quit --retain-splash
+CONF
+systemctl daemon-reload 2>/dev/null || true
+
+if [[ $SO_TEMA == 1 ]]; then
+  install -d /etc/alba && touch "$MARCA"
+  exit 0
+fi
+
+# 5. Refaz a inicialização; se falhar, desfaz tudo
+echo "Preparando a tela de abertura…"
+if mkinitcpio -P >/var/log/alba-abertura.log 2>&1 && { [[ ! -f /boot/grub/grub.cfg ]] || grub-mkconfig -o /boot/grub/grub.cfg >>/var/log/alba-abertura.log 2>&1; }; then
+  install -d /etc/alba && touch "$MARCA"
+  rm -f "$CONF_INIT.antes-da-abertura" "$GRUB.antes-da-abertura"
+  echo "Tela de abertura pronta."
+else
+  echo "Não consegui preparar a tela de abertura; voltando como estava (veja /var/log/alba-abertura.log)." >&2
+  [[ -f "$CONF_INIT.antes-da-abertura" ]] && mv -f "$CONF_INIT.antes-da-abertura" "$CONF_INIT"
+  [[ -f "$GRUB.antes-da-abertura" ]] && mv -f "$GRUB.antes-da-abertura" "$GRUB"
+  mkinitcpio -P >>/var/log/alba-abertura.log 2>&1
+  [[ -f /boot/grub/grub.cfg ]] && grub-mkconfig -o /boot/grub/grub.cfg >>/var/log/alba-abertura.log 2>&1
+  exit 0
+fi

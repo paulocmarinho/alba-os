@@ -1,0 +1,90 @@
+# Tela de abertura do Alba OS: o sol nasce atrás do horizonte.
+Window.SetBackgroundTopColor(0.059, 0.075, 0.149);
+Window.SetBackgroundBottomColor(0.059, 0.075, 0.149);
+
+L = Window.GetWidth();
+A = Window.GetHeight();
+esc = A / 800;
+if (esc < 0.6) esc = 0.6;
+
+fun carregar(nome) {
+  img = Image(nome);
+  return img.Scale(img.GetWidth() * esc, img.GetHeight() * esc);
+}
+
+sol_img = carregar("sol.png");
+raios_img = carregar("raios.png");
+linhas_img = carregar("linhas.png");
+texto_img = carregar("texto.png");
+mascara_img = carregar("mascara.png");
+ponto_img = carregar("ponto.png");
+
+cx = Window.GetX() + L / 2;
+horizonte = Window.GetY() + A / 2 + 10 * esc;
+
+sol = Sprite(sol_img);
+sol.SetX(cx - sol_img.GetWidth() / 2);
+sol.SetZ(1);
+
+raios = Sprite(raios_img);
+raios.SetX(cx - raios_img.GetWidth() / 2);
+raios.SetY(horizonte - raios_img.GetHeight());
+raios.SetZ(1);
+raios.SetOpacity(0);
+
+mascara = Sprite(mascara_img);
+mascara.SetX(cx - mascara_img.GetWidth() / 2);
+mascara.SetY(horizonte + 1);
+mascara.SetZ(2);
+
+linhas = Sprite(linhas_img);
+linhas.SetX(cx - linhas_img.GetWidth() / 2);
+linhas.SetY(horizonte - 14 * esc);
+linhas.SetZ(3);
+
+texto = Sprite(texto_img);
+texto.SetX(cx - texto_img.GetWidth() / 2);
+texto.SetY(horizonte + 110 * esc);
+texto.SetZ(3);
+texto.SetOpacity(0);
+
+for (i = 0; i < 3; i++) {
+  pontos[i] = Sprite(ponto_img);
+  pontos[i].SetX(cx + (i - 1) * 22 * esc - ponto_img.GetWidth() / 2);
+  pontos[i].SetY(horizonte + 250 * esc);
+  pontos[i].SetZ(3);
+  pontos[i].SetOpacity(0);
+}
+
+quadro = 0;
+subida = 120 * esc;
+
+fun suave(t) {
+  if (t < 0) return 0;
+  if (t > 1) return 1;
+  return t * t * (3 - 2 * t);
+}
+
+fun atualizar() {
+  quadro++;
+  # 50 quadros por segundo: o sol sobe em ~1,2 s, depois raios e nome aparecem.
+  t = suave(quadro / 60);
+  sol.SetY(horizonte - sol_img.GetHeight() + subida * (1 - t));
+  raios.SetOpacity(suave((quadro - 50) / 25));
+  texto.SetOpacity(suave((quadro - 65) / 25));
+  if (quadro > 90) {
+    for (i = 0; i < 3; i++) {
+      n = quadro - 90 + 48 - i * 8;
+      fase = (n - Math.Int(n / 48) * 48) / 48;
+      if (fase < 0.5) brilho = fase * 2; else brilho = (1 - fase) * 2;
+      pontos[i].SetOpacity(0.25 + 0.6 * brilho);
+    }
+  }
+}
+Plymouth.SetRefreshFunction(atualizar);
+
+# Desligando ou reiniciando: tudo já aparece, sem a animação de subida.
+if (Plymouth.GetMode() == "shutdown" || Plymouth.GetMode() == "reboot") quadro = 90;
+
+fun mensagem(texto_msg) { }
+Plymouth.SetMessageFunction(mensagem);
