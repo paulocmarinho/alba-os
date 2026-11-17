@@ -53,6 +53,9 @@ class AppAlba(Gtk.Application):
             if props:
                 self.paginas[janela].enviar({"tipo": "props", "props": props})
             janela.present()
+            # O compositor não deixa uma janela se trazer para a frente sozinha (proteção contra
+            # janelas que roubam o foco): quem traz é a casca, pela lista de janelas.
+            publicar({"tipo": "ativar-app", "app": f"org.alba.{self.app}"})
         else:
             self.nova_janela(props)
         return 0

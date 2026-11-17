@@ -512,6 +512,10 @@ class Casca(Gtk.Application):
         elif tipo == "alternar":
             self._alt_manter = bool(m.get("manter")) and os.environ.get("ALBA_DEPURAR") == "1"  # só nos testes
             self.alternar(-1 if m.get("direcao") == -1 else 1)
+        elif tipo == "ativar-app" and self.janelas:
+            for j in self.janelas.todas():
+                if j["app"] == m.get("app"):
+                    self.janelas.ativar(j["id"])
         elif tipo == "alternarIr":
             self.fechar_sobre()
             if self.janelas and m.get("id") is not None:

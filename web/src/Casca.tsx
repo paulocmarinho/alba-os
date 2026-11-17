@@ -77,7 +77,7 @@ export function AlbaCasca() {
         aviso(String(m.texto)); // avisos do sistema (ex.: captura de tela) aparecem por cima de tudo
       } else if (m.tipo === "tocando") {
         setTocando(m.dados ?? null);
-      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "lancar" || m.tipo === "launchpad" || m.tipo === "alternar" || m.tipo === "busca" || m.tipo === "fecharSobre" || m.tipo === "desbloquear-teste")) {
+      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "lancar" || m.tipo === "launchpad" || m.tipo === "alternar" || m.tipo === "busca" || m.tipo === "fecharSobre" || m.tipo === "ativar-app" || m.tipo === "desbloquear-teste")) {
         paraCasca(m); // atalhos de teclado e scripts chegam pelo servidor e a barra repassa à casca
       }
     });
