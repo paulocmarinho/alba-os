@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Atualizador do Alba OS (roda como root, chamado pela interface via sudo).
+# Baixa o pacote de atualização mais recente publicado no GitHub, confere a soma SHA-256
+# e troca os arquivos do Alba (interface, servidor, sessão). Não mexe nos seus arquivos.
+set -euo pipefail
+
+REPO="paulocmarinho/alba-os"
+BASE="https://github.com/$REPO/releases/latest/download"
+PACOTE="alba-atualizacao.tar.gz"
+
+falhar() { echo "ERRO: $*" >&2; exit 1; }
+
+[[ $EUID -eq 0 ]] || falhar "precisa rodar como administrador."
+[[ ! -d /run/archiso ]] || falhar "a sessão de instalação não se atualiza; instale o Alba primeiro."
+
+TMP="$(mktemp -d /var/tmp/alba-atualizacao.XXXXXX)"
+trap 'rm -rf "$TMP"' EXIT
+
+echo "Baixando a atualização…"
+curl -fsSL --retry 3 --connect-timeout 15 -o "$TMP/$PACOTE" "$BASE/$PACOTE" || falhar "não consegui baixar a atualização (sem internet?)."
+curl -fsSL --retry 3 --connect-timeout 15 -o "$TMP/$PACOTE.sha256" "$BASE/$PACOTE.sha256" || falhar "não consegui baixar a soma de verificação."
+
+echo "Conferindo…"
+esperado="$(cut -d' ' -f1 "$TMP/$PACOTE.sha256")"
+[[ "$esperado" =~ ^[0-9a-f]{64}$ ]] || falhar "soma de verificação inválida."
+echo "$esperado  $TMP/$PACOTE" | sha256sum -c --quiet - || falhar "o pacote veio corrompido."
+
+mkdir "$TMP/x"
+tar -xzf "$TMP/$PACOTE" -C "$TMP/x" --no-same-owner --no-same-permissions --delay-directory-restore
+# Só aceita os lugares que pertencem ao Alba.
+while IFS= read -r -d '' item; do
+  rel="${item#"$TMP/x/"}"
+  case "$rel" in
+    usr|usr/share|usr/share/alba|usr/share/alba/*|usr/bin|usr/bin/alba-*|usr/local|usr/local/bin|usr/local/bin/alba-*) ;;
+    usr/share/themes|usr/share/themes/Alba|usr/share/themes/Alba/*) ;;
+    etc/xdg|etc/xdg/labwc|etc/xdg/labwc/*|etc/xdg/mimeapps.list) ;;
+    etc|etc/pacman.d|etc/pacman.d/hooks|etc/pacman.d/hooks/alba-*|etc/profile.d|etc/profile.d/alba.sh) ;;
+    etc/chromium|etc/chromium/policies|etc/chromium/policies/managed|etc/chromium/policies/managed/alba.json) ;;
+    etc/sudoers.d|etc/sudoers.d/20-alba-atualizar) ;;
+    *) falhar "o pacote tem um arquivo fora do lugar: $rel" ;;
+  esac
+done < <(find "$TMP/x" -mindepth 1 -print0)
+[[ -f "$TMP/x/usr/share/alba/web/index.html" ]] || falhar "pacote incompleto."
+if [[ -f "$TMP/x/etc/sudoers.d/20-alba-atualizar" ]]; then
+  visudo -cqf "$TMP/x/etc/sudoers.d/20-alba-atualizar" || falhar "regra de permissão inválida no pacote."
+fi
+
+# Programas novos que esta versão precisa (ex.: o compositor de janelas).
+if [[ -f "$TMP/x/usr/share/alba/pacotes.txt" ]]; then
+  mapfile -t faltando < <(grep -vE '^\s*(#|$)' "$TMP/x/usr/share/alba/pacotes.txt" | while read -r p; do pacman -Qq "$p" >/dev/null 2>&1 || echo "$p"; done)
+  if (( ${#faltando[@]} )); then
+    echo "Instalando programas novos: ${faltando[*]}"
+    pacman -Syu --needed --noconfirm "${faltando[@]}" || falhar "não consegui instalar os programas novos (${faltando[*]})."
+  fi
+fi
+
+echo "Instalando…"
+A=/usr/share/alba
+for parte in web servidor casca; do
+  rm -rf "$A/$parte.velho"
+  [[ -d "$A/$parte" ]] && mv "$A/$parte" "$A/$parte.velho"
+done
+# Arquivo por arquivo: as pastas do sistema (/usr, /etc…) mantêm dono e permissões.
+(cd "$TMP/x" && find . -type f -print0) | while IFS= read -r -d '' f; do
+  install -D -o root -g root -m 644 "$TMP/x/$f" "/${f#./}"
+done
+chmod 755 /usr/bin/alba-* /usr/local/bin/alba-* "$A/sistema/instalar.sh"
+[[ -f /etc/sudoers.d/20-alba-atualizar ]] && chmod 440 /etc/sudoers.d/20-alba-atualizar
+rm -rf "$A/web.velho" "$A/servidor.velho" "$A/casca.velho"
+
+versao="$(python3 -c 'import json;d=json.load(open("/usr/share/alba/compilacao.json"));print(d.get("versao",""), d.get("commit","")[:7])' 2>/dev/null || true)"
+echo "Pronto: Alba OS ${versao:-atualizado}."

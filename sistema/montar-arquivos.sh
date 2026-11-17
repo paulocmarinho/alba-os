@@ -43,7 +43,11 @@ install -Dm644 "$RAIZ/sistema/alba-identidade.hook" "$D/etc/pacman.d/hooks/alba-
 install -Dm644 "$RAIZ/sistema/alba-perfil.sh" "$D/etc/profile.d/alba.sh"
 install -Dm644 "$RAIZ/iso/airootfs/etc/chromium/policies/managed/alba.json" "$D/etc/chromium/policies/managed/alba.json"
 install -Dm440 "$RAIZ/sistema/alba-atualizar.sudoers" "$D/etc/sudoers.d/20-alba-atualizar"
-install -Dm644 "$RAIZ/sistema/alba-polkit.rules" "$D/etc/polkit-1/rules.d/50-alba.rules"
+# A regra de permissão vai junto com o Alba; o atualizador (e a ISO) a põe em /etc/polkit-1.
+install -Dm644 "$RAIZ/sistema/alba-polkit.rules" "$D/usr/share/alba/sistema/50-alba.rules"
+if [[ "${2:-}" == "--com-live" ]]; then
+  install -Dm644 "$RAIZ/sistema/alba-polkit.rules" "$D/etc/polkit-1/rules.d/50-alba.rules"
+fi
 
 if [[ "$LIVE" == "--com-live" ]]; then
   install -Dm755 "$RAIZ/sistema/alba-live-setup" "$D/usr/local/bin/alba-live-setup"

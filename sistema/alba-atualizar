@@ -13,6 +13,23 @@ falhar() { echo "ERRO: $*" >&2; exit 1; }
 [[ $EUID -eq 0 ]] || falhar "precisa rodar como administrador."
 [[ ! -d /run/archiso ]] || falhar "a sessão de instalação não se atualiza; instale o Alba primeiro."
 
+# Ajustes do sistema que vêm dentro do Alba (/usr/share/alba/sistema) e precisam ir para /etc.
+# Rodam no fim de cada atualização e também sozinhos ("alba-atualizar --ajustes"), que o Alba
+# chama ao iniciar: assim um atualizador antigo, que não conhecia um ajuste, não trava nada.
+aplicar_ajustes() {
+  local S=/usr/share/alba/sistema
+  if [[ -f "$S/50-alba.rules" && -d /etc/polkit-1 ]]; then
+    install -d -m 750 /etc/polkit-1/rules.d
+    chown root:polkitd /etc/polkit-1/rules.d 2>/dev/null || true
+    cmp -s "$S/50-alba.rules" /etc/polkit-1/rules.d/50-alba.rules || install -m 644 "$S/50-alba.rules" /etc/polkit-1/rules.d/50-alba.rules
+  fi
+}
+
+if [[ "${1:-}" == "--ajustes" ]]; then
+  aplicar_ajustes
+  exit 0
+fi
+
 TMP="$(mktemp -d /var/tmp/alba-atualizacao.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -37,7 +54,6 @@ while IFS= read -r -d '' item; do
     etc|etc/pacman.d|etc/pacman.d/hooks|etc/pacman.d/hooks/alba-*|etc/profile.d|etc/profile.d/alba.sh) ;;
     etc/chromium|etc/chromium/policies|etc/chromium/policies/managed|etc/chromium/policies/managed/alba.json) ;;
     etc/sudoers.d|etc/sudoers.d/20-alba-atualizar) ;;
-    etc/polkit-1|etc/polkit-1/rules.d|etc/polkit-1/rules.d/50-alba.rules) ;;
     *) falhar "o pacote tem um arquivo fora do lugar: $rel" ;;
   esac
 done < <(find "$TMP/x" -mindepth 1 -print0)
@@ -68,6 +84,7 @@ done
 chmod 755 /usr/bin/alba-* /usr/local/bin/alba-* "$A/sistema/instalar.sh"
 [[ -f /etc/sudoers.d/20-alba-atualizar ]] && chmod 440 /etc/sudoers.d/20-alba-atualizar
 rm -rf "$A/web.velho" "$A/servidor.velho" "$A/casca.velho"
+aplicar_ajustes
 
 versao="$(python3 -c 'import json;d=json.load(open("/usr/share/alba/compilacao.json"));print(d.get("versao",""), d.get("commit","")[:7])' 2>/dev/null || true)"
 echo "Pronto: Alba OS ${versao:-atualizado}."

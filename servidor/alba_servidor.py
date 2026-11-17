@@ -501,6 +501,17 @@ def api_atualizacao_ver(_q, _c):
     return {"atual": atual, "nova": nova, "disponivel": disponivel, "live": False}
 
 
+def ajustes_do_sistema():
+    """Ajustes que precisam de administrador (ex.: permissão de Wi-Fi e pendrives).
+    Uma atualização feita por um atualizador antigo pode não ter aplicado: aplica agora."""
+    if ARGS.live or os.getuid() == 0:
+        return
+    falta = Path("/usr/share/alba/sistema/50-alba.rules").exists() and not Path("/etc/polkit-1/rules.d/50-alba.rules").exists()
+    if falta and Path("/usr/local/bin/alba-atualizar").exists():
+        subprocess.Popen(["sudo", "-n", "/usr/local/bin/alba-atualizar", "--ajustes"], stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+
+
 def api_atualizacao_instalar(_q, _c):
     if ARGS and ARGS.live:
         raise ErroApi(409, "A sessão de instalação não se atualiza.")
@@ -1340,6 +1351,7 @@ def main():
     p.add_argument("--instalador", default="/usr/share/alba/sistema/instalar.sh")
     ARGS = p.parse_args()
     loja.configurar(publicar_de_fora, notificar)
+    ajustes_do_sistema()
     mimetypes.add_type("application/javascript", ".js")
     mimetypes.add_type("text/css", ".css")
     mimetypes.add_type("font/ttf", ".ttf")

@@ -85,6 +85,8 @@ jobs:
         run: |
           RAIZ_PACOTE="$(mktemp -d)"
           bash sistema/montar-arquivos.sh "$RAIZ_PACOTE"
+          # Todo atualizador ainda em uso precisa aceitar o pacote (senão a atualização trava).
+          for a in sistema/alba-atualizar testes/atualizador-*.sh; do bash testes/validar-pacote.sh "$a" "$RAIZ_PACOTE"; done
           mkdir -p saida
           tar --owner=0 --group=0 --numeric-owner -czf saida/alba-atualizacao.tar.gz -C "$RAIZ_PACOTE" usr etc
           cp compilacao.json saida/
