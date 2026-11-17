@@ -652,6 +652,21 @@ def api_musica_letra(_q, c):
     )
 
 
+def api_musica_foto_artista(_q, c):
+    nome = musica.foto_artista(
+        str(c.get("nome", "")), list(c.get("albuns") or [])[:30], list(c.get("faixas") or [])[:40],
+        [str(x) for x in (c.get("caminhos") or [])][:5], bool(c.get("online", True)),
+    )
+    return {"url": f"/api/musica/artista?f={urllib.parse.quote(nome)}" if nome else None}
+
+
+def foto_de_artista(req):
+    p = musica.arquivo_de_artista(req.query.get("f", ""))
+    if not p:
+        raise ErroApi(404, "Sem foto.")
+    return resposta(200, p.read_bytes(), musica.tipo_imagem(p.read_bytes()[:16]), ["Cache-Control: max-age=86400"])
+
+
 def capa_do_spotify(req):
     try:
         dados, tipo = musica.baixar_capa_spotify(req.query.get("url", ""))
@@ -750,6 +765,7 @@ ROTAS = {
     ("GET", "/api/musica/spotify"): api_musica_spotify,
     ("POST", "/api/musica/spotify"): api_musica_spotify_acao,
     ("POST", "/api/musica/letra"): api_musica_letra,
+    ("POST", "/api/musica/foto-artista"): api_musica_foto_artista,
     ("POST", "/api/musica/config"): api_musica_config,
     ("GET", "/api/som"): api_som_ler,
     ("POST", "/api/som"): api_som_gravar,
@@ -1077,6 +1093,8 @@ async def atender(leitor, escritor):
                             dados = await asyncio.get_running_loop().run_in_executor(None, faixa_de_audio, req)
                         elif req.caminho == "/api/musica/capa" and req.metodo == "GET":
                             dados = capa_de_album(req)
+                        elif req.caminho == "/api/musica/artista" and req.metodo == "GET":
+                            dados = foto_de_artista(req)
                         elif req.caminho == "/api/musica/capa-spotify" and req.metodo == "GET":
                             dados = await asyncio.get_running_loop().run_in_executor(None, capa_do_spotify, req)
                         else:

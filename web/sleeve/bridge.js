@@ -281,6 +281,15 @@ export const host = {
       case 'volume':
         await api('POST', '/api/musica/spotify', { acao: 'volume', volume: msg.value }).catch(() => {});
         break;
+      case 'artistPhotos':
+        for (const ar of msg.artists || []) {
+          const caminhos = (ar.urls || []).map((u) => { try { return new URL(u, location.origin).searchParams.get('caminho'); } catch { return null; } }).filter(Boolean);
+          const r = await api('POST', '/api/musica/foto-artista', {
+            nome: ar.name, albuns: ar.albums, faixas: ar.tracks, caminhos, online: msg.online,
+          }).catch(() => ({}));
+          emit({ type: 'artistPhoto', name: ar.name, url: r.url || null });
+        }
+        break;
       case 'repair':
         // No Alba o servidor já entrega o arquivo consertado; se ainda assim não abriu, não tem conserto
         emit({ type: 'repaired', id: msg.id, url: null });

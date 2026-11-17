@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import threading
 import time
+import unicodedata
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -42,6 +43,7 @@ CACHE = CASA / ".cache" / "alba" / "sleeve"
 CAPAS = CACHE / "capas"
 LETRAS = CACHE / "letras"
 REPARADOS = CACHE / "reparados"
+ARTISTAS = CACHE / "artistas"
 _trava = threading.Lock()
 _estado = {"lendo": False, "contagem": 0}
 
@@ -480,6 +482,98 @@ def arquivo_tocavel(caminho: Path) -> Path:
         resultado = caminho
     _tocaveis[chave] = resultado
     return resultado
+
+
+# ---------------------------------------------------------------- fotos de artistas
+# Primeiro um artist.jpg na pasta do álbum ou acima dela; senão, o Deezer (sem chave, 1000 px),
+# só se algum álbum ou música da biblioteca estiver na discografia (evita homônimos).
+_trava_deezer = threading.Lock()
+
+
+def _norm(texto: str) -> str:
+    s = re.sub(r"\(.*?\)|\[.*?\]|\b(feat|ft)\.?\s.*$", " ", (texto or "").lower())
+    s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+    return re.sub(r"\s+", " ", "".join(c if c.isalnum() else " " for c in s)).strip()
+
+
+def _parecido(remoto: str, locais: set[str]) -> bool:
+    if not remoto:
+        return False
+    return remoto in locais or any(len(l) >= 4 and len(remoto) >= 4 and (l in remoto or remoto in l) for l in locais)
+
+
+def _deezer(url: str):
+    pedido = urllib.request.Request(url, headers={"User-Agent": "Sleeve-AlbaOS (+https://github.com/paulocmarinho/sleeve)"})
+    with urllib.request.urlopen(pedido, timeout=10) as r:
+        dados = json.loads(r.read().decode("utf-8"))
+    return None if isinstance(dados, dict) and "error" in dados else dados
+
+
+def foto_artista(nome: str, albuns: list, faixas: list, caminhos: list, online: bool) -> str | None:
+    """Nome do arquivo da foto em ARTISTAS (servido por /api/musica/artista), ou None."""
+    chave = _id(nome.lower())
+    for caminho in caminhos:
+        p = Path(caminho)
+        if not permitido(p):
+            continue
+        for pasta in (p.parent, p.parent.parent):
+            for arq in ("artist.jpg", "artist.jpeg", "artist.png"):
+                origem = pasta / arq
+                if origem.is_file():
+                    ARTISTAS.mkdir(parents=True, exist_ok=True)
+                    destino = ARTISTAS / f"{chave}-local{origem.suffix.lower()}"
+                    if not destino.exists() or destino.stat().st_mtime < origem.stat().st_mtime:
+                        shutil.copyfile(origem, destino)
+                    return destino.name
+    salvo = ARTISTAS / f"{chave}.jpg"
+    if salvo.is_file():
+        return salvo.name
+    if not online:
+        return None
+    nada = ARTISTAS / f"{chave}.none"
+    if nada.is_file() and time.time() - nada.stat().st_mtime < 14 * 86400:
+        return None
+    with _trava_deezer:  # um artista por vez, para não passar do limite do Deezer
+        try:
+            foto = _foto_do_deezer(nome, albuns, faixas)
+        except Exception:  # noqa: BLE001  (sem internet: tenta de novo depois)
+            return None
+        finally:
+            time.sleep(0.12)
+    ARTISTAS.mkdir(parents=True, exist_ok=True)
+    if not foto:
+        nada.write_text("")
+        return None
+    salvo.write_bytes(foto)
+    return salvo.name
+
+
+def _foto_do_deezer(nome: str, albuns: list, faixas: list) -> bytes | None:
+    alvo = _norm(nome)
+    busca = _deezer("https://api.deezer.com/search/artist?limit=8&q=" + urllib.parse.quote(nome)) or {}
+    candidatos = [a for a in busca.get("data", []) if _norm(a.get("name", "")) == alvo][:3]
+    locais_albuns = {x for x in map(_norm, albuns) if x}
+    locais_faixas = {x for x in map(_norm, faixas) if x}
+    for a in candidatos:
+        foto = a.get("picture_xl") or ""
+        if not foto or "/artist//" in foto:  # imagem genérica de quem não tem foto
+            continue
+        lista = _deezer(f"https://api.deezer.com/artist/{a['id']}/albums?limit=100") or {}
+        bate = any(_parecido(_norm(x.get("title", "")), locais_albuns) for x in lista.get("data", []))
+        if not bate:
+            top = _deezer(f"https://api.deezer.com/artist/{a['id']}/top?limit=50") or {}
+            bate = any(_parecido(_norm(x.get("title", "")), locais_faixas) for x in top.get("data", []))
+        if bate:
+            pedido = urllib.request.Request(foto, headers={"User-Agent": "Sleeve-AlbaOS"})
+            with urllib.request.urlopen(pedido, timeout=10) as r:
+                dados = r.read(8 * 1024 * 1024)
+            return dados if len(dados) > 1000 else None
+    return None
+
+
+def arquivo_de_artista(nome: str) -> Path | None:
+    p = ARTISTAS / Path(nome).name
+    return p if p.is_file() else None
 
 
 # ---------------------------------------------------------------- capa do Spotify
