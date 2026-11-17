@@ -37,6 +37,7 @@ while IFS= read -r -d '' item; do
     etc|etc/pacman.d|etc/pacman.d/hooks|etc/pacman.d/hooks/alba-*|etc/profile.d|etc/profile.d/alba.sh) ;;
     etc/chromium|etc/chromium/policies|etc/chromium/policies/managed|etc/chromium/policies/managed/alba.json) ;;
     etc/sudoers.d|etc/sudoers.d/20-alba-atualizar) ;;
+    etc/polkit-1|etc/polkit-1/rules.d|etc/polkit-1/rules.d/50-alba.rules) ;;
     *) falhar "o pacote tem um arquivo fora do lugar: $rel" ;;
   esac
 done < <(find "$TMP/x" -mindepth 1 -print0)

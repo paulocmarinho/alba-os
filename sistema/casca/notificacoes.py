@@ -45,12 +45,13 @@ class Notificacoes:
 
     def _chamada(self, conexao, _remetente, caminho, interface, metodo, params, chamada):
         if metodo == "Notify":
-            app, substitui, _icone, titulo, corpo, _acoes, _dicas, _tempo = params.unpack()
+            app, substitui, _icone, titulo, corpo, _acoes, dicas, _tempo = params.unpack()
+            desktop = str((dicas or {}).get("desktop-entry") or "")
             ident = substitui or self.proximo
             if not substitui:
                 self.proximo += 1
             try:
-                self.mostrar(app, titulo, _sem_marcacao(corpo))
+                self.mostrar(app, titulo, _sem_marcacao(corpo), desktop)
             except Exception:  # noqa: BLE001
                 pass
             chamada.return_value(GLib.Variant("(u)", (ident,)))

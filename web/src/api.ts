@@ -91,6 +91,50 @@ export type Vitrine = {
 export type TarefaLoja = { acao: string; progresso: number; estado: "rodando" | "pronto" | "erro"; texto: string; nome: string };
 export type InstaladoLoja = { id: string; nome: string; versao: string; tamanho: string };
 
+export type EstadoRede = {
+  tem_wifi: boolean;
+  wifi_ligado: boolean;
+  wifi: { nome: string; sinal: number | null } | null;
+  cabo: { nome: string; dispositivo: string } | null;
+  online: boolean;
+};
+export type RedeWifi = { ssid: string; sinal: number; segura: boolean; empresarial: boolean; ativa: boolean; salva: boolean };
+export type Notificacao = {
+  id: number;
+  app: string;
+  titulo: string;
+  texto: string;
+  abrir: { app?: string; props?: Record<string, unknown>; desktop?: string } | null;
+  quando: number;
+  lida: boolean;
+};
+export type EstadoNotificacoes = { lista: Notificacao[]; nao_perturbe: boolean; nao_lidas: number };
+export type Unidade = { dispositivo: string; nome: string; tamanho: number; montada: string | null };
+export type ArquivoAchado = { caminho: string; nome: string; pasta: boolean; onde: string };
+
+export const rede = {
+  estado: () => pedir<EstadoRede>("GET", "/api/rede/estado"),
+  redes: (buscar = false) => pedir<{ redes: RedeWifi[] }>("GET", `/api/rede/redes${buscar ? "?buscar=1" : ""}`),
+  wifi: (corpo: { acao: "ligar"; ligado: boolean } | { acao: "conectar"; ssid: string; senha?: string } | { acao: "desconectar" } | { acao: "esquecer"; ssid: string }) =>
+    pedir<EstadoRede>("POST", "/api/rede/wifi", corpo),
+};
+
+export const notificacoes = {
+  listar: () => pedir<EstadoNotificacoes>("GET", "/api/notificacoes"),
+  lidas: () => pedir<EstadoNotificacoes>("POST", "/api/notificacoes/acao", { acao: "lidas" }),
+  apagar: (id?: number) => pedir<EstadoNotificacoes>("POST", "/api/notificacoes/acao", { acao: "apagar", id }),
+  naoPerturbe: (ligado: boolean) => pedir<EstadoNotificacoes>("POST", "/api/notificacoes/acao", { acao: "nao_perturbe", ligado }),
+};
+
+export const arquivosExtra = {
+  colar: (itens: string[], destino: string, acao: "copiar" | "mover") => pedir<{ itens: string[] }>("POST", "/api/colar", { itens, destino, acao }),
+  unidades: () => pedir<{ unidades: Unidade[] }>("GET", "/api/unidades"),
+  montar: (dispositivo: string) => pedir<{ caminho: string | null }>("POST", "/api/unidade", { dispositivo, acao: "montar" }),
+  ejetar: (dispositivo: string) => pedir("POST", "/api/unidade", { dispositivo, acao: "ejetar" }),
+  abrirExterno: (caminho: string) => pedir("POST", "/api/abrir", { caminho }),
+  buscar: (q: string) => pedir<{ arquivos: ArquivoAchado[] }>("GET", `/api/busca/arquivos?q=${encodeURIComponent(q)}`),
+};
+
 export const loja = {
   vitrine: () => pedir<Vitrine>("GET", "/api/loja/vitrine"),
   buscar: (termo: string) => pedir<{ apps: AppLoja[] }>("GET", `/api/loja/buscar?q=${encodeURIComponent(termo)}`),

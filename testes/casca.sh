@@ -66,6 +66,32 @@ grim saida/10-notificacao.png
 alba-app ajustes '{"secao": "sobre"}' &
 sleep 8
 grim saida/11-sobre.png
+# ---- bloco 1: rede, notificações, Alt+Tab, busca
+mkdir -p ~/Documentos && echo "relatório" > ~/Documentos/relatorio-anual.txt
+alba-enviar '{"tipo": "painel", "qual": "rede"}'
+sleep 3
+grim saida/14-rede.png
+alba-enviar fecharSobre; sleep 1
+alba-enviar '{"tipo": "painel", "qual": "calendario"}'
+sleep 3
+grim saida/15-notificacoes.png
+alba-enviar fecharSobre; sleep 1
+alba-enviar '{"tipo": "alternar", "direcao": 1, "manter": true}'
+sleep 3
+grim saida/16-alttab.png
+wtype -k Escape; sleep 1
+alba-enviar busca
+sleep 3
+wtype "rel"
+sleep 3
+grim saida/17-busca.png
+wtype -k Escape; wtype -k Escape; sleep 1
+alba-enviar busca
+sleep 2
+wtype "12*3+4"
+sleep 2
+grim saida/18-conta.png
+wtype -k Escape; wtype -k Escape; sleep 1
 alba-app loja &
 sleep 15
 grim saida/12-loja.png

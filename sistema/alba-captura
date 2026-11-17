@@ -26,4 +26,7 @@ else
 fi
 
 command -v wl-copy >/dev/null && wl-copy --type image/png < "$arquivo"
-avisar "Captura salva em Imagens e copiada."
+if command -v alba-enviar >/dev/null; then
+  aviso="$(python3 -c 'import json,sys; print(json.dumps({"tipo": "notificar", "app": "Captura de tela", "titulo": "Captura salva em Imagens", "texto": "Também está copiada: é só colar.", "abrir": {"app": "visualizador", "props": {"caminho": sys.argv[1]}}}))' "$arquivo")"
+  alba-enviar "$aviso"
+fi

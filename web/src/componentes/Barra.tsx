@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type Rede, type Som } from "../api";
+import { api, type EstadoRede, notificacoes, rede as apiRede, type Som } from "../api";
+import { ouvirEventos } from "../ponte";
 import { APPS, type IdApp, type Janela, dataLonga, hora, useAlba } from "../contexto";
 
 import { Icone } from "./Icone";
 
 /** Barra superior completa: menu do Alba à esquerda, status, data por extenso e hora à direita. */
-export type Painel = "central" | "som" | "calendario";
+export type Painel = "central" | "som" | "calendario" | "rede";
 
 export function BarraSuperior({
   nomeAtivo,
@@ -23,18 +24,27 @@ export function BarraSuperior({
 }) {
   const { agora, abrir, bloquear, energia, sistema } = useAlba();
   const [menu, setMenu] = useState(false);
-  const [rede, setRede] = useState<Rede | null>(null);
+  const [rede, setRede] = useState<EstadoRede | null>(null);
+  const [naoLidas, setNaoLidas] = useState(0);
   const [som, setSom] = useState<Som | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const atualizar = () => {
-      api.rede().then(setRede).catch(() => {});
+      apiRede.estado().then(setRede).catch(() => {});
       api.som().then(setSom).catch(() => {});
     };
     atualizar();
+    notificacoes.listar().then((e) => setNaoLidas(e.nao_lidas)).catch(() => {});
+    const sair = ouvirEventos((m) => {
+      if (m.tipo === "rede" && m.rede) setRede(m.rede);
+      if ((m.tipo === "notificacao" || m.tipo === "notificacoes") && typeof m.nao_lidas === "number") setNaoLidas(m.nao_lidas);
+    });
     const t = window.setInterval(atualizar, 10_000);
-    return () => window.clearInterval(t);
+    return () => {
+      window.clearInterval(t);
+      sair();
+    };
   }, []);
 
   useEffect(() => {
@@ -80,12 +90,12 @@ export function BarraSuperior({
       </nav>
       <nav className="status-menu" aria-label="Status do sistema">
         <button
-          title={rede?.online ? "Conectado" : "Sem conexão"}
-          className={`${rede?.online ? "" : "desligado"} ${painel === "central" ? "active" : ""}`}
+          title={rede?.wifi ? `Wi-Fi: ${rede.wifi.nome}` : rede?.cabo ? "Conectado por cabo" : "Sem conexão"}
+          className={`${rede?.online ? "" : "desligado"} ${painel === "rede" ? "active" : ""}`}
           aria-label="Rede"
-          onClick={() => aoPainel("central")}
+          onClick={() => aoPainel("rede")}
         >
-          <Icone name="wifi" size={18} />
+          <Icone name={rede?.cabo && !rede.wifi ? "ethernet" : "wifi"} size={18} />
         </button>
         {som?.disponivel && (
           <button
@@ -102,6 +112,7 @@ export function BarraSuperior({
         </button>
         <button className={`date-time ${painel === "calendario" ? "active" : ""}`} aria-label="Calendário" onClick={() => aoPainel("calendario")}>
           <span>{dataLonga(agora)}</span> {hora(agora)}
+          {naoLidas > 0 && painel !== "calendario" && <i className="selo-notificacao" aria-label={`${naoLidas} notificações novas`} />}
         </button>
       </nav>
     </header>

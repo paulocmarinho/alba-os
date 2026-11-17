@@ -12,6 +12,8 @@ import { Musica, type Tocando } from "./apps/Musica";
 import { Terminal } from "./apps/Terminal";
 import { BarraSuperior, Dock, type Painel } from "./componentes/Barra";
 import { PainelCalendario, PainelSom } from "./componentes/Paineis";
+import { CentralNotificacoes } from "./componentes/Notificacoes";
+import { PainelRede } from "./componentes/PainelRede";
 import { Central } from "./componentes/Central";
 import { Icone } from "./componentes/Icone";
 import { Janela } from "./componentes/Janela";
@@ -344,7 +346,13 @@ export function Alba() {
               ))}
               {painel === "central" && <Central fechar={() => setPainel(null)} />}
               {painel === "som" && <PainelSom />}
-              {painel === "calendario" && <PainelCalendario />}
+              {painel === "calendario" && (
+                <div className="coluna-paineis">
+                  <CentralNotificacoes fechar={() => setPainel(null)} />
+                  <PainelCalendario />
+                </div>
+              )}
+              {painel === "rede" && <PainelRede />}
             </section>
             <Dock janelas={janelas} aoClicar={cliqueDock} live={sistema!.live} />
           </>

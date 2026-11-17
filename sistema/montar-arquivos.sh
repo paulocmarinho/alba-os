@@ -13,7 +13,7 @@ LIVE="${2:-}"
 L="$D/usr/share/alba"
 mkdir -p "$L/web" "$L/servidor" "$L/sistema"
 cp -a "$RAIZ/web/dist/." "$L/web/"
-cp -a "$RAIZ/servidor/alba_servidor.py" "$RAIZ/servidor/pam.py" "$RAIZ/servidor/musica.py" "$RAIZ/servidor/loja.py" "$L/servidor/"
+cp -a "$RAIZ/servidor/alba_servidor.py" "$RAIZ/servidor/pam.py" "$RAIZ/servidor/musica.py" "$RAIZ/servidor/loja.py" "$RAIZ/servidor/rede.py" "$RAIZ/servidor/notificacoes.py" "$RAIZ/servidor/busca.py" "$L/servidor/"
 install -m755 "$RAIZ/sistema/instalar.sh" "$L/sistema/instalar.sh"
 
 # Identidade da compilação (versão + commit + data), usada para saber se há atualização.
@@ -43,6 +43,7 @@ install -Dm644 "$RAIZ/sistema/alba-identidade.hook" "$D/etc/pacman.d/hooks/alba-
 install -Dm644 "$RAIZ/sistema/alba-perfil.sh" "$D/etc/profile.d/alba.sh"
 install -Dm644 "$RAIZ/iso/airootfs/etc/chromium/policies/managed/alba.json" "$D/etc/chromium/policies/managed/alba.json"
 install -Dm440 "$RAIZ/sistema/alba-atualizar.sudoers" "$D/etc/sudoers.d/20-alba-atualizar"
+install -Dm644 "$RAIZ/sistema/alba-polkit.rules" "$D/etc/polkit-1/rules.d/50-alba.rules"
 
 if [[ "$LIVE" == "--com-live" ]]; then
   install -Dm755 "$RAIZ/sistema/alba-live-setup" "$D/usr/local/bin/alba-live-setup"

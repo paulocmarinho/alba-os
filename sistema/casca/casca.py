@@ -171,7 +171,7 @@ class Casca(Gtk.Application):
             s.mostrar()
         try:
             from janelas import Janelas
-            self.janelas = Janelas(self.janelas_mudaram)
+            self.janelas = Janelas(self.janelas_mudaram, self.refazer_janelas)
         except Exception as e:  # noqa: BLE001
             print("Alba: sem lista de janelas:", e, flush=True)
         if not LIVE:
@@ -280,6 +280,67 @@ class Casca(Gtk.Application):
         return {"tipo": "janelas", "itens": itens, "extras": list(extras.values()), "live": LIVE,
                 "ativa": {"titulo": ativa["titulo"], "app": nome_ativo or ativa["app"]} if ativa else None}
 
+    def refazer_janelas(self):
+        """Conecta de novo à lista de janelas do compositor (ele manda todas as abertas)."""
+        from janelas import Janelas
+        velha = self.janelas
+        try:
+            self.janelas = Janelas(self.janelas_mudaram, self.refazer_janelas)
+        except Exception as e:  # noqa: BLE001
+            print("Alba: não refez a lista de janelas:", e, flush=True)
+            return False
+        if velha:
+            velha.encerrar()
+        self.janelas_mudaram()
+        return False
+
+    # ------------------------------------------------------------ Alt+Tab
+    def descrever_janela(self, j: dict) -> dict:
+        app = j["app"] or ""
+        if app.startswith("org.alba."):
+            a = app.removeprefix("org.alba.")
+            return {"id": j["id"], "tipo": "alba", "app": a, "nome": APPS.get(a, {}).get("nome", a), "titulo": j["titulo"],
+                    "minimizada": j["minimizada"]}
+        desktop = self._desktop_de(app) if app else None
+        nome = j["titulo"] or app
+        if desktop:
+            try:
+                nome = Gio.DesktopAppInfo.new(desktop).get_display_name()
+            except TypeError:
+                pass
+        return {"id": j["id"], "tipo": "externo", "nome": nome, "titulo": j["titulo"],
+                "icone": self.icone(desktop) if desktop else None, "minimizada": j["minimizada"]}
+
+    def alternar(self, direcao: int):
+        if LIVE or self.bloqueada or not self.janelas:
+            return
+        if self.sobre_ativo and self.painel == "alternar":
+            self.sobre.pagina.enviar({"tipo": "alternarMover", "direcao": direcao})
+            return
+        lista = [self.descrever_janela(j) for j in self.janelas.recentes()]
+        if len(lista) < 2:
+            if lista:  # uma janela só: traz para a frente
+                self.janelas.ativar(lista[0]["id"])
+            return
+        self.sobre.pagina.enviar({"tipo": "alternarLista", "janelas": lista,
+                                  "selecionada": 1 if direcao > 0 else len(lista) - 1})
+        self.abrir_sobre("alternar")
+        self._alternar_t = 0
+        GLib.timeout_add(80, self._vigiar_alt)
+
+    def _vigiar_alt(self):
+        """Solta o Alt (ou o Super) → escolhe. O teclado só chega aqui quando a camada recebe o foco."""
+        if not (self.sobre_ativo and self.painel == "alternar") or getattr(self, "_alt_manter", False):
+            return False
+        self._alternar_t += 1
+        teclado = Gdk.Display.get_default().get_default_seat().get_keyboard()
+        mods = teclado.get_modifier_state() if teclado else 0
+        segurando = bool(mods & (Gdk.ModifierType.ALT_MASK | Gdk.ModifierType.SUPER_MASK))
+        if not segurando and self._alternar_t >= 3:
+            self.sobre.pagina.enviar({"tipo": "alternarEscolher"})
+            return False
+        return self._alternar_t < 600  # desiste depois de ~50 s
+
     def vigiar_instalador(self):
         """Modo de instalação: o instalador está sempre aberto e na frente."""
         lista = self.janelas.todas() if self.janelas else []
@@ -320,14 +381,17 @@ class Casca(Gtk.Application):
             for j in dados:
                 self.janelas.ativar(j["id"])
 
-    def notificar(self, app, titulo, texto):
+    def notificar(self, app, titulo, texto, desktop=""):
+        """Notificação de um programa (D-Bus): vai para a central de notificações do Alba."""
         import threading
         from comum import publicar
-        partes = [p for p in (titulo, texto) if p]
-        if not partes:
+        if not (titulo or texto):
             return
-        aviso = " — ".join(partes)
-        threading.Thread(target=publicar, args=({"tipo": "aviso", "texto": aviso[:240], "app": app},), daemon=True).start()
+        if desktop and not desktop.endswith(".desktop"):
+            desktop += ".desktop"
+        abrir = {"desktop": desktop} if desktop and Gio.DesktopAppInfo.new(desktop) else None
+        evento = {"app": app, "titulo": titulo, "texto": texto, "abrir": abrir}
+        threading.Thread(target=publicar, args=(evento, "/api/notificacoes"), daemon=True).start()
 
     # ------------------------------------------------------------ launchpad
     def lista_apps(self) -> list[dict]:
@@ -363,12 +427,22 @@ class Casca(Gtk.Application):
         self.sobre.pagina.enviar({"tipo": "apps", "apps": self.lista_apps()})
         self.abrir_sobre("launchpad")
 
+    def abrir_busca(self):
+        if LIVE or self.bloqueada:
+            return
+        if self.sobre_ativo and self.painel == "busca":
+            self.fechar_sobre()
+            return
+        self.sobre.pagina.enviar({"tipo": "apps", "apps": self.lista_apps()})
+        self.abrir_sobre("busca")
+
     # ------------------------------------------------------------ painéis e bloqueio
     def abrir_sobre(self, modo, qual=None):
-        self.painel = qual if modo == "painel" else ("launchpad" if modo == "launchpad" else None)
+        self.painel = qual if modo == "painel" else (modo if modo in ("launchpad", "alternar", "busca") else None)
         self.sobre_ativo = True
-        Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.EXCLUSIVE if modo in ("bloqueio", "launchpad") else Camada.KeyboardMode.ON_DEMAND)
+        Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.EXCLUSIVE if modo in ("bloqueio", "launchpad", "alternar", "busca") else Camada.KeyboardMode.ON_DEMAND)
         self.sobre.pagina.enviar({"tipo": "modo", "modo": modo, "qual": qual})
+        self.sobre.regiao = None  # a tela toda (pode ter sobrado a área de um aviso)
         self.sobre.definir_clicavel(True)
         self.barra.pagina.enviar({"tipo": "painel", "qual": self.painel})
 
@@ -378,6 +452,7 @@ class Casca(Gtk.Application):
         self.painel = None
         self.sobre_ativo = False
         self.sobre.pagina.enviar({"tipo": "modo", "modo": None})
+        self.sobre.regiao = None
         self.sobre.definir_clicavel(False)
         Camada.set_keyboard_mode(self.sobre.janela, Camada.KeyboardMode.NONE)
         self.barra.pagina.enviar({"tipo": "painel", "qual": None})
@@ -400,6 +475,15 @@ class Casca(Gtk.Application):
             lancar_desktop(str(m.get("desktop")))
         elif tipo == "launchpad":
             self.abrir_launchpad()
+        elif tipo == "alternar":
+            self._alt_manter = bool(m.get("manter")) and os.environ.get("ALBA_DEPURAR") == "1"  # só nos testes
+            self.alternar(-1 if m.get("direcao") == -1 else 1)
+        elif tipo == "alternarIr":
+            self.fechar_sobre()
+            if self.janelas and m.get("id") is not None:
+                self.janelas.ativar(m.get("id"))
+        elif tipo == "busca":
+            self.abrir_busca()
         elif tipo == "item":
             self.clique_item(str(m.get("chave")))
         elif tipo == "janela" and self.janelas:
@@ -426,6 +510,17 @@ class Casca(Gtk.Application):
         elif tipo == "desbloqueado":
             self.bloqueada = False
             self.fechar_sobre()
+        elif tipo == "regiaoAvisos" and origem is self.sobre:
+            if self.sobre_ativo:
+                return
+            r = m.get("r")
+            if isinstance(r, dict):
+                z = escala()
+                self.sobre.regiao = (round(r["x"] * z), round(r["y"] * z), max(1, round(r["l"] * z)), max(1, round(r["a"] * z)))
+                self.sobre.definir_clicavel(True)
+            else:
+                self.sobre.regiao = None
+                self.sobre.definir_clicavel(False)
         elif tipo == "regiao" and origem is self.dock:
             self.dock.definir_regiao(m.get("x", 0), m.get("y", 0), m.get("l", 1), m.get("a", 1))
         elif tipo == "escala":
