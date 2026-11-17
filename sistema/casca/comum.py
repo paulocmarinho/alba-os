@@ -106,11 +106,11 @@ def lancar_desktop(id_desktop: str) -> bool:
     return ok
 
 
-def publicar(evento: dict) -> None:
+def publicar(evento: dict, rota: str = "/api/evento") -> None:
     """Manda um evento para todas as partes do Alba (pelo servidor)."""
     import urllib.request
     try:
-        pedido = urllib.request.Request(f"{URL}/api/evento", data=json.dumps(evento).encode(), method="POST",
+        pedido = urllib.request.Request(f"{URL}{rota}", data=json.dumps(evento).encode(), method="POST",
                                         headers={"Content-Type": "application/json", "X-Alba-Token": TOKEN})
         urllib.request.urlopen(pedido, timeout=3).close()
     except OSError:

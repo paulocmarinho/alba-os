@@ -1,7 +1,8 @@
-import { type CSSProperties, useCallback, useEffect, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { alturaTela, emCss, larguraTela } from "../escala";
-import { api, type Item, type Local, tamanhoLegivel } from "../api";
+import { api, arquivosExtra, type Item, type Local, tamanhoLegivel, type Unidade } from "../api";
+import { ouvirEventos, publicarEvento } from "../ponte";
 import { iniciais, useAlba } from "../contexto";
 import { Icone, type NomeIcone } from "../componentes/Icone";
 
@@ -105,6 +106,18 @@ function ArteArquivo({ item }: { item: Item }) {
   );
 }
 
+/** Área de transferência de arquivos, compartilhada entre as janelas do Arquivos (pelo servidor). */
+let areaArquivos: { itens: string[]; acao: "copiar" | "mover" } | null = null;
+const ouvintesArea = new Set<() => void>();
+function definirArea(a: typeof areaArquivos, avisarOutras = true) {
+  areaArquivos = a;
+  ouvintesArea.forEach((f) => f());
+  if (avisarOutras) publicarEvento({ tipo: "arquivos-area", area: a });
+}
+ouvirEventos((m) => m.tipo === "arquivos-area" && definirArea(m.area ?? null, false));
+
+const TIPO_ARRASTE = "application/x-alba-arquivos";
+
 export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: number }) {
   const { sistema, config, abrir, aviso, confirmar, perguntar, renomearJanela, mudarConfig } = useAlba();
   const [locais, setLocais] = useState<Local[]>([]);
@@ -115,7 +128,11 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
   const [pai, setPai] = useState<string | null>(null);
   const [visao, setVisao] = useState<"grade" | "lista">("grade");
   const [busca, setBusca] = useState("");
-  const [selecionado, setSelecionado] = useState<string | null>(null);
+  const [selecao, setSelecao] = useState<string[]>([]);
+  const [ancora, setAncora] = useState<string | null>(null);
+  const [area, setArea] = useState(areaArquivos);
+  const [unidades, setUnidades] = useState<Unidade[]>([]);
+  const [alvoArraste, setAlvoArraste] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ item: Item; x: number; y: number } | null>(null);
   const [erro, setErro] = useState("");
   const naLixeira = caminho === "lixeira";
@@ -142,13 +159,33 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
     }
   }, [caminho, naLixeira, idJanela, renomearJanela, sistema.casa]);
 
-  useEffect(() => {
-    api.locais().then((r) => setLocais(r.locais)).catch(() => {});
+  const lerUnidades = useCallback(() => {
+    arquivosExtra
+      .unidades()
+      .then((r) => setUnidades(r.unidades))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
+    api.locais().then((r) => setLocais(r.locais)).catch(() => {});
+    lerUnidades();
+    const t = window.setInterval(lerUnidades, 4000); // pendrive entrou ou saiu
+    const f = () => setArea(areaArquivos);
+    ouvintesArea.add(f);
+    const sair = ouvirEventos((m) => m.tipo === "arquivos-mudaram" && carregarRef.current());
+    return () => {
+      window.clearInterval(t);
+      ouvintesArea.delete(f);
+      sair();
+    };
+  }, [lerUnidades]);
+
+  const carregarRef = useRef(carregar);
+  carregarRef.current = carregar;
+
+  useEffect(() => {
     carregar();
-    setSelecionado(null);
+    setSelecao([]);
     setBusca("");
   }, [carregar]);
 
@@ -177,8 +214,141 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
     if (item.tipo === "pasta") return ir(item.caminho);
     if (item.categoria === "imagem") return abrir("visualizador", { caminho: item.caminho });
     if (item.categoria === "audio") return abrir("musica", { abrir: { caminhos: [item.caminho], vez: Date.now() } });
-    if (item.categoria === "texto" || (item.tamanho ?? 0) < 512 * 1024) return abrir("notas", { caminho: item.caminho });
-    aviso("O Alba OS ainda não tem um app para abrir este tipo de arquivo.");
+    if (item.categoria === "texto") return abrir("notas", { caminho: item.caminho });
+    arquivosExtra.abrirExterno(item.caminho).catch((e) => {
+      if ((item.tamanho ?? 0) < 512 * 1024 && item.categoria === "arquivo") abrir("notas", { caminho: item.caminho });
+      else aviso(e.message);
+    });
+  }
+
+  // ------------------------------------------------ copiar, recortar, colar, arrastar
+  const avisarMudanca = () => publicarEvento({ tipo: "arquivos-mudaram" });
+
+  async function colarEm(destino: string, itens: string[], acao: "copiar" | "mover") {
+    if (!itens.length) return;
+    try {
+      const r = await arquivosExtra.colar(itens, destino, acao);
+      const n = r.itens.length;
+      if (n) aviso(`${n} ${n === 1 ? "item" : "itens"} ${acao === "mover" ? "movido" : "copiado"}${n === 1 ? "" : "s"}.`);
+      if (acao === "mover" && areaArquivos?.acao === "mover") definirArea(null);
+      carregar();
+      avisarMudanca();
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
+  const copiar = (acao: "copiar" | "mover", itens = selecao) => {
+    if (!itens.length || naLixeira) return;
+    if (acao === "mover" && !gravavel) return aviso("Não dá para recortar daqui: você só pode copiar.");
+    definirArea({ itens, acao });
+    aviso(`${itens.length === 1 ? "1 item" : `${itens.length} itens`} ${acao === "mover" ? "recortado" : "copiado"}${itens.length === 1 ? "" : "s"}. Abra outra pasta e cole.`);
+  };
+  const colar = () => {
+    if (!area || naLixeira) return;
+    if (!gravavel) return aviso("Não dá para colar nesta pasta.");
+    colarEm(caminho, area.itens, area.acao);
+  };
+
+  async function lixeiraVarios(caminhos: string[]) {
+    for (const c of caminhos) {
+      try {
+        await api.paraLixeira(c);
+      } catch (e: any) {
+        aviso(e.message);
+        break;
+      }
+    }
+    aviso(caminhos.length === 1 ? `“${caminhos[0].split("/").pop()}” foi para a lixeira.` : `${caminhos.length} itens foram para a lixeira.`);
+    carregar();
+    avisarMudanca();
+  }
+
+  function clicar(e: React.MouseEvent, item: Item) {
+    if (e.ctrlKey || e.metaKey) {
+      setSelecao((s) => (s.includes(item.caminho) ? s.filter((x) => x !== item.caminho) : [...s, item.caminho]));
+      setAncora(item.caminho);
+    } else if (e.shiftKey && ancora) {
+      const ordem = [...pastas, ...arquivos].map((i) => i.caminho);
+      const a = ordem.indexOf(ancora);
+      const b = ordem.indexOf(item.caminho);
+      if (a >= 0 && b >= 0) setSelecao(ordem.slice(Math.min(a, b), Math.max(a, b) + 1));
+    } else {
+      setSelecao([item.caminho]);
+      setAncora(item.caminho);
+    }
+  }
+
+  function teclado(e: React.KeyboardEvent) {
+    if ((e.target as HTMLElement).tagName === "INPUT") return;
+    const ctrl = e.ctrlKey || e.metaKey;
+    const k = e.key.toLowerCase();
+    if (ctrl && k === "c") copiar("copiar");
+    else if (ctrl && k === "x") copiar("mover");
+    else if (ctrl && k === "v") colar();
+    else if (ctrl && k === "a") setSelecao(visiveis.map((i) => i.caminho));
+    else if (e.key === "Delete" && gravavel && !naLixeira && selecao.length) lixeiraVarios(selecao);
+    else if (e.key === "F2" && gravavel && selecao.length === 1) {
+      const it = itens.find((i) => i.caminho === selecao[0]);
+      if (it) renomear(it);
+    } else if (e.key === "Backspace" && pai) ir(pai);
+    else if (e.key === "Escape") setSelecao([]);
+    else return;
+    e.preventDefault();
+  }
+
+  // Arrastar: soltar numa pasta (ou num local da barra lateral) move; com Ctrl, copia.
+  const arrastarDe = (e: React.DragEvent, item: Item) => {
+    if (naLixeira) return e.preventDefault();
+    const itensArraste = selecao.includes(item.caminho) ? selecao : [item.caminho];
+    if (!selecao.includes(item.caminho)) setSelecao([item.caminho]);
+    e.dataTransfer.setData(TIPO_ARRASTE, JSON.stringify(itensArraste));
+    e.dataTransfer.setData("text/plain", itensArraste.join("\n"));
+    e.dataTransfer.effectAllowed = "copyMove";
+  };
+  const alvo = (destino: string, podeSoltar: boolean) =>
+    podeSoltar
+      ? {
+          onDragOver: (e: React.DragEvent) => {
+            if (!e.dataTransfer.types.includes(TIPO_ARRASTE)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
+            setAlvoArraste(destino);
+          },
+          onDragLeave: () => setAlvoArraste((a) => (a === destino ? null : a)),
+          onDrop: (e: React.DragEvent) => {
+            e.preventDefault();
+            setAlvoArraste(null);
+            try {
+              const lista: string[] = JSON.parse(e.dataTransfer.getData(TIPO_ARRASTE) || "[]");
+              const validos = lista.filter((c) => c !== destino);
+              if (validos.length) colarEm(destino, validos, e.ctrlKey ? "copiar" : "mover");
+            } catch {
+              /* nada */
+            }
+          },
+        }
+      : {};
+
+  async function abrirUnidade(u: Unidade) {
+    if (u.montada) return ir(u.montada);
+    try {
+      const r = await arquivosExtra.montar(u.dispositivo);
+      lerUnidades();
+      if (r.caminho) ir(r.caminho);
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+  async function ejetar(u: Unidade) {
+    try {
+      if (u.montada && (caminho === u.montada || caminho.startsWith(u.montada + "/"))) ir(sistema.casa);
+      await arquivosExtra.ejetar(u.dispositivo);
+      aviso(`Pode tirar “${u.nome}” com segurança.`);
+      lerUnidades();
+    } catch (e: any) {
+      aviso(e.message);
+    }
   }
 
   async function novaPasta() {
@@ -245,13 +415,16 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
   const cartao = (item: Item) => (
     <button
       key={item.caminho}
-      className={`folder-card ${visao === "grade" ? "tile" : ""} ${selecionado === item.caminho ? "selecionado" : ""}`}
-      onClick={() => setSelecionado(item.caminho)}
+      className={`folder-card ${visao === "grade" ? "tile" : ""} ${selecao.includes(item.caminho) ? "selecionado" : ""} ${alvoArraste === item.caminho ? "alvo-arraste" : ""} ${area?.acao === "mover" && area.itens.includes(item.caminho) ? "recortado" : ""}`}
+      onClick={(e) => clicar(e, item)}
       onDoubleClick={() => abrirItem(item)}
       onKeyDown={(e) => e.key === "Enter" && abrirItem(item)}
+      draggable={!naLixeira}
+      onDragStart={(e) => arrastarDe(e, item)}
+      {...alvo(item.caminho, item.tipo === "pasta" && !naLixeira)}
       onContextMenu={(e) => {
         e.preventDefault();
-        setSelecionado(item.caminho);
+        if (!selecao.includes(item.caminho)) setSelecao([item.caminho]);
         setMenu({ item, x: emCss(e.clientX), y: emCss(e.clientY) });
       }}
     >
@@ -277,7 +450,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
-          setSelecionado(item.caminho);
+          if (!selecao.includes(item.caminho)) setSelecao([item.caminho]);
           const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
           setMenu({ item, x: r.left, y: r.bottom + 4 });
         }}
@@ -288,7 +461,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
   );
 
   return (
-    <div className="window-body app-arquivos">
+    <div className="window-body app-arquivos" tabIndex={-1} onKeyDown={teclado}>
       <aside className="sidebar">
         <div className="profile">
           <div className="avatar">{iniciais(sistema.nome)}</div>
@@ -299,10 +472,34 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
         </div>
         <p className="eyebrow">Locais</p>
         {locais.map((l) => (
-          <button key={l.caminho} className={caminho === l.caminho ? "active" : ""} onClick={() => ir(l.caminho)}>
+          <button
+            key={l.caminho}
+            className={`${caminho === l.caminho ? "active" : ""} ${alvoArraste === l.caminho ? "alvo-arraste" : ""}`}
+            onClick={() => ir(l.caminho)}
+            {...alvo(l.caminho, l.caminho !== "/")}
+          >
             <Icone name={l.icone as NomeIcone} size={18} />
             <span>{l.nome}</span>
           </button>
+        ))}
+        {unidades.length > 0 && <p className="eyebrow">Unidades</p>}
+        {unidades.map((u) => (
+          <div key={u.dispositivo} className="linha-unidade">
+            <button
+              className={`${u.montada && caminho.startsWith(u.montada) ? "active" : ""} ${alvoArraste === u.montada ? "alvo-arraste" : ""}`}
+              onClick={() => abrirUnidade(u)}
+              title={`${u.nome} · ${tamanhoLegivel(u.tamanho)}`}
+              {...alvo(u.montada || "", !!u.montada)}
+            >
+              <Icone name="usb" size={18} />
+              <span>{u.nome}</span>
+            </button>
+            {u.montada && (
+              <button className="ejetar" onClick={() => ejetar(u)} aria-label={`Ejetar ${u.nome}`} title="Ejetar">
+                <Icone name="eject" size={14} />
+              </button>
+            )}
+          </div>
         ))}
         <button className={naLixeira ? "active" : ""} onClick={() => ir("lixeira")}>
           <Icone name="trash" size={18} />
@@ -353,7 +550,11 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
 
         {erro && <p className="aviso-erro">{erro}</p>}
 
-        <section className="folder-section">
+        <section
+          className="folder-section"
+          onClick={(e) => (e.target as HTMLElement).closest(".folder-card") === null && setSelecao([])}
+          {...alvo(caminho, gravavel && !naLixeira)}
+        >
           <div className="section-title">
             <h2>{naLixeira ? `${visiveis.length} itens` : "Pastas"}</h2>
             {naLixeira ? (
@@ -362,9 +563,16 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
               </button>
             ) : (
               gravavel && (
-                <button className="new-folder" onClick={novaPasta}>
-                  <Icone name="plus" size={15} /> Nova pasta
-                </button>
+                <span className="acoes-pasta">
+                  {area && (
+                    <button className="new-folder" onClick={colar} title="Colar (Ctrl+V)">
+                      <Icone name="paste" size={15} /> Colar {area.itens.length > 1 ? `${area.itens.length} itens` : ""}
+                    </button>
+                  )}
+                  <button className="new-folder" onClick={novaPasta}>
+                    <Icone name="plus" size={15} /> Nova pasta
+                  </button>
+                </span>
               )
             )}
           </div>
@@ -390,7 +598,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
 
         <footer className="system-footer barra-status">
           <span>
-            {visiveis.length} {visiveis.length === 1 ? "item" : "itens"}
+            {selecao.length > 1 ? `${selecao.length} de ${visiveis.length} selecionados` : `${visiveis.length} ${visiveis.length === 1 ? "item" : "itens"}`}
           </span>
           <span>•</span>
           <span>{tamanhoLegivel(Math.max(0, sistema.disco_total - sistema.disco_usado))} disponíveis</span>
@@ -401,7 +609,7 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
         createPortal(
         <div
           className={`menu-contexto ${config.tema === "escuro" ? "escuro" : ""}`}
-          style={{ left: Math.min(menu.x, larguraTela() - 250), top: Math.min(menu.y, alturaTela() - 140) }}
+          style={{ left: Math.min(menu.x, larguraTela() - 250), top: Math.min(menu.y, alturaTela() - 300) }}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {naLixeira ? (
@@ -425,13 +633,28 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
                   <Icone name="image" size={16} /> Usar como papel de parede
                 </button>
               )}
+              <button onClick={() => (setMenu(null), copiar("copiar"))}>
+                <Icone name="copy" size={16} /> Copiar {selecao.length > 1 ? `${selecao.length} itens` : ""}
+              </button>
+              {gravavel && (
+                <button onClick={() => (setMenu(null), copiar("mover"))}>
+                  <Icone name="cut" size={16} /> Recortar
+                </button>
+              )}
+              {area && menu.item.tipo === "pasta" && (
+                <button onClick={() => (setMenu(null), colarEm(menu.item.caminho, area.itens, area.acao))}>
+                  <Icone name="paste" size={16} /> Colar nesta pasta
+                </button>
+              )}
               {gravavel && (
                 <>
-                  <button onClick={() => (setMenu(null), renomear(menu.item))}>
-                    <Icone name="edit" size={16} /> Renomear
-                  </button>
-                  <button className="perigo" onClick={() => (setMenu(null), lixeira(menu.item))}>
-                    <Icone name="trash" size={16} /> Mover para a lixeira
+                  {selecao.length <= 1 && (
+                    <button onClick={() => (setMenu(null), renomear(menu.item))}>
+                      <Icone name="edit" size={16} /> Renomear
+                    </button>
+                  )}
+                  <button className="perigo" onClick={() => (setMenu(null), selecao.length > 1 ? lixeiraVarios(selecao) : lixeira(menu.item))}>
+                    <Icone name="trash" size={16} /> Mover para a lixeira {selecao.length > 1 ? `(${selecao.length})` : ""}
                   </button>
                 </>
               )}

@@ -15,14 +15,18 @@ export type AppLista = {
 
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-function IconeApp({ app }: { app: AppLista }) {
+export function IconeApp({ app, pequeno }: { app: AppLista; pequeno?: boolean }) {
   if (app.tipo === "alba" && app.app && APPS[app.app]) {
     return (
-      <span className={`dock-icon ${APPS[app.app].classe}`}>
-        {app.app === "musica" ? <MarcaSleeve /> : <Icone name={APPS[app.app].icone} size={40} />}
+      <span className={`dock-icon ${APPS[app.app].classe} ${pequeno ? "pequeno" : ""}`}>
+        {app.app === "musica" ? <MarcaSleeve /> : <Icone name={APPS[app.app].icone} size={pequeno ? 18 : 40} />}
       </span>
     );
   }
+  if (pequeno)
+    return (
+      <span className="dock-icon externo pequeno">{app.icone ? <img src={app.icone} alt="" draggable={false} /> : <Icone name="grid" size={18} />}</span>
+    );
   return (
     <span className="dock-icon externo">
       {app.icone ? <img src={app.icone} alt="" draggable={false} /> : <Icone name="grid" size={36} />}

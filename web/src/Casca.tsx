@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type Config, type Sistema } from "./api";
+import { api, type Config, type Notificacao, type Sistema } from "./api";
 import { CaixaDialogo, Papel, type Dialogo } from "./Alba";
 import { APPS, CtxAlba, type Contexto, type IdApp, useAlba } from "./contexto";
 import { appAvulso, daCasca, ouvirEventos, paraCasca, propsIniciais, publicarEvento, superficie } from "./ponte";
@@ -13,6 +13,10 @@ import { Terminal } from "./apps/Terminal";
 import { BarraSuperior, MarcaSleeve, type Painel } from "./componentes/Barra";
 import { Central } from "./componentes/Central";
 import { Icone } from "./componentes/Icone";
+import { CartaoNotificacao, CentralNotificacoes } from "./componentes/Notificacoes";
+import { PainelRede } from "./componentes/PainelRede";
+import { Alternador, type JanelaAlt } from "./componentes/Alternador";
+import { Busca } from "./componentes/Busca";
 import { type AppLista, Launchpad } from "./componentes/Launchpad";
 import { PainelCalendario, PainelSom } from "./componentes/Paineis";
 import { TelaBloqueio } from "./componentes/TelaBloqueio";
@@ -41,7 +45,8 @@ export function AlbaCasca() {
   const [agora, setAgora] = useState(new Date());
   const [dialogo, setDialogo] = useState<Dialogo | null>(null);
   const [tocando, setTocando] = useState<Tocando | null>(null);
-  const [avisos, setAvisos] = useState<{ id: number; texto: string }[]>([]);
+  const [avisos, setAvisos] = useState<{ id: number; texto: string; notificacao?: Notificacao }[]>([]);
+  const caixaAvisos = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const nome = superficie || appAvulso;
@@ -62,11 +67,16 @@ export function AlbaCasca() {
       if (m.tipo === "config" && m.config) {
         setConfig(m.config);
         if (superficie === "barra" || appAvulso) paraCasca({ tipo: "escala" });
+      } else if (m.tipo === "notificacao" && superficie === "sobre" && m.mostrar && m.notificacao) {
+        const n = m.notificacao as Notificacao;
+        const id = Date.now() + Math.random();
+        setAvisos((a) => [...a.slice(-3), { id, texto: n.titulo, notificacao: n }]);
+        window.setTimeout(() => setAvisos((a) => a.filter((x) => x.id !== id)), 6000);
       } else if (m.tipo === "aviso" && superficie === "sobre" && m.texto) {
         aviso(String(m.texto)); // avisos do sistema (ex.: captura de tela) aparecem por cima de tudo
       } else if (m.tipo === "tocando") {
         setTocando(m.dados ?? null);
-      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "lancar" || m.tipo === "launchpad" || m.tipo === "desbloquear-teste")) {
+      } else if (superficie === "barra" && (m.tipo === "bloquear" || m.tipo === "painel" || m.tipo === "abrir" || m.tipo === "item" || m.tipo === "lancar" || m.tipo === "launchpad" || m.tipo === "alternar" || m.tipo === "busca" || m.tipo === "fecharSobre" || m.tipo === "desbloquear-teste")) {
         paraCasca(m); // atalhos de teclado e scripts chegam pelo servidor e a barra repassa à casca
       }
     });
@@ -79,6 +89,18 @@ export function AlbaCasca() {
   useEffect(() => {
     if (sistema && config) paraCasca({ tipo: "pronto" });
   }, [!!sistema && !!config]);
+
+  // Na camada de cima, os avisos de notificação recebem cliques (o resto da tela continua livre).
+  useEffect(() => {
+    if (superficie !== "sobre") return;
+    const id = window.requestAnimationFrame(() => {
+      const el = caixaAvisos.current;
+      if (!el || !avisos.length) return paraCasca({ tipo: "regiaoAvisos", r: null });
+      const r = el.getBoundingClientRect();
+      paraCasca({ tipo: "regiaoAvisos", r: { x: r.left, y: r.top, l: r.width, a: r.height } });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [avisos]);
 
   const aviso = useCallback((texto: string) => {
     const id = Date.now() + Math.random();
@@ -169,12 +191,22 @@ export function AlbaCasca() {
         {superficie === "dock" && <DockCasca />}
         {superficie === "sobre" && <Sobre />}
         {!superficie && appAvulso && <AppAvulso app={appAvulso as IdApp} />}
-        <div className="avisos" aria-live="polite">
-          {avisos.map((a) => (
-            <div key={a.id} className="aviso">
-              {a.texto}
-            </div>
-          ))}
+        <div className="avisos" aria-live="polite" ref={caixaAvisos}>
+          {avisos.map((a) =>
+            a.notificacao ? (
+              <div key={a.id} className="aviso aviso-notificacao">
+                <CartaoNotificacao
+                  n={{ ...a.notificacao, lida: true }}
+                  aoFechar={() => setAvisos((x) => x.filter((y) => y.id !== a.id))}
+                  aoAbrir={() => setAvisos((x) => x.filter((y) => y.id !== a.id))}
+                />
+              </div>
+            ) : (
+              <div key={a.id} className="aviso">
+                {a.texto}
+              </div>
+            ),
+          )}
         </div>
         {dialogo && <CaixaDialogo d={dialogo} fechar={() => setDialogo(null)} />}
       </main>
@@ -293,16 +325,18 @@ function MenuAlba({ fechar }: { fechar: () => void }) {
 }
 
 function Sobre() {
-  const [modo, setModo] = useState<{ modo: "bloqueio" | "painel" | "launchpad" | null; qual?: PainelCasca }>({ modo: null });
+  const [modo, setModo] = useState<{ modo: "bloqueio" | "painel" | "launchpad" | "alternar" | "busca" | null; qual?: PainelCasca }>({ modo: null });
   const [apps, setApps] = useState<AppLista[]>([]);
+  const [alt, setAlt] = useState<{ janelas: JanelaAlt[]; inicial: number; vez: number } | null>(null);
   const [vez, setVez] = useState(0);
   useEffect(
     () =>
       daCasca((m) => {
         if (m.tipo === "modo") {
           setModo({ modo: m.modo, qual: m.qual });
-          if (m.modo === "launchpad") setVez((v) => v + 1);
+          if (m.modo === "launchpad" || m.modo === "busca") setVez((v) => v + 1);
         } else if (m.tipo === "apps") setApps(m.apps || []);
+        else if (m.tipo === "alternarLista") setAlt({ janelas: m.janelas || [], inicial: m.selecionada ?? 1, vez: Date.now() });
       }),
     [],
   );
@@ -335,13 +369,21 @@ function Sobre() {
         />
       </>
     );
+  if (modo.modo === "alternar" && alt) return <Alternador key={alt.vez} janelas={alt.janelas} inicial={alt.inicial} />;
+  if (modo.modo === "busca") return <Busca key={vez} apps={apps} fechar={fechar} />;
   if (modo.modo !== "painel") return null;
   return (
     <section className="sobre-fundo" onPointerDown={(e) => e.target === e.currentTarget && fechar()}>
       <div className={`sobre-painel sobre-${modo.qual}`} onPointerDown={(e) => e.stopPropagation()}>
         {modo.qual === "central" && <Central fechar={fechar} />}
         {modo.qual === "som" && <PainelSom />}
-        {modo.qual === "calendario" && <PainelCalendario />}
+        {modo.qual === "calendario" && (
+          <div className="coluna-paineis">
+            <CentralNotificacoes fechar={fechar} />
+            <PainelCalendario />
+          </div>
+        )}
+        {modo.qual === "rede" && <PainelRede />}
         {modo.qual === "menu" && <MenuAlba fechar={fechar} />}
       </div>
     </section>

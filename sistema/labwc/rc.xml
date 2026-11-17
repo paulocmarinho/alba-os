@@ -50,6 +50,10 @@
 
   <keyboard>
     <default />
+    <!-- Alt+Tab do Alba (ícones grandes, como no Mac); soltar o Alt escolhe -->
+    <keybind key="A-Tab"><action name="Execute" command="alba-enviar '{&quot;tipo&quot;: &quot;alternar&quot;, &quot;direcao&quot;: 1}'" /></keybind>
+    <keybind key="A-S-Tab"><action name="Execute" command="alba-enviar '{&quot;tipo&quot;: &quot;alternar&quot;, &quot;direcao&quot;: -1}'" /></keybind>
+    <keybind key="W-Tab"><action name="Execute" command="alba-enviar '{&quot;tipo&quot;: &quot;alternar&quot;, &quot;direcao&quot;: 1}'" /></keybind>
     <keybind key="W-l"><action name="Execute" command="alba-enviar bloquear" /></keybind>
     <keybind key="C-A-l"><action name="Execute" command="alba-enviar bloquear" /></keybind>
     <keybind key="C-A-t"><action name="Execute" command="alba-app terminal" /></keybind>
@@ -59,9 +63,10 @@
     <keybind key="W-Left"><action name="SnapToEdge" direction="left" /></keybind>
     <keybind key="W-Right"><action name="SnapToEdge" direction="right" /></keybind>
     <keybind key="W-d"><action name="ToggleShowDesktop" /></keybind>
-    <!-- Launchpad: tecla Super sozinha, Super+Espaço ou F4 (como no Mac) -->
+    <!-- Launchpad: tecla Super sozinha ou F4; busca: Super+Espaço ou Alt+Espaço (como no Mac) -->
     <keybind key="Super_L" onRelease="yes"><action name="Execute" command="alba-enviar launchpad" /></keybind>
-    <keybind key="W-space"><action name="Execute" command="alba-enviar launchpad" /></keybind>
+    <keybind key="W-space"><action name="Execute" command="alba-enviar busca" /></keybind>
+    <keybind key="A-space"><action name="Execute" command="alba-enviar busca" /></keybind>
     <keybind key="XF86LaunchA"><action name="Execute" command="alba-enviar launchpad" /></keybind>
     <!-- Captura de tela -->
     <keybind key="Print"><action name="Execute" command="alba-captura" /></keybind>

@@ -34,6 +34,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import musica  # noqa: E402
 import loja  # noqa: E402
+import rede  # noqa: E402
+import notificacoes  # noqa: E402
+import busca  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 try:
@@ -41,7 +44,7 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.5.0"
+VERSAO = "0.6.0"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
@@ -110,9 +113,25 @@ def dentro_da_casa(p: Path):
         return False
 
 
+def em_unidade_externa(p: Path):
+    """Pendrives e HDs externos montados pelo Alba (udisks) também podem ser alterados."""
+    usuario = pwd.getpwuid(os.getuid()).pw_name
+    for base in (Path("/run/media") / usuario, Path("/media")):
+        try:
+            rel = p.resolve().relative_to(base)
+            return len(rel.parts) >= 1
+        except ValueError:
+            continue
+    return False
+
+
+def pode_gravar(p: Path):
+    return dentro_da_casa(p) or em_unidade_externa(p)
+
+
 def exigir_casa(p: Path):
-    if not dentro_da_casa(p):
-        raise ErroApi(403, "Só é possível alterar arquivos dentro da sua pasta pessoal.")
+    if not pode_gravar(p):
+        raise ErroApi(403, "Só é possível alterar arquivos dentro da sua pasta pessoal ou em unidades externas.")
 
 
 def categoria(p: Path):
@@ -296,7 +315,7 @@ def api_arquivos(q, _c):
             continue
     itens.sort(key=lambda i: (i["tipo"] != "pasta", i["nome"].lower()))
     pai = str(pasta.parent) if pasta != pasta.parent else None
-    return {"caminho": str(pasta), "pai": pai, "itens": itens, "gravavel": dentro_da_casa(pasta)}
+    return {"caminho": str(pasta), "pai": pai, "itens": itens, "gravavel": pode_gravar(pasta)}
 
 
 def api_texto_ler(q, _c):
@@ -682,6 +701,169 @@ def capa_de_album(req):
     return resposta(200, dados, musica.tipo_imagem(dados))
 
 
+# ---------------------------------------------------------------- copiar, mover, unidades, abrir
+def _destino_livre(pasta: Path, nome: str) -> Path:
+    """"foto.jpg" já existe → "foto (2).jpg", "foto (3).jpg"…"""
+    destino = pasta / nome
+    if not destino.exists():
+        return destino
+    base = Path(nome)
+    stem, sufixo = (nome, "") if destino.is_dir() else (base.stem, base.suffix)
+    n = 2
+    while (pasta / f"{stem} ({n}){sufixo}").exists():
+        n += 1
+    return pasta / f"{stem} ({n}){sufixo}"
+
+
+def api_colar(_q, c):
+    """Copiar ou mover itens para uma pasta (copiar/recortar e colar, arrastar e soltar)."""
+    destino = caminho_seguro(c.get("destino", ""))
+    if not destino.is_dir():
+        raise ErroApi(400, "O destino não é uma pasta.")
+    exigir_casa(destino)
+    acao = c.get("acao")
+    if acao not in ("copiar", "mover"):
+        raise ErroApi(400, "Ação desconhecida.")
+    feitos = []
+    for texto in list(c.get("itens") or [])[:500]:
+        origem = caminho_seguro(str(texto))
+        if acao == "mover":
+            exigir_casa(origem)
+            if origem == CASA:
+                raise ErroApi(400, "A pasta pessoal não pode ser movida.")
+            if origem.parent == destino:
+                continue  # já está aqui
+        if origem.is_dir() and (destino == origem or origem in destino.parents):
+            raise ErroApi(400, f"Não dá para pôr “{origem.name}” dentro dela mesma.")
+        alvo = _destino_livre(destino, origem.name)
+        try:
+            if acao == "mover":
+                shutil.move(str(origem), str(alvo))
+            elif origem.is_dir():
+                shutil.copytree(origem, alvo, symlinks=True)
+            else:
+                shutil.copy2(origem, alvo)
+        except OSError as e:
+            raise ErroApi(500, f"Não consegui {'mover' if acao == 'mover' else 'copiar'} “{origem.name}”: {e.strerror or e}") from e
+        feitos.append(str(alvo))
+    return {"ok": True, "itens": feitos}
+
+
+def api_unidades(_q, _c):
+    """Pendrives, cartões e HDs externos (montados ou não)."""
+    cod, saida, _ = rodar("lsblk", "-J", "-b", "-o", "NAME,PATH,SIZE,LABEL,FSTYPE,MOUNTPOINT,RM,HOTPLUG,TYPE,MODEL")
+    if cod != 0:
+        return {"unidades": []}
+    unidades = []
+
+    def visitar(d, modelo=""):
+        modelo = (d.get("model") or modelo or "").strip()
+        removivel = d.get("rm") in (True, "1") or d.get("hotplug") in (True, "1")
+        if d.get("type") == "part" or (d.get("type") == "disk" and not d.get("children")):
+            if removivel and d.get("fstype") and d.get("fstype") not in ("swap", "crypto_LUKS"):
+                unidades.append({"dispositivo": d.get("path"), "nome": d.get("label") or modelo or "Unidade externa",
+                                 "tamanho": int(d.get("size") or 0), "montada": d.get("mountpoint") or None})
+        for f in d.get("children") or []:
+            if removivel:
+                f.setdefault("rm", True)
+            visitar(f, modelo)
+
+    for d in json.loads(saida).get("blockdevices", []):
+        if not str(d.get("name", "")).startswith(("loop", "sr", "zram")):
+            visitar(d)
+    return {"unidades": unidades}
+
+
+def api_unidade(_q, c):
+    disp = str(c.get("dispositivo", ""))
+    if not re.fullmatch(r"/dev/[a-zA-Z0-9]+", disp):
+        raise ErroApi(400, "Unidade inválida.")
+    if not shutil.which("udisksctl"):
+        raise ErroApi(500, "Para usar pendrives, atualize o Alba em Ajustes › Sobre.")
+    if c.get("acao") == "montar":
+        cod, saida, erro = rodar("udisksctl", "mount", "--no-user-interaction", "-b", disp, tempo=30)
+        m = re.search(r" at (/\S+)", saida)
+        if cod != 0:
+            raise ErroApi(500, "Não consegui abrir a unidade: " + (erro or saida).strip().splitlines()[-1])
+        return {"ok": True, "caminho": m.group(1).rstrip(".") if m else None}
+    if c.get("acao") == "ejetar":
+        cod, saida, erro = rodar("udisksctl", "unmount", "--no-user-interaction", "-b", disp, tempo=60)
+        if cod != 0:
+            raise ErroApi(500, "A unidade está em uso. Feche os arquivos abertos nela e tente de novo.")
+        disco = re.sub(r"p?\d+$", "", disp) if re.search(r"(sd[a-z]|mmcblk\d+p|nvme\d+n\d+p)\d+$", disp) else disp
+        rodar("udisksctl", "power-off", "--no-user-interaction", "-b", disco, tempo=30)
+        return {"ok": True}
+    raise ErroApi(400, "Ação desconhecida.")
+
+
+def api_abrir_externo(_q, c):
+    """Abre um arquivo no programa padrão do sistema (PDF, vídeo, planilha…)."""
+    p = caminho_seguro(str(c.get("caminho", "")))
+    programa = shutil.which("gio") or shutil.which("xdg-open")
+    if not programa:
+        raise ErroApi(500, "Nenhum programa para abrir este arquivo.")
+    cmd = [programa, "open", str(p)] if programa.endswith("gio") else [programa, str(p)]
+    env = {k: v for k, v in os.environ.items() if k != "LD_PRELOAD"}
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=15, env=env)
+    if r.returncode != 0:
+        raise ErroApi(404, "Nenhum app instalado abre este tipo de arquivo. Procure um na Alba Store.")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- rede
+def _rede(func):
+    def rota(q, c):
+        try:
+            return func(q, c)
+        except rede.ErroRede as e:
+            raise ErroApi(500, str(e)) from e
+    return rota
+
+
+def api_rede_wifi(_q, c):
+    acao = c.get("acao")
+    if acao == "ligar":
+        rede.ligar_wifi(bool(c.get("ligado")))
+    elif acao == "conectar":
+        rede.conectar(str(c.get("ssid", "")), c.get("senha") or None)
+    elif acao == "desconectar":
+        rede.desconectar()
+    elif acao == "esquecer":
+        rede.esquecer(str(c.get("ssid", "")))
+    else:
+        raise ErroApi(400, "Ação desconhecida.")
+    estado = rede.estado()
+    publicar_de_fora({"tipo": "rede", "rede": estado})
+    return estado
+
+
+# ---------------------------------------------------------------- notificações
+def notificar(app, titulo, texto, abrir=None):
+    n, mostrar = notificacoes.adicionar(app, titulo, texto, abrir)
+    publicar_de_fora({"tipo": "notificacao", "notificacao": n, "mostrar": mostrar,
+                      "nao_lidas": notificacoes.listar()["nao_lidas"]})
+    return n
+
+
+def api_notificacoes_criar(_q, c):
+    return notificar(str(c.get("app", "")), str(c.get("titulo", "")), str(c.get("texto", "")), c.get("abrir"))
+
+
+def api_notificacoes_acao(_q, c):
+    acao = c.get("acao")
+    if acao == "lidas":
+        notificacoes.marcar_lidas()
+    elif acao == "apagar":
+        notificacoes.apagar(int(c["id"]) if c.get("id") is not None else None)
+    elif acao == "nao_perturbe":
+        notificacoes.nao_perturbe(bool(c.get("ligado")))
+    else:
+        raise ErroApi(400, "Ação desconhecida.")
+    estado = notificacoes.listar()
+    publicar_de_fora({"tipo": "notificacoes", **estado})
+    return estado
+
+
 # ---------------------------------------------------------------- Alba Store
 def _loja(func):
     def rota(q, c):
@@ -706,6 +888,17 @@ ROTAS_LOJA = {
 
 ROTAS = {
     **ROTAS_LOJA,
+    ("POST", "/api/colar"): api_colar,
+    ("GET", "/api/unidades"): api_unidades,
+    ("POST", "/api/unidade"): api_unidade,
+    ("POST", "/api/abrir"): api_abrir_externo,
+    ("GET", "/api/rede/estado"): _rede(lambda q, c: rede.estado()),
+    ("GET", "/api/rede/redes"): _rede(lambda q, c: {"redes": rede.redes(rescan=q.get("buscar") == "1")}),
+    ("POST", "/api/rede/wifi"): _rede(api_rede_wifi),
+    ("GET", "/api/notificacoes"): lambda q, c: notificacoes.listar(),
+    ("POST", "/api/notificacoes"): api_notificacoes_criar,
+    ("POST", "/api/notificacoes/acao"): api_notificacoes_acao,
+    ("GET", "/api/busca/arquivos"): lambda q, c: {"arquivos": busca.buscar(q.get("q", ""))},
     ("GET", "/api/sistema"): api_sistema,
     ("GET", "/api/locais"): api_locais,
     ("GET", "/api/arquivos"): api_arquivos,
@@ -1020,7 +1213,11 @@ async def ws_eventos(ws: WebSocket):
 
 
 def api_evento(_q, c):
-    publicar_de_fora(c if isinstance(c, dict) else {})
+    c = c if isinstance(c, dict) else {}
+    if c.get("tipo") == "notificar":  # ex.: alba-captura
+        notificar(str(c.get("app", "")), str(c.get("titulo", "")), str(c.get("texto", "")), c.get("abrir"))
+        return {"ok": True}
+    publicar_de_fora(c)
     return {"ok": True}
 
 
@@ -1103,7 +1300,7 @@ def main():
     p.add_argument("--live", action="store_true", help="sessão ao vivo (instalação)")
     p.add_argument("--instalador", default="/usr/share/alba/sistema/instalar.sh")
     ARGS = p.parse_args()
-    loja.configurar(publicar_de_fora)
+    loja.configurar(publicar_de_fora, notificar)
     mimetypes.add_type("application/javascript", ".js")
     mimetypes.add_type("text/css", ".css")
     mimetypes.add_type("font/ttf", ".ttf")

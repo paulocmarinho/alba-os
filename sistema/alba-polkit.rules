@@ -1,0 +1,14 @@
+// Alba OS: quem administra o computador (grupo wheel) muda a rede (Wi-Fi) e usa pendrives
+// sem digitar a senha de novo, como no macOS.
+polkit.addRule(function (action, subject) {
+  if (!subject.isInGroup("wheel")) return;
+  if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0) return polkit.Result.YES;
+  var pendrive = [
+    "org.freedesktop.udisks2.filesystem-mount",
+    "org.freedesktop.udisks2.filesystem-mount-other-seat",
+    "org.freedesktop.udisks2.filesystem-unmount-others",
+    "org.freedesktop.udisks2.eject-media",
+    "org.freedesktop.udisks2.power-off-drive",
+  ];
+  if (pendrive.indexOf(action.id) >= 0) return polkit.Result.YES;
+});

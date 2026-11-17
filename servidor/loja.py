@@ -91,11 +91,12 @@ DESCRICOES = {
 _tarefas: dict[str, dict] = {}
 _trava = threading.Lock()
 _avisar = None  # função que publica eventos para a interface (definida pelo servidor)
+_notificar = None  # guarda na central de notificações
 
 
-def configurar(avisar):
-    global _avisar
-    _avisar = avisar
+def configurar(avisar, notificar=None):
+    global _avisar, _notificar
+    _avisar, _notificar = avisar, notificar
 
 
 class ErroLoja(Exception):
@@ -365,12 +366,12 @@ def _rodar(chave: str, acao: str, comando: list[str], nome: str):
             _tarefas[chave].update(estado="pronto", progresso=100, texto="Pronto")
         textos = {"instalar": f"{nome} instalado. Ele já está no Launchpad.", "remover": f"{nome} removido.",
                   "atualizar": "Apps atualizados."}
-        _publicar({"tipo": "aviso", "texto": textos.get(acao, "Pronto.")})
+        _avisar_fim(textos.get(acao, "Pronto."), chave if acao == "instalar" else None)
         _publicar({"tipo": "apps-mudaram"})
     except Exception as e:  # noqa: BLE001
         with _trava:
             _tarefas[chave].update(estado="erro", texto=str(e)[:200] or "Falhou.")
-        _publicar({"tipo": "aviso", "texto": f"{nome}: {str(e)[:160] or 'não deu certo.'}"})
+        _avisar_fim(f"{nome}: {str(e)[:160] or 'não deu certo.'}", None)
     finally:
         _publicar({"tipo": "loja", "tarefas": tarefas()})
         threading.Timer(8, _esquecer, args=(chave,)).start()
@@ -380,6 +381,14 @@ def _esquecer(chave):
     with _trava:
         if _tarefas.get(chave, {}).get("estado") != "rodando":
             _tarefas.pop(chave, None)
+
+
+def _avisar_fim(texto, app_id):
+    if _notificar:
+        abrir = {"desktop": f"{app_id}.desktop"} if app_id else {"app": "loja"}
+        _notificar("Alba Store", texto, "", abrir)
+    else:
+        _publicar({"tipo": "aviso", "texto": texto})
 
 
 def _iniciar(chave, acao, comando, nome):

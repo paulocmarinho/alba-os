@@ -69,6 +69,7 @@ class Janelas:
         self.lista: dict[int, dict] = {}
         self.alcas: dict[int, object] = {}
         self.proximo = 1
+        self.ordem: list[int] = []  # janelas da mais usada recentemente para a menos (Alt+Tab)
         self.gerente = None
         self.assento = None
         Gerente, Assento = _modulos()
@@ -109,6 +110,12 @@ class Janelas:
         def estado(_h, valor):
             e = _estados(valor)
             dados["ativa"] = ATIVA in e
+            if dados["ativa"]:
+                if ident in self.ordem:
+                    self.ordem.remove(ident)
+                self.ordem.insert(0, ident)
+            elif ident not in self.ordem:
+                self.ordem.append(ident)
             dados["minimizada"] = MINIMIZADA in e
             dados["maximizada"] = MAXIMIZADA in e
 
@@ -118,6 +125,8 @@ class Janelas:
         def fechada(_h):
             self.lista.pop(ident, None)
             self.alcas.pop(ident, None)
+            if ident in self.ordem:
+                self.ordem.remove(ident)
             try:
                 alca.destroy()
             except Exception:  # noqa: BLE001
@@ -161,6 +170,11 @@ class Janelas:
         if alca:
             alca.close()
             self.tela.flush()
+
+    def recentes(self) -> list[dict]:
+        """Janelas na ordem de uso, para o Alt+Tab."""
+        ids = [i for i in self.ordem if i in self.lista] + [i for i in self.lista if i not in self.ordem]
+        return [dict(self.lista[i]) for i in ids if self.lista[i]["app"] or self.lista[i]["titulo"]]
 
     def todas(self) -> list[dict]:
         return [dict(j) for j in self.lista.values() if j["app"] or j["titulo"]]
