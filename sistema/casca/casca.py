@@ -171,7 +171,7 @@ class Casca(Gtk.Application):
             s.mostrar()
         try:
             from janelas import Janelas
-            self.janelas = Janelas(self.janelas_mudaram)
+            self.janelas = Janelas(self.janelas_mudaram, self.refazer_janelas)
         except Exception as e:  # noqa: BLE001
             print("Alba: sem lista de janelas:", e, flush=True)
         if not LIVE:
@@ -279,6 +279,20 @@ class Casca(Gtk.Application):
                     nome_ativo = item["nome"]
         return {"tipo": "janelas", "itens": itens, "extras": list(extras.values()), "live": LIVE,
                 "ativa": {"titulo": ativa["titulo"], "app": nome_ativo or ativa["app"]} if ativa else None}
+
+    def refazer_janelas(self):
+        """Conecta de novo à lista de janelas do compositor (ele manda todas as abertas)."""
+        from janelas import Janelas
+        velha = self.janelas
+        try:
+            self.janelas = Janelas(self.janelas_mudaram, self.refazer_janelas)
+        except Exception as e:  # noqa: BLE001
+            print("Alba: não refez a lista de janelas:", e, flush=True)
+            return False
+        if velha:
+            velha.encerrar()
+        self.janelas_mudaram()
+        return False
 
     # ------------------------------------------------------------ Alt+Tab
     def descrever_janela(self, j: dict) -> dict:

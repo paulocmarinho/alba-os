@@ -61,10 +61,38 @@ def _estados(valor) -> set[int]:
         return set()
 
 
+_FALHOU = [False]
+
+
+def _vigiar_pywayland():
+    """Se o pywayland não conseguir ler um evento (ex.: a criação de uma janela nova), a lista
+    ficaria sem aquela janela. Marcamos a falha para a casca refazer a lista do zero."""
+    try:
+        from pywayland.protocol_core import message
+    except ImportError:
+        return
+    original = message.Message.c_to_arguments
+    if getattr(original, "_alba", False):
+        return
+
+    def protegido(self, *args, **kwargs):
+        try:
+            return original(self, *args, **kwargs)
+        except RuntimeError:
+            _FALHOU[0] = True
+            raise
+
+    protegido._alba = True
+    message.Message.c_to_arguments = protegido
+
+
 class Janelas:
-    def __init__(self, ao_mudar):
+    def __init__(self, ao_mudar, ao_falhar=None):
         from pywayland.client import Display
 
+        _vigiar_pywayland()
+        self.ao_falhar = ao_falhar
+        self.ativo = True
         self.ao_mudar = ao_mudar
         self.lista: dict[int, dict] = {}
         self.alcas: dict[int, object] = {}
@@ -76,7 +104,9 @@ class Janelas:
         self.Gerente, self.Assento = Gerente, Assento
         self.tela = Display()
         self.tela.connect()
-        registro = self.tela.get_registry()
+        # Guardado de propósito: se o registro for recolhido pelo coletor de lixo, o pywayland
+        # às vezes não acha mais a conexão ao criar uma janela nova ("Cannot find display").
+        self.registro = registro = self.tela.get_registry()
         registro.dispatcher["global"] = self._global
         self.tela.roundtrip()
         self.tela.roundtrip()
@@ -140,13 +170,26 @@ class Janelas:
         alca.dispatcher["closed"] = fechada
 
     def _ler(self, *_a):
+        if not self.ativo:
+            return False
         try:
             self.tela.dispatch(block=True)
             self.tela.flush()
         except Exception as e:  # noqa: BLE001
             print("janelas: conexão perdida:", e, flush=True)
             return False
+        if _FALHOU[0] and self.ao_falhar:
+            _FALHOU[0] = False
+            print("janelas: um evento se perdeu; refazendo a lista de janelas", flush=True)
+            GLib.idle_add(self.ao_falhar)
         return True
+
+    def encerrar(self):
+        self.ativo = False
+        try:
+            self.tela.disconnect()
+        except Exception:  # noqa: BLE001
+            pass
 
     def _alca(self, ident):
         return self.alcas.get(int(ident))
