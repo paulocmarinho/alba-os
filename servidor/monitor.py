@@ -256,7 +256,7 @@ def amostra() -> dict:
     # Processos "de passagem": o que eles abrem aparece separado (um app aberto por um terminal
     # ou por um atalho de teclado aparece com o próprio nome, não dentro do "sh").
     sessao = {pid for pid, p in meus.items()
-              if p["comm"] in ("labwc", "systemd", "alba-sessao", "dbus-daemon", "dbus-broker", "sh", "bash", "dash", "zsh", "fish")
+              if p["comm"] in ("labwc", "systemd", "alba-sessao", "dbus-daemon", "dbus-broker", "dbus-run-session", "sh", "bash", "dash", "zsh", "fish", "timeout", "sudo", "login")
               or re.search(r"casca/casca\.py|alba-casca|alba_servidor", " ".join(p["cmd"]))}
     sessao.add(1)
 
