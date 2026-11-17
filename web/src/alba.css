@@ -2280,3 +2280,5 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
 .credito-link { color: var(--ink); background: rgba(60, 80, 140, 0.08); }
 .dark .credito-link { color: #eef0f8; background: rgba(255, 255, 255, 0.08); }
 .credito-apoiar { color: #fff; background: var(--destaque, #e0662f); }
+.ajuste-grupo.credito-papel { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 12px; text-align: left; }
+.ajuste-grupo.credito-papel .credito-texto { align-items: flex-start; }
