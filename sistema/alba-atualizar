@@ -13,7 +13,7 @@ falhar() { echo "ERRO: $*" >&2; exit 1; }
 # Tela de entrada (greetd): quem entra sozinho ao ligar o computador (vazio = ninguém).
 configurar_entrada() {
   local auto="$1"
-  install -d /etc/greetd
+  install -d /etc/greetd /etc/alba
   {
     echo "# Gerado pelo Alba OS (Ajustes › Contas)."
     echo "[terminal]"

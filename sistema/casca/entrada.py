@@ -68,7 +68,7 @@ def entrar(login: str, senha: str) -> tuple[bool, str]:
                 resposta = senha if tipo in ("secret", "visible") else None
                 r = g.pedir({"type": "post_auth_message_response", "response": resposta})
             elif r.get("type") == "success":
-                r = g.pedir({"type": "start_session", "cmd": SESSAO, "env": []})
+                r = g.pedir({"type": "start_session", "cmd": SESSAO, "env": ["ALBA_ENTROU_COM_SENHA=1"]})
                 if r.get("type") == "success":
                     return True, ""
                 g.pedir({"type": "cancel_session"})

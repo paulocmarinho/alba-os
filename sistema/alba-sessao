@@ -11,6 +11,11 @@ PORTA=7070
 CACHE="$HOME/.cache/alba"
 mkdir -p "$CACHE"
 exec >"$CACHE/sessao.log" 2>&1
+# Quem acabou de digitar a senha na tela de entrada não precisa digitar de novo na de bloqueio.
+if [[ "${ALBA_ENTROU_COM_SENHA:-}" == 1 ]]; then
+  touch "$CACHE/manter-desbloqueado"
+  unset ALBA_ENTROU_COM_SENHA
+fi
 
 TOKEN="$(head -c 48 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 40)"
 MODO=()

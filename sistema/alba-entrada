@@ -3,7 +3,7 @@
 # Um compositor de tela única (cage) mostra a escolha de conta e a senha.
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/tmp/alba-entrada-$(id -u)}"
 mkdir -p "$XDG_CACHE_HOME"
-exec >"$XDG_CACHE_HOME/entrada.log" 2>&1
+export XDG_DATA_HOME="$XDG_CACHE_HOME/dados" XDG_CONFIG_HOME="$XDG_CACHE_HOME/config"
 teclado="$(cat /etc/alba/teclado 2>/dev/null || echo br)"
 case "$teclado" in
   br) export XKB_DEFAULT_LAYOUT=br XKB_DEFAULT_MODEL=abnt2 ;;
@@ -15,4 +15,19 @@ if ! compgen -G "/dev/dri/renderD*" >/dev/null; then
   export WLR_RENDERER=pixman WEBKIT_DISABLE_DMABUF_RENDERER=1 LIBGL_ALWAYS_SOFTWARE=1
   export WLR_SCENE_DEBUG_DAMAGE=rerender GSK_RENDERER=ngl
 fi
-exec cage -s -- python3 /usr/share/alba/casca/entrada.py
+# Rede de segurança: se a tela bonita não abrir (duas falhas rápidas seguidas), o greetd mostra
+# a entrada de texto dele (agreety), que sempre funciona: digite o usuário e a senha.
+FALHAS="$XDG_CACHE_HOME/falhas"
+if [[ "$(cat "$FALHAS" 2>/dev/null || echo 0)" -ge 2 ]]; then
+  rm -f "$FALHAS"
+  exec agreety --cmd /usr/bin/alba-sessao
+fi
+inicio=$(date +%s)
+dbus-run-session -- cage -s -- python3 /usr/share/alba/casca/entrada.py >"$XDG_CACHE_HOME/entrada.log" 2>&1
+codigo=$?
+if (( codigo != 0 && $(date +%s) - inicio < 8 )); then
+  echo $(( $(cat "$FALHAS" 2>/dev/null || echo 0) + 1 )) >"$FALHAS"
+else
+  rm -f "$FALHAS"
+fi
+exit "$codigo"
