@@ -811,6 +811,9 @@ def ajustes_do_sistema():
     falta = Path("/usr/share/alba/sistema/50-alba.rules").exists() and not Path("/etc/polkit-1/rules.d/50-alba.rules").exists()
     falta = falta or (Path("/usr/bin/plymouth-set-default-theme").exists() and Path("/usr/local/bin/alba-abertura").exists()
                       and not Path("/etc/alba/abertura-1").exists())
+    # Tela de entrada com as contas (greetd): passa a valer no próximo boot.
+    falta = falta or (Path("/usr/bin/greetd").exists() and Path("/usr/bin/alba-entrada").exists()
+                      and not Path("/etc/alba/entrada-greetd").exists())
     if falta and Path("/usr/local/bin/alba-atualizar").exists():
         subprocess.Popen(["sudo", "-n", "/usr/local/bin/alba-atualizar", "--ajustes"], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, start_new_session=True)
