@@ -246,7 +246,7 @@ export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: num
             <h2>Rede</h2>
             {(() => {
               const principal = rede?.conexoes.find((c) => c.tipo === "wifi" || c.tipo === "ethernet");
-              const icone: NomeIcone = principal?.tipo === "ethernet" ? "ethernet" : "wifi";
+              const icone: NomeIcone = principal?.tipo === "ethernet" ? "ethernet" : principal?.tipo === "wifi" || !rede?.online ? "wifi" : "globe";
               return (
                 <div className="ajustes-vivo rede-vivo">
                   <span className={`rede-vivo-icone ${rede?.online ? "" : "desligado"}`}>
@@ -285,7 +285,7 @@ export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: num
                 </div>
               ) : null}
             </div>
-            <p className="dica">Conexões por cabo entram sozinhas. Redes Wi‑Fi com senha chegam numa próxima versão do Alba OS.</p>
+            <p className="dica">Conexões por cabo entram sozinhas. Para entrar numa rede Wi‑Fi, clique no ícone de Wi‑Fi na barra superior.</p>
           </>
         )}
 
