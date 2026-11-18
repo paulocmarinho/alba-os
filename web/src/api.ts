@@ -27,6 +27,10 @@ export type Config = {
   escala: number;
   teclado: string;
   relogio24h: boolean;
+  /** O vidro (barra, dock, painéis, barra de título) muda de tom com a hora do dia. */
+  vidro_horario?: boolean;
+  /** A cor de destaque acompanha o horário. */
+  destaque_auto?: boolean;
 };
 
 export type Teclado = { id: string; nome: string };

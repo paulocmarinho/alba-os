@@ -14,6 +14,7 @@ python
 noto-fonts
 noto-fonts-emoji
 ttf-jetbrains-mono
+inter-font
 
 # Rede, som e energia
 networkmanager

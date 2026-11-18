@@ -46,13 +46,14 @@ try:
 except OSError:  # libpam ausente (não deve acontecer no Alba)
     pam = None
 
-VERSAO = "0.8.0"
+VERSAO = "0.9.0"
 CASA = Path.home()
 CONFIG_DIR = CASA / ".config" / "alba"
 CONFIG_ARQ = CONFIG_DIR / "config.json"
 LIXEIRA = CASA / ".local" / "share" / "Trash"
 CONFIG_PADRAO = {"tema": "claro", "destaque": "#e0662f", "papel": "rio", "papel_arquivo": "", "papel_definido": False,
-                 "teclado": "br", "relogio24h": True, "escala": 1.25}
+                 "teclado": "br", "relogio24h": True, "escala": 1.25,
+                 "vidro_horario": True, "destaque_auto": False}
 PAPEIS = ("rio", "montanhas", "alba", "personalizado")
 ESCALAS = (1.0, 1.25, 1.5)
 PASTAS_PADRAO = ["Documentos", "Downloads", "Imagens", "Músicas", "Vídeos"]
@@ -191,6 +192,8 @@ def gravar_config(novo):
         cfg["papel"] = "rio"
     cfg["papel_arquivo"] = str(cfg.get("papel_arquivo") or "")[:1024]
     cfg["papel_definido"] = bool(cfg.get("papel_definido"))
+    cfg["vidro_horario"] = bool(cfg.get("vidro_horario", True))
+    cfg["destaque_auto"] = bool(cfg.get("destaque_auto"))
     try:
         cfg["escala"] = float(cfg["escala"])
     except (TypeError, ValueError):

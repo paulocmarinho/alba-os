@@ -2322,3 +2322,383 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
 .launchpad-menu { position: fixed; min-width: 190px; color: var(--ink); background: #f4f7fc; }
 .launchpad-menu .perigo { color: #c2410c; }
 .launchpad-menu-nota { display: block; padding: 6px 12px 8px; color: var(--muted); font-size: 11.5px; }
+
+/* ================================================================ identidade "Alba" (0.9)
+   O vidro acompanha o dia (--vidro, --vidro-borda, --horizonte vêm de horario.ts), o dock tem
+   uma linha de horizonte e o app aberto "nasce" dela, o status fica numa cápsula, e as janelas
+   do Alba têm três pontos que só ganham cor quando o mouse passa. */
+
+.desktop {
+  --vidro: #eef2f8;
+  --vidro-borda: #d8dfeb;
+  --horizonte: #f39a62;
+  letter-spacing: -0.006em;
+}
+
+.desktop .topbar,
+.desktop .dock,
+.desktop .painel-flutuante,
+.desktop .control-center,
+.desktop .menu-suspenso {
+  transition: background-color 1.2s ease, border-color 1.2s ease;
+}
+
+/* Na casca (sem desfoque possível entre camadas) o vidro é uma cor sólida com o tom da hora. */
+.casca-barra .topbar,
+.casca-barra.dark .topbar {
+  background: var(--vidro) !important;
+  border-bottom: 1px solid var(--vidro-borda);
+  box-shadow: none;
+}
+
+.casca-dock .dock,
+.casca-dock.dark .dock {
+  background: var(--vidro) !important;
+  border-color: var(--vidro-borda) !important;
+}
+
+.casca-sobre .painel-flutuante,
+.casca-sobre .control-center,
+.casca-sobre .menu-suspenso,
+.casca-sobre.dark .painel-flutuante,
+.casca-sobre.dark .control-center,
+.casca-sobre.dark .menu-suspenso {
+  background: var(--vidro) !important;
+  border-color: var(--vidro-borda) !important;
+}
+
+.casca-dock .dock > button::before {
+  color: var(--ink);
+  background: var(--vidro) !important;
+  border-color: var(--vidro-borda);
+}
+
+/* Fora da casca (navegador) o vidro é translúcido de verdade, com o mesmo tom. */
+.desktop:not(.casca) .topbar {
+  background: color-mix(in srgb, var(--vidro) 62%, transparent);
+}
+
+.desktop:not(.casca) .dock {
+  background: color-mix(in srgb, var(--vidro) 58%, transparent);
+}
+
+/* ---------------------------------------------------------------- barra superior */
+.topbar {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.app-menu strong {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.capsula-status {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 0 3px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-radius: 999px;
+}
+
+.capsula-status > button {
+  width: 30px;
+  min-width: 30px;
+  height: 24px !important;
+  border-radius: 999px !important;
+}
+
+.capsula-status > button.active,
+.capsula-status > button:hover {
+  background: color-mix(in srgb, var(--ink) 9%, transparent) !important;
+}
+
+.status-menu button.date-time {
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.status-menu button.date-time span {
+  font-weight: 500;
+  opacity: 0.78;
+}
+
+/* ---------------------------------------------------------------- dock com horizonte */
+.dock {
+  border-radius: 22px;
+}
+
+.dock::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 4px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--horizonte) 22%, color-mix(in srgb, var(--horizonte) 40%, #ffffff) 50%, var(--horizonte) 78%, transparent);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.desktop.dark .dock::after {
+  opacity: 0.55;
+}
+
+/* O app aberto: um brilho que nasce da linha do horizonte (no lugar do pontinho). */
+.dock > button.running::after,
+.casca-dock .dock > button.running::after,
+.desktop.dark .dock > button.running::after {
+  width: 20px;
+  height: 6px;
+  bottom: -9px;
+  left: 50%;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 100%, var(--horizonte) 0%, color-mix(in srgb, var(--horizonte) 45%, transparent) 45%, transparent 72%);
+  opacity: 0.8;
+}
+
+.dock > button.ativo::after,
+.casca-dock .dock > button.ativo::after {
+  width: 28px;
+  height: 9px;
+  bottom: -10px;
+  opacity: 1;
+  background: radial-gradient(ellipse at 50% 100%, #fff6ea 0%, var(--horizonte) 28%, color-mix(in srgb, var(--horizonte) 40%, transparent) 55%, transparent 75%);
+}
+
+/* ---------------------------------------------------------------- ícones com luz própria */
+.dock-icon:not(.externo):not(.trash) {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 15px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 232, 0.55),
+    inset 0 -1px 0 rgba(28, 36, 110, 0.18),
+    0 4px 10px rgba(35, 42, 83, 0.18);
+}
+
+.dock-icon:not(.externo):not(.trash)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 70% at 30% -10%, rgba(255, 238, 214, 0.42), transparent 60%),
+    linear-gradient(180deg, transparent 55%, rgba(34, 40, 120, 0.16));
+  pointer-events: none;
+}
+
+.dock-icon > svg {
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 1px 1px rgba(20, 24, 60, 0.18));
+}
+
+.dock-icon.files { background: linear-gradient(160deg, #7cc7f4 0%, #4a8fe8 55%, #4560cc 100%); }
+.dock-icon.notes { background: linear-gradient(160deg, #ffd889 0%, #f6a45d 58%, #e2774c 100%); }
+.dock-icon.settings { background: linear-gradient(160deg, #c3ccd8 0%, #7a8799 60%, #5c687c 100%); }
+.dock-icon.terminal { background: linear-gradient(160deg, #434e5f 0%, #1b2230 60%, #0f141d 100%); }
+
+/* ---------------------------------------------------------------- janelas (modo navegador) */
+.window-bar {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.window-bar .window-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+}
+
+.window-bar .barra-direita {
+  min-width: 62px;
+  justify-content: flex-end;
+}
+
+.window-controls {
+  order: -1;
+  gap: 9px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.window-controls button,
+.terminal-window .window-controls button {
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 0;
+  padding: 0;
+  color: transparent;
+  background: color-mix(in srgb, var(--ink) 22%, transparent) !important;
+  border-radius: 50% !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.window-controls svg {
+  width: 8px;
+  height: 8px;
+  stroke-width: 1.8;
+}
+
+.janela:not(.ativa) .window-controls button {
+  background: color-mix(in srgb, var(--ink) 12%, transparent) !important;
+}
+
+.window-controls:hover button {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.window-controls:hover .wc-close { background: #ef6a4c !important; }
+.window-controls:hover .wc-min { background: #f0b23e !important; }
+.window-controls:hover .wc-max { background: #4ba2e8 !important; }
+
+/* ---------------------------------------------------------------- Ajustes: cabeçalho vivo */
+.ajustes-vivo {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 150px;
+  margin: 4px 0 18px;
+  padding: 14px 16px;
+  overflow: hidden;
+  color: #fff;
+  background: #6f86b8 center / cover no-repeat;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(36, 40, 92, 0.16);
+}
+
+.ajustes-vivo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 12, 30, 0) 40%, rgba(10, 12, 30, 0.55));
+}
+
+.ajustes-vivo .vivo-barra {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: var(--vidro);
+  border-bottom: 1px solid var(--vidro-borda);
+}
+
+.ajustes-vivo .vivo-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  display: flex;
+  gap: 4px;
+  padding: 4px 6px 6px;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  border-radius: 8px;
+  transform: translateX(-50%);
+}
+
+.ajustes-vivo .vivo-dock i {
+  width: 12px;
+  height: 12px;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+  border-radius: 4px;
+}
+
+.ajustes-vivo .vivo-dock i:nth-child(1) { background: #5a9be9; }
+.ajustes-vivo .vivo-dock i:nth-child(2) { background: #f4a65c; }
+.ajustes-vivo .vivo-dock i:nth-child(3) { background: #263041; }
+
+.ajustes-vivo .vivo-dock::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 2px;
+  height: 1px;
+  background: var(--horizonte);
+}
+
+.ajustes-vivo .vivo-texto {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 55%;
+  margin-bottom: 26px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.ajustes-vivo .vivo-texto small {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.ajustes-vivo .vivo-texto strong {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.ajustes-vivo.rede-vivo {
+  height: auto;
+  align-items: center;
+  color: var(--ink);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--destaque) 16%, var(--vidro)), var(--vidro));
+  border: 1px solid var(--vidro-borda);
+  box-shadow: none;
+}
+
+.ajustes-vivo.rede-vivo::before { display: none; }
+
+.ajustes-vivo.rede-vivo .vivo-texto {
+  max-width: none;
+  margin: 0;
+  text-shadow: none;
+}
+
+.ajustes-vivo.rede-vivo .vivo-texto small { color: var(--muted); }
+
+.rede-vivo-icone {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: var(--destaque);
+  border-radius: 13px;
+}
+
+.rede-vivo-icone.desligado { background: #8b93a7; }
+
+.amostra-cor.auto {
+  background: conic-gradient(from 200deg, #7a6ff0, #e0662f, #2f7fe0, #d9822b, #5b6ee1, #7a6ff0) !important;
+}
+
+.fase-atual {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.fase-atual i {
+  width: 10px;
+  height: 10px;
+  background: var(--vidro);
+  border: 1px solid var(--vidro-borda);
+  border-radius: 50%;
+  box-shadow: inset 0 -3px 0 var(--horizonte);
+}

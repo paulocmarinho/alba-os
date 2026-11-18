@@ -17,14 +17,14 @@
     <keepBorder>yes</keepBorder>
     <dropShadows>yes</dropShadows>
     <titlebar>
-      <layout>:iconify,max,close</layout>
+      <layout>close,iconify,max:</layout>
       <showTitle>yes</showTitle>
     </titlebar>
-    <font place="ActiveWindow"><name>DM Sans</name><size>10</size><weight>bold</weight></font>
-    <font place="InactiveWindow"><name>DM Sans</name><size>10</size><weight>bold</weight></font>
-    <font place="MenuHeader"><name>DM Sans</name><size>10</size><weight>bold</weight></font>
-    <font place="MenuItem"><name>DM Sans</name><size>10</size></font>
-    <font place="OnScreenDisplay"><name>DM Sans</name><size>11</size></font>
+    <font place="ActiveWindow"><name>Inter Variable,Inter,DM Sans</name><size>10</size><weight>bold</weight></font>
+    <font place="InactiveWindow"><name>Inter Variable,Inter,DM Sans</name><size>10</size><weight>bold</weight></font>
+    <font place="MenuHeader"><name>Inter Variable,Inter,DM Sans</name><size>10</size><weight>bold</weight></font>
+    <font place="MenuItem"><name>Inter Variable,Inter,DM Sans</name><size>10</size></font>
+    <font place="OnScreenDisplay"><name>Inter Variable,Inter,DM Sans</name><size>11</size></font>
   </theme>
 
   <windowSwitcher preview="yes" outlines="yes">

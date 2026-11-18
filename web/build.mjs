@@ -19,6 +19,10 @@ await build({
   logLevel: "info",
 });
 cpSync("public", "dist", { recursive: true });
+// Inter (SIL Open Font License), a fonte da interface do Alba.
+mkdirSync("dist/fonts", { recursive: true });
+cpSync("fontes/InterVariable.woff2", "dist/fonts/InterVariable.woff2");
+cpSync("fontes/Inter-LICENSE.txt", "dist/fonts/Inter-LICENSE.txt");
 
 // Sleeve, o player de música do sistema (github.com/paulocmarinho/sleeve).
 // A interface dele vem sem etapa de build: copiamos src/web e trocamos a ponte pela do Alba.

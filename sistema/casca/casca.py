@@ -177,15 +177,28 @@ class Casca(Gtk.Application):
             import tema_janelas
             from comum import ler_config
             c = ler_config()
-            tema_janelas.aplicar(escala(), c.get("tema") == "escuro", c.get("destaque"))
+            fase = tema_janelas.fase_do_dia(time.localtime().tm_hour) if c.get("vidro_horario", True) else "dia"
+            self.fase_janelas = fase
+            tema_janelas.aplicar(escala(), c.get("tema") == "escuro", c.get("destaque"), fase)
         except Exception as e:  # noqa: BLE001
             print("alba-casca: tema das janelas:", e, file=sys.stderr, flush=True)
         return False
+
+    def vigiar_fase(self):
+        """A barra de título das janelas muda de tom quando o dia muda de fase (manhã, tarde…)."""
+        try:
+            import tema_janelas
+            if tema_janelas.fase_do_dia(time.localtime().tm_hour) != getattr(self, "fase_janelas", None):
+                self.aplicar_tema_janelas()
+        except Exception:  # noqa: BLE001
+            pass
+        return True
 
     def ativar(self, _app):
         css_transparente()
         if not LIVE:
             GLib.idle_add(self.aplicar_tema_janelas)
+            GLib.timeout_add_seconds(60, self.vigiar_fase)
             if not self.recarregada:
                 GLib.timeout_add(2500, self.abrir_autoinicio)
         A = Camada.Edge

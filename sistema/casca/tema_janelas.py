@@ -47,6 +47,29 @@ ESCURO = {
 }
 
 
+# O tom do "vidro" ao longo do dia (o mesmo de web/src/horario.ts): (claro, escuro) para o
+# fundo da barra de título e a borda.
+FASES = {
+    "madrugada": (("#ebeaf5", "#d9d6ec"), ("#1b1a2e", "#2c2a48")),
+    "manha": (("#f7eee8", "#ecdccf"), ("#241d22", "#3a2e33")),
+    "dia": (("#eef2f8", "#d8dfeb"), ("#1d2033", "#2d3250")),
+    "tarde": (("#f6ece0", "#eadac6"), ("#251f1d", "#3b312b")),
+    "noite": (("#e7eaf4", "#d3d8ea"), ("#171a2f", "#272c4c")),
+}
+
+
+def fase_do_dia(hora: int) -> str:
+    if hora < 5:
+        return "madrugada"
+    if hora < 10:
+        return "manha"
+    if hora < 16:
+        return "dia"
+    if hora < 19:
+        return "tarde"
+    return "noite"
+
+
 def _escrever_se_mudou(caminho: Path, texto: str) -> bool:
     try:
         if caminho.read_text("utf-8") == texto:
@@ -58,12 +81,14 @@ def _escrever_se_mudou(caminho: Path, texto: str) -> bool:
     return True
 
 
-def aplicar(escala: float, escuro: bool, destaque: str | None = None) -> None:
+def aplicar(escala: float, escuro: bool, destaque: str | None = None, fase: str | None = None) -> None:
     if not (TEMA_SISTEMA / "themerc").exists() or not (CONFIG_SISTEMA / "rc.xml").exists():
         return
     mudou = False
 
     # Tema: medidas e cores.
+    tom = FASES.get(fase or "")
+    vidro, borda = (tom[1] if escuro else tom[0]) if tom else (None, None)
     linhas = []
     for linha in (TEMA_SISTEMA / "themerc").read_text("utf-8").splitlines():
         m = re.match(r"^([\w.\-]+):\s*(.+)$", linha)
@@ -75,6 +100,10 @@ def aplicar(escala: float, escuro: bool, destaque: str | None = None) -> None:
                 valor = ESCURO[chave]
             elif chave == "menu.items.active.bg.color" and destaque:
                 valor = destaque
+            if vidro and chave in ("window.active.title.bg.color", "window.inactive.title.bg.color"):
+                valor = vidro
+            elif borda and chave in ("window.active.border.color", "window.inactive.border.color"):
+                valor = borda
             linha = f"{chave}: {valor}"
         linhas.append(linha)
     mudou |= _escrever_se_mudou(TEMA_USUARIO / "themerc", "\n".join(linhas) + "\n")
@@ -85,7 +114,7 @@ def aplicar(escala: float, escuro: bool, destaque: str | None = None) -> None:
     for svg in TEMA_SISTEMA.glob("*.svg"):
         texto = svg.read_text("utf-8")
         texto = re.sub(r'width="16" height="16"', f'width="{lado}" height="{lado}"', texto, count=1)
-        if cor and "close_hover" not in svg.name:
+        if cor and "_hover" not in svg.name:
             texto = texto.replace("#3a4660", cor).replace("#a3abbd", "#6c7390")
         mudou |= _escrever_se_mudou(TEMA_USUARIO / svg.name, texto)
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Config, type Notificacao, type Sistema } from "./api";
+import { coresDoHorario, faseDoDia } from "./horario";
 import { CaixaDialogo, Papel, type Dialogo } from "./Alba";
 import { APPS, CtxAlba, type Contexto, type IdApp, useAlba } from "./contexto";
 import { appAvulso, daCasca, ouvirEventos, paraCasca, propsIniciais, publicarEvento, superficie } from "./ponte";
@@ -191,7 +192,8 @@ export function AlbaCasca() {
     <CtxAlba.Provider value={ctx}>
       <main
         className={`desktop casca casca-${superficie || "app"} ${escuro ? "dark" : ""}`}
-        style={{ "--destaque": config.destaque } as React.CSSProperties}
+        style={coresDoHorario(config, agora)}
+        data-fase={faseDoDia(agora)}
       >
         {superficie === "fundo" && <Papel />}
         {superficie === "barra" && <Barra />}

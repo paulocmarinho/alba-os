@@ -1,5 +1,13 @@
 /* Visual do Alba: base vinda do protótipo do Figma. */
 @font-face {
+  font-family: "Inter";
+  src: url("./fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "DM Sans";
   src: url("./fonts/DMSans.ttf") format("truetype");
   font-weight: 100 1000;
@@ -22,7 +30,8 @@ body,
 
 
 :root {
-  font-family: "DM Sans", sans-serif;
+  font-family: "Inter", "DM Sans", sans-serif;
+  font-feature-settings: "cv11", "ss03";
   color: #171921;
   background: #18182a;
   font-synthesis: none;

@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { api, type Config, type Sistema } from "./api";
+import { coresDoHorario, faseDoDia } from "./horario";
 import { alturaTela, definirEscala, larguraTela } from "./escala";
 import { fotoDoPapel } from "./papeis";
 import { APPS, CtxAlba, type Contexto, type IdApp, type Janela as DadosJanela } from "./contexto";
@@ -327,7 +328,8 @@ export function Alba() {
     <CtxAlba.Provider value={ctx}>
       <main
         className={`desktop ${config.tema === "escuro" ? "dark" : ""} ${sistema.live ? "modo-instalacao" : ""}`}
-        style={{ "--destaque": config.destaque } as React.CSSProperties}
+        style={coresDoHorario(config, agora)}
+        data-fase={faseDoDia(agora)}
       >
         <Papel />
         {bloqueado ? (

@@ -89,6 +89,7 @@ export function BarraSuperior({
         <strong>{nomeAtivo}</strong>
       </nav>
       <nav className="status-menu" aria-label="Status do sistema">
+        <div className="capsula-status">
         <button
           title={rede?.wifi ? `Wi-Fi: ${rede.wifi.nome}` : rede?.cabo ? "Conectado por cabo" : "Sem conexão"}
           className={`${rede?.online ? "" : "desligado"} ${painel === "rede" ? "active" : ""}`}
@@ -110,6 +111,7 @@ export function BarraSuperior({
         <button className={painel === "central" ? "active" : ""} aria-label="Central de controle" onClick={() => aoPainel("central")}>
           <Icone name="control" size={20} />
         </button>
+        </div>
         <button className={`date-time ${painel === "calendario" ? "active" : ""}`} aria-label="Calendário" onClick={() => aoPainel("calendario")}>
           <span>{dataLonga(agora)}</span> {hora(agora)}
           {naoLidas > 0 && painel !== "calendario" && <i className="selo-notificacao" aria-label={`${naoLidas} notificações novas`} />}

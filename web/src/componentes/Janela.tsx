@@ -17,7 +17,7 @@ type Props = {
   onRedimensionar: (largura: number, altura: number) => void;
 };
 
-/** Moldura de janela do Alba: arrastar pela barra, redimensionar pelo canto, controles próprios à direita. */
+/** Moldura de janela do Alba: arrastar pela barra, redimensionar pelo canto, controles do Alba à esquerda (três pontos que ganham cor no hover). */
 export function Janela({
   janela,
   ativa,
@@ -90,26 +90,26 @@ export function Janela({
           if (!(e.target as HTMLElement).closest("button")) onMaximizar();
         }}
       >
+        <div className="window-controls" role="group" aria-label={`Controles da janela ${janela.titulo}`}>
+          <button className="wc-close" onClick={onFechar} aria-label="Fechar">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M3 3l6 6M9 3l-6 6" />
+            </svg>
+          </button>
+          <button className="wc-min" onClick={onMinimizar} aria-label="Minimizar">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <path d="M2.5 6h7" />
+            </svg>
+          </button>
+          <button className="wc-max" onClick={onMaximizar} aria-label={janela.maximizada ? "Restaurar" : "Maximizar"}>
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+              <rect x="2.5" y="2.5" width="7" height="7" rx="2.2" />
+            </svg>
+          </button>
+        </div>
         <span className="window-title">{janela.titulo}</span>
         <div className="barra-direita">
           {acoes && <div className="window-actions">{acoes}</div>}
-          <div className="window-controls" role="group" aria-label={`Controles da janela ${janela.titulo}`}>
-            <button className="wc-min" onClick={onMinimizar} aria-label="Minimizar">
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                <path d="M2.5 6h7" />
-              </svg>
-            </button>
-            <button className="wc-max" onClick={onMaximizar} aria-label={janela.maximizada ? "Restaurar" : "Maximizar"}>
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                <rect x="2.5" y="2.5" width="7" height="7" rx="2.2" />
-              </svg>
-            </button>
-            <button className="wc-close" onClick={onFechar} aria-label="Fechar">
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                <path d="M3 3l6 6M9 3l-6 6" />
-              </svg>
-            </button>
-          </div>
         </div>
       </header>
       )}

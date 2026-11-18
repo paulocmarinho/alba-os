@@ -120,6 +120,17 @@ grim saida/25-atualizacoes.png
 alba-app ajustes '{"secao": "aparencia"}' &
 sleep 6
 grim saida/23-papel-credito.png
+# ---- identidade 0.9: cabeçalho vivo da rede, tema escuro e destaque automático
+alba-app ajustes '{"secao": "rede"}' &
+sleep 5
+grim saida/26-rede-ajustes.png
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "escuro", "destaque_auto": true}' "$ALBA_URL/api/config" > saida/config-escuro.json
+alba-app ajustes '{"secao": "aparencia"}' &
+sleep 8
+grim saida/27-escuro.png
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "claro", "destaque_auto": false}' "$ALBA_URL/api/config" > /dev/null
+sleep 4
+cp ~/.local/share/themes/Alba/labwc/themerc saida/themerc-usuario.txt 2>/dev/null
 alba-app monitor &
 sleep 2; alba-app arquivos &
 sleep 9

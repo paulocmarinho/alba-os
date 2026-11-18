@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { api, type InfoAtualizacao, type Rede, type Som, type Teclado, tamanhoLegivel } from "../api";
 import { useAlba } from "../contexto";
-import { creditoDoPapel, PAPEIS } from "../papeis";
+import { creditoDoPapel, fotoDoPapel, PAPEIS } from "../papeis";
+import { FASES, faseDoDia } from "../horario";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
 import { AjustesApps, AtualizarTudo } from "./AjustesApps";
@@ -41,7 +42,8 @@ function duracao(segundos: number) {
 }
 
 export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: number; app?: string }) {
-  const { config, mudarConfig, sistema, perguntar } = useAlba();
+  const { config, mudarConfig, sistema, perguntar, agora } = useAlba();
+  const fase = FASES[faseDoDia(agora)];
 
   async function escolherImagem() {
     const caminho = await perguntar({
@@ -100,6 +102,19 @@ export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: num
         {secao === "aparencia" && (
           <>
             <h2>Aparência</h2>
+            <div className="ajustes-vivo" style={fotoDoPapel(config) ? { backgroundImage: `url(${fotoDoPapel(config)})` } : undefined}>
+              <span className="vivo-barra" />
+              <span className="vivo-texto">
+                <small>{config.vidro_horario === false ? "Vidro neutro" : `Agora · ${fase.nome}`}</small>
+                <strong>{config.papel === "personalizado" ? "Sua imagem" : PAPEIS.find((p) => p.id === config.papel)?.nome || "Alba"}</strong>
+              </span>
+              <span className="vivo-dock">
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
             <h3>Papel de parede</h3>
             <div className="ajuste-grupo papeis">
               {PAPEIS.map((p) => (
@@ -160,18 +175,48 @@ export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: num
                 ))}
               </div>
             </div>
+            <h3>Vidro</h3>
+            <div className="ajuste-grupo">
+              <div className="setting-row">
+                <span>
+                  <Icone name="sun" /> Acompanhar o horário
+                </span>
+                <Interruptor
+                  rotulo="Vidro acompanha o horário"
+                  ligado={config.vidro_horario !== false}
+                  aoMudar={() => mudarConfig({ vidro_horario: config.vidro_horario === false })}
+                />
+              </div>
+              <p className="dica">
+                A barra, o dock, os painéis e a barra de título das janelas mudam de tom ao longo do dia: lavanda na madrugada, pêssego de manhã, neutro
+                durante o dia, âmbar no fim da tarde e anil à noite.{" "}
+                {config.vidro_horario !== false && (
+                  <span className="fase-atual">
+                    <i /> Agora: {fase.nome.toLowerCase()}
+                  </span>
+                )}
+              </p>
+            </div>
             <h3>Cor de destaque</h3>
             <div className="ajuste-grupo destaques">
+              <button
+                className={`amostra-cor auto ${config.destaque_auto ? "selecionado" : ""}`}
+                aria-label="Automática (acompanha o dia)"
+                title="Automática (acompanha o dia)"
+                onClick={() => mudarConfig({ destaque_auto: true })}
+              >
+                {config.destaque_auto && <Icone name="check" size={16} />}
+              </button>
               {DESTAQUES.map((d) => (
                 <button
                   key={d.cor}
-                  className={`amostra-cor ${config.destaque === d.cor ? "selecionado" : ""}`}
+                  className={`amostra-cor ${!config.destaque_auto && config.destaque === d.cor ? "selecionado" : ""}`}
                   style={{ background: d.cor }}
                   aria-label={d.nome}
                   title={d.nome}
-                  onClick={() => mudarConfig({ destaque: d.cor })}
+                  onClick={() => mudarConfig({ destaque: d.cor, destaque_auto: false })}
                 >
-                  {config.destaque === d.cor && <Icone name="check" size={16} />}
+                  {!config.destaque_auto && config.destaque === d.cor && <Icone name="check" size={16} />}
                 </button>
               ))}
             </div>
@@ -199,6 +244,21 @@ export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: num
         {secao === "rede" && (
           <>
             <h2>Rede</h2>
+            {(() => {
+              const principal = rede?.conexoes.find((c) => c.tipo === "wifi" || c.tipo === "ethernet");
+              const icone: NomeIcone = principal?.tipo === "ethernet" ? "ethernet" : "wifi";
+              return (
+                <div className="ajustes-vivo rede-vivo">
+                  <span className={`rede-vivo-icone ${rede?.online ? "" : "desligado"}`}>
+                    <Icone name={icone} size={22} />
+                  </span>
+                  <span className="vivo-texto">
+                    <small>{rede?.online ? (principal?.tipo === "ethernet" ? "Conectado por cabo" : "Conectado") : "Rede"}</small>
+                    <strong>{rede ? (rede.online ? principal?.nome || principal?.dispositivo || "Internet" : "Sem conexão") : "Verificando…"}</strong>
+                  </span>
+                </div>
+              );
+            })()}
             <div className="ajuste-grupo">
               <div className="setting-row">
                 <span>
