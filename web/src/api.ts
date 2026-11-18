@@ -33,6 +33,8 @@ export type Config = {
   destaque_auto?: boolean;
   /** Apps fixos no dock, na ordem (null = a lista que vem com o Alba). */
   dock?: string[] | null;
+  /** Lugar de cada ícone na área de trabalho: nome do arquivo → [coluna a partir da direita, linha]. */
+  mesa_posicoes?: Record<string, [number, number]>;
 };
 
 export type Teclado = { id: string; nome: string };
@@ -152,6 +154,21 @@ export type ItemMesa = {
   icone?: string;
 };
 
+export type Conta = { login: string; nome: string; admin: boolean; eu: boolean; automatico: boolean };
+
+export const contas = {
+  listar: () => pedir<{ contas: Conta[]; souAdmin: boolean; telaEntrada: boolean }>("GET", "/api/contas"),
+  acao: (corpo: {
+    acao: "criar" | "senha" | "nome" | "admin" | "remover" | "automatico";
+    login: string;
+    nome?: string;
+    admin?: boolean;
+    senha_atual: string;
+    senha_nova?: string;
+    apagar_arquivos?: boolean;
+  }) => pedir<{ ok: boolean }>("POST", "/api/contas", corpo),
+};
+
 export const mesa = {
   listar: () => pedir<{ caminho: string; itens: ItemMesa[] }>("GET", "/api/mesa"),
   atalho: (alvo: { caminho?: string; desktop?: string; alba?: string }) => pedir<{ caminho: string }>("POST", "/api/mesa/atalho", alvo),
@@ -250,7 +267,7 @@ export const api = {
   som: () => pedir<Som>("GET", "/api/som"),
   gravarSom: (mudancas: Partial<Som>) => pedir<Som>("POST", "/api/som", mudancas),
   rede: () => pedir<Rede>("GET", "/api/rede"),
-  energia: (acao: "desligar" | "reiniciar") => pedir("POST", "/api/energia", { acao }),
+  energia: (acao: "desligar" | "reiniciar" | "sair") => pedir("POST", "/api/energia", { acao }),
   discos: () => pedir<{ discos: Disco[] }>("GET", "/api/discos"),
   fusos: () => pedir<{ fusos: string[]; padrao: string; teclados: Teclado[] }>("GET", "/api/fusos"),
   recarregar: (sessao = false) => pedir<{ ok: boolean }>("POST", "/api/recarregar", { sessao }),

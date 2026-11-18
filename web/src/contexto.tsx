@@ -48,7 +48,7 @@ export type Contexto = {
   bloquear: () => void;
   tocando: Tocando | null;
   definirTocando: (t: Tocando | null) => void;
-  energia: (acao: "desligar" | "reiniciar") => void;
+  energia: (acao: "desligar" | "reiniciar" | "sair") => void;
 };
 
 export const CtxAlba = createContext<Contexto | null>(null);

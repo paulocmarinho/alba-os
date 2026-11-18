@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, arquivosExtra, type Item, type ItemMesa, mesa } from "../api";
 import { type IdApp, APPS, useAlba } from "../contexto";
 import { ouvirEventos, paraCasca, publicarEvento } from "../ponte";
@@ -8,17 +8,126 @@ import { Icone } from "./Icone";
 
 type Menu = { item: ItemMesa | null; x: number; y: number };
 
+// Grade dos ícones (px da página): margem de cima (barra), de baixo (dock), da direita e tamanho da célula.
+const TOPO = 54;
+const BAIXO = 110;
+const DIREITA = 18;
+const CEL_L = 104;
+const CEL_A = 116;
+
 /**
  * Ícones na área de trabalho (a pasta ~/Área de Trabalho), em colunas a partir da direita,
  * com menu de clique direito: nova pasta, novo documento, colar, papel de parede…
  */
 export function AreaDeTrabalho() {
-  const { abrir, aviso, perguntar, confirmar, config } = useAlba();
+  const { abrir, aviso, perguntar, confirmar, config, mudarConfig } = useAlba();
   const [pasta, setPasta] = useState("");
   const [itens, setItens] = useState<ItemMesa[]>([]);
   const [sel, setSel] = useState<string[]>([]);
   const [menu, setMenu] = useState<Menu | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
+  const [tela, setTela] = useState({ l: window.innerWidth, a: window.innerHeight });
+  useEffect(() => {
+    const f = () => setTela({ l: window.innerWidth, a: window.innerHeight });
+    window.addEventListener("resize", f);
+    return () => window.removeEventListener("resize", f);
+  }, []);
+
+  // ---- lugares na grade (coluna 0 = direita, como no Mac); o que o usuário arrastou fica salvo
+  const linhas = Math.max(1, Math.floor((tela.a - TOPO - BAIXO) / CEL_A));
+  const colunas = Math.max(1, Math.floor((tela.l - DIREITA - 20) / CEL_L));
+  const nomeDe = (it: ItemMesa) => it.caminho.split("/").pop() || it.nome;
+  const salvas = config.mesa_posicoes || {};
+  const lugares = useMemo(() => {
+    const ocupado = new Set<string>();
+    const mapa = new Map<string, [number, number]>();
+    for (const it of itens) {
+      const p = salvas[nomeDe(it)];
+      if (p && p[0] < colunas && p[1] < linhas && !ocupado.has(`${p[0]},${p[1]}`)) {
+        mapa.set(it.caminho, p);
+        ocupado.add(`${p[0]},${p[1]}`);
+      }
+    }
+    let c = 0;
+    let l = 0;
+    for (const it of itens) {
+      if (mapa.has(it.caminho)) continue;
+      while (ocupado.has(`${c},${l}`)) {
+        l++;
+        if (l >= linhas) (l = 0), c++;
+      }
+      mapa.set(it.caminho, [c, l]);
+      ocupado.add(`${c},${l}`);
+    }
+    return mapa;
+  }, [itens, salvas, linhas, colunas]);
+
+  // ---- arrastar ícones
+  type Arraste = { caminhos: string[]; x0: number; y0: number; dx: number; dy: number; ativo: boolean };
+  const [arraste, setArraste] = useState<Arraste | null>(null);
+  const arrasteRef = useRef<Arraste | null>(null);
+  const acabouDeArrastar = useRef(false);
+  const mudarArraste = (a: Arraste | null) => {
+    arrasteRef.current = a;
+    setArraste(a);
+  };
+
+  function celulaEm(x: number, y: number): [number, number] {
+    const c = Math.min(colunas - 1, Math.max(0, Math.floor((tela.l - DIREITA - x) / CEL_L)));
+    const l = Math.min(linhas - 1, Math.max(0, Math.floor((y - TOPO) / CEL_A)));
+    return [c, l];
+  }
+
+  function soltarIcones(e: React.PointerEvent) {
+    const a = arrasteRef.current;
+    mudarArraste(null);
+    if (!a?.ativo) return;
+    acabouDeArrastar.current = true;
+    window.setTimeout(() => (acabouDeArrastar.current = false), 60);
+    const [c, l] = celulaEm(e.clientX, e.clientY);
+    // Soltou em cima de uma pasta: move para dentro dela.
+    const alvo = itens.find((i) => !a.caminhos.includes(i.caminho) && i.tipo === "pasta" && lugares.get(i.caminho)?.[0] === c && lugares.get(i.caminho)?.[1] === l);
+    if (alvo) {
+      arquivosExtra
+        .colar(a.caminhos, alvo.caminho, "mover")
+        .then(mudou)
+        .catch((er) => aviso(er.message));
+      return;
+    }
+    // Cada ícone anda o mesmo tanto que o que foi pego; se o lugar estiver ocupado, vai para o vazio mais perto.
+    const principal = lugares.get(a.caminhos[0]) || [0, 0];
+    const dc = c - principal[0];
+    const dl = l - principal[1];
+    const novas: Record<string, [number, number]> = {};
+    const ocupado = new Set<string>();
+    for (const it of itens) {
+      if (a.caminhos.includes(it.caminho)) continue;
+      const p = lugares.get(it.caminho)!;
+      novas[nomeDe(it)] = p;
+      ocupado.add(`${p[0]},${p[1]}`);
+    }
+    for (const cam of a.caminhos) {
+      const p = lugares.get(cam) || [0, 0];
+      let alvoC = Math.min(colunas - 1, Math.max(0, p[0] + dc));
+      let alvoL = Math.min(linhas - 1, Math.max(0, p[1] + dl));
+      if (ocupado.has(`${alvoC},${alvoL}`)) {
+        let melhor: [number, number] | null = null;
+        let dist = Infinity;
+        for (let cc = 0; cc < colunas; cc++)
+          for (let ll = 0; ll < linhas; ll++) {
+            if (ocupado.has(`${cc},${ll}`)) continue;
+            const d = (cc - alvoC) ** 2 + (ll - alvoL) ** 2;
+            if (d < dist) (dist = d), (melhor = [cc, ll]);
+          }
+        if (!melhor) continue;
+        [alvoC, alvoL] = melhor;
+      }
+      ocupado.add(`${alvoC},${alvoL}`);
+      const it = itens.find((i) => i.caminho === cam);
+      if (it) novas[nomeDe(it)] = [alvoC, alvoL];
+    }
+    mudarConfig({ mesa_posicoes: novas });
+  }
 
   const carregar = useCallback(() => {
     mesa
@@ -157,6 +266,9 @@ export function AreaDeTrabalho() {
           <button onClick={fazer(() => paraCasca({ tipo: "launchpad" }))}>
             <Icone name="grid" size={16} /> Adicionar app…
           </button>
+          <button onClick={fazer(() => mudarConfig({ mesa_posicoes: {} }))}>
+            <Icone name="grid" size={16} /> Organizar ícones por nome
+          </button>
           <button onClick={fazer(() => abrir("arquivos", { inicial: pasta }))}>
             <Icone name="folder" size={16} /> Abrir no Arquivos
           </button>
@@ -210,18 +322,42 @@ export function AreaDeTrabalho() {
         setMenu({ item: null, x: e.clientX, y: e.clientY });
       }}
     >
-      <div className="mesa-grade">
-        {itens.map((it) => (
+      <div className={`mesa-grade ${arraste?.ativo ? "arrastando" : ""}`}>
+        {arraste?.ativo &&
+          (() => {
+            const [c, l] = celulaEm(arraste.x0 + arraste.dx, arraste.y0 + arraste.dy);
+            return <span className="mesa-alvo" style={{ right: DIREITA + c * CEL_L, top: TOPO + l * CEL_A }} />;
+          })()}
+        {itens.map((it) => {
+          const [c, l] = lugares.get(it.caminho) || [0, 0];
+          const movendo = arraste?.ativo && arraste.caminhos.includes(it.caminho);
+          return (
           <button
             key={it.caminho}
-            className={`mesa-item ${sel.includes(it.caminho) ? "selecionado" : ""}`}
+            className={`mesa-item ${sel.includes(it.caminho) ? "selecionado" : ""} ${movendo ? "movendo" : ""}`}
             title={it.nome}
+            style={{ right: DIREITA + c * CEL_L, top: TOPO + l * CEL_A, transform: movendo ? `translate(${arraste!.dx}px, ${arraste!.dy}px)` : undefined }}
             onPointerDown={(e) => {
               if (e.button === 2 && sel.includes(it.caminho)) return;
+              let grupo = [it.caminho];
               if (e.ctrlKey) setSel((s) => (s.includes(it.caminho) ? s.filter((x) => x !== it.caminho) : [...s, it.caminho]));
+              else if (sel.includes(it.caminho)) grupo = sel;
               else setSel([it.caminho]);
+              if (e.button !== 0 || e.ctrlKey) return;
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              mudarArraste({ caminhos: grupo, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, ativo: false });
             }}
-            onDoubleClick={() => abrirItem(it)}
+            onPointerMove={(e) => {
+              const a = arrasteRef.current;
+              if (!a) return;
+              const dx = e.clientX - a.x0;
+              const dy = e.clientY - a.y0;
+              if (!a.ativo && Math.hypot(dx, dy) < 6) return;
+              mudarArraste({ ...a, dx, dy, ativo: true });
+            }}
+            onPointerUp={soltarIcones}
+            onPointerCancel={() => mudarArraste(null)}
+            onDoubleClick={() => !acabouDeArrastar.current && abrirItem(it)}
             onContextMenu={(e) => {
               e.preventDefault();
               setMenu({ item: it, x: e.clientX, y: e.clientY });
@@ -231,7 +367,8 @@ export function AreaDeTrabalho() {
             <span className="mesa-nome">{it.nome.replace(/\.desktop$/, "")}</span>
             {it.atalho && <span className="mesa-seta" aria-label="Atalho" />}
           </button>
-        ))}
+          );
+        })}
       </div>
       {menu && (
         <div

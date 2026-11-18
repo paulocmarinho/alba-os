@@ -3,6 +3,7 @@
 
 # Sessão gráfica: compositor mínimo + motor de navegador em modo quiosque
 cage
+greetd
 chromium
 mesa
 vulkan-swrast

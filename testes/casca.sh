@@ -182,3 +182,33 @@ grim saida/31-mesa.png
 curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "escuro"}' "$ALBA_URL/api/config" > /dev/null
 sleep 3
 grim saida/32-mesa-escuro.png
+# ---- ícones da área de trabalho em lugares escolhidos (como depois de arrastar)
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "claro", "mesa_posicoes": {"alba-notas.desktop": [3, 2], "Projetos": [6, 4], "foto.jpg": [0, 5]}}' "$ALBA_URL/api/config" > /dev/null
+sleep 4
+grim saida/33-mesa-arrumada.png
+# ---- contas: o ajudante de root (criar, senha errada, admin, remover)
+useradd -m -G wheel -c "Paulo Teste" paulo && echo 'paulo:segredo1' | chpasswd
+{
+  echo "== criar maria"; printf 'segredo1\nsenhaMaria\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta criar maria "Maria Souza" 0; echo "saida=$?"
+  echo "== senha errada"; printf 'errada\nx\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta criar joao "João" 0; echo "saida=$?"
+  echo "== login inválido"; printf 'segredo1\nx\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta criar "Joao Silva" "João" 0; echo "saida=$?"
+  echo "== maria vira admin"; printf 'segredo1\n\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta admin maria 1; echo "saida=$?"; id maria
+  echo "== tirar admin do único outro"; printf 'segredo1\n\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta admin maria 0; echo "saida=$?"; id maria
+  echo "== remover a si mesmo"; printf 'segredo1\n\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta remover paulo 1; echo "saida=$?"
+  echo "== senha da maria funciona?"; python3 -c 'import sys; sys.path.insert(0,"/usr/share/alba/servidor"); import pam; print(pam.autenticar("maria","senhaMaria"))'
+  echo "== entrada automática"; printf 'segredo1\n\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta automatico maria; echo "saida=$?"; cat /etc/greetd/config.toml
+} > saida/contas.txt 2>&1
+curl -s "${H[@]}" "$ALBA_URL/api/contas" > saida/contas.json
+alba-app ajustes '{"secao": "contas"}' &
+sleep 6
+grim saida/34-contas.png
+# ---- tela de entrada (sem greetd: a senha "alba" entra)
+ALBA_ENTRADA_TESTE=1 ALBA_ESCALA=1 python3 /usr/share/alba/casca/entrada.py > saida/entrada.log 2>&1 &
+sleep 8
+grim saida/35-entrada.png
+wtype -k Tab; sleep 0.3; wtype -k Return; sleep 1.5
+grim saida/36-entrada-senha.png
+wtype errada; wtype -k Return; sleep 1.5
+grim saida/37-entrada-erro.png
+wtype alba; wtype -k Return; sleep 1.5
+grim saida/38-entrada-ok.png

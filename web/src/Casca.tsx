@@ -142,11 +142,11 @@ export function AlbaCasca() {
     [aviso],
   );
   const energia = useCallback(
-    async (acao: "desligar" | "reiniciar") => {
+    async (acao: "desligar" | "reiniciar" | "sair") => {
       const ok = await confirmar({
-        titulo: acao === "desligar" ? "Desligar o computador?" : "Reiniciar o computador?",
-        texto: "Salve o que estiver aberto antes de continuar.",
-        ok: acao === "desligar" ? "Desligar" : "Reiniciar",
+        titulo: acao === "desligar" ? "Desligar o computador?" : acao === "sair" ? "Encerrar a sessão?" : "Reiniciar o computador?",
+        texto: acao === "sair" ? "Os apps abertos serão fechados e a tela de entrada vai aparecer." : "Salve o que estiver aberto antes de continuar.",
+        ok: acao === "desligar" ? "Desligar" : acao === "sair" ? "Encerrar sessão" : "Reiniciar",
         perigo: acao === "desligar",
       });
       if (ok) api.energia(acao).catch((e) => aviso(e.message));
@@ -526,6 +526,7 @@ function MenuAlba({ fechar }: { fechar: () => void }) {
       {item("Ajustes do sistema…", "settings", () => abrir("ajustes"))}
       <hr />
       {!sistema.live && item("Bloquear tela", "lock", bloquear)}
+      {!sistema.live && item(`Encerrar sessão de ${sistema.nome.split(" ")[0]}…`, "user", () => energia("sair"))}
       {item("Reiniciar…", "restart", () => energia("reiniciar"))}
       {item("Desligar…", "power", () => energia("desligar"))}
     </div>

@@ -26,6 +26,7 @@ import shutil
 import signal
 import struct
 import subprocess
+import time
 import sys
 import termios
 import urllib.parse
@@ -54,7 +55,7 @@ LIXEIRA = CASA / ".local" / "share" / "Trash"
 CONFIG_PADRAO = {"tema": "claro", "destaque": "#e0662f", "papel": "rio", "papel_arquivo": "", "papel_definido": False,
                  "teclado": "br", "relogio24h": True, "escala": 1.25,
                  "vidro_horario": True, "destaque_auto": False,
-                 "dock": None}
+                 "dock": None, "mesa_posicoes": {}}
 PAPEIS = ("rio", "montanhas", "alba", "personalizado")
 ESCALAS = (1.0, 1.25, 1.5)
 PASTAS_PADRAO = ["Documentos", "Downloads", "Imagens", "Músicas", "Vídeos"]
@@ -204,6 +205,14 @@ def gravar_config(novo):
             if isinstance(item, str) and re.fullmatch(r"[\w.\-]{1,200}", item) and item not in limpa:
                 limpa.append(item)
         cfg["dock"] = limpa[:30]
+    # Lugar de cada ícone na área de trabalho: {"nome do arquivo": [coluna, linha]} (coluna 0 = direita).
+    pos = cfg.get("mesa_posicoes")
+    limpo = {}
+    if isinstance(pos, dict):
+        for nome, v in list(pos.items())[:500]:
+            if isinstance(nome, str) and isinstance(v, list) and len(v) == 2 and all(isinstance(n, int) and 0 <= n < 100 for n in v):
+                limpo[nome[:255]] = v
+    cfg["mesa_posicoes"] = limpo
     try:
         cfg["escala"] = float(cfg["escala"])
     except (TypeError, ValueError):
@@ -385,6 +394,115 @@ def api_arquivo_novo(_q, c):
         raise ErroApi(409, "Já existe um item com esse nome.")
     destino.touch()
     return {"ok": True, "caminho": str(destino)}
+
+
+# ---------------------------------------------------------------- contas de usuário
+def _contas_lista() -> list[dict]:
+    import grp
+    try:
+        admins = set(grp.getgrnam("wheel").gr_mem)
+    except KeyError:
+        admins = set()
+    eu = pwd.getpwuid(os.getuid()).pw_name
+    auto = _entrada_automatica()
+    lista = []
+    for p in pwd.getpwall():
+        if 1000 <= p.pw_uid < 60000 and not p.pw_shell.endswith(("nologin", "false")):
+            nome = (p.pw_gecos or "").split(",")[0].strip() or p.pw_name
+            lista.append({"login": p.pw_name, "nome": nome, "admin": p.pw_name in admins, "eu": p.pw_name == eu,
+                          "automatico": p.pw_name == auto})
+    return sorted(lista, key=lambda c: (not c["eu"], c["nome"].lower()))
+
+
+def _entrada_automatica() -> str:
+    try:
+        return Path("/etc/alba/entrada-automatica").read_text().strip()
+    except OSError:
+        pass
+    try:  # antes da tela de entrada: login automático pelo tty1
+        texto = Path("/etc/systemd/system/getty@tty1.service.d/autologin.conf").read_text()
+        m = re.search(r"--autologin (\S+)", texto)
+        return m.group(1) if m else ""
+    except OSError:
+        return ""
+
+
+def api_contas(_q, _c):
+    contas = _contas_lista()
+    eu = next((c for c in contas if c["eu"]), None)
+    return {"contas": contas, "souAdmin": bool(eu and eu["admin"]),
+            "telaEntrada": Path("/etc/alba/entrada-greetd").exists()}
+
+
+def _trocar_senha_propria(atual: str, nova: str) -> None:
+    """Conta sem administrador: troca a própria senha pelo passwd (que pede a atual)."""
+    import pty
+    import select
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.environ["LC_ALL"] = "C"
+        os.execvp("passwd", ["passwd"])
+    saida = b""
+    respostas = [atual, nova, nova]
+    fim = time.time() + 20
+    try:
+        while time.time() < fim:
+            r, _, _ = select.select([fd], [], [], 0.5)
+            if not r:
+                continue
+            try:
+                parte = os.read(fd, 1024)
+            except OSError:
+                break
+            if not parte:
+                break
+            saida += parte
+            if saida.rstrip().lower().endswith(b"password:") and respostas:
+                os.write(fd, (respostas.pop(0) + "\n").encode())
+                saida = b""
+    finally:
+        _, status = os.waitpid(pid, 0)
+    if os.waitstatus_to_exitcode(status) != 0:
+        texto = saida.decode(errors="replace").strip().splitlines()
+        raise ErroApi(400, "Não consegui trocar a senha" + (f": {texto[-1]}" if texto else "."))
+
+
+def api_contas_acao(_q, c):
+    acao = str(c.get("acao", ""))
+    login = str(c.get("login", ""))
+    atual = str(c.get("senha_atual", ""))
+    nova = str(c.get("senha_nova", ""))
+    if "\n" in atual or "\n" in nova:
+        raise ErroApi(400, "A senha não pode ter quebra de linha.")
+    if ARGS and ARGS.live:
+        raise ErroApi(403, "Instale o Alba primeiro.")
+    contas = {x["login"]: x for x in _contas_lista()}
+    eu = next((x for x in contas.values() if x["eu"]), None)
+    if acao == "senha" and eu and login == eu["login"] and not eu["admin"]:
+        _trocar_senha_propria(atual, nova)
+        return {"ok": True}
+    if not (eu and eu["admin"]):
+        raise ErroApi(403, "Só um administrador pode fazer isso.")
+    extra: list[str] = []
+    if acao == "criar":
+        extra = [str(c.get("nome", "")).strip(), "1" if c.get("admin") else "0"]
+    elif acao == "nome":
+        extra = [str(c.get("nome", "")).strip()]
+    elif acao == "admin":
+        extra = ["1" if c.get("admin") else "0"]
+    elif acao == "remover":
+        extra = ["1" if c.get("apagar_arquivos") else "0"]
+    elif acao not in ("senha", "automatico"):
+        raise ErroApi(400, "Ação desconhecida.")
+    r = subprocess.run(["sudo", "-n", "/usr/local/bin/alba-atualizar", "--conta", acao, login, *extra],
+                       input=f"{atual}\n{nova}\n", capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        erro = (r.stderr or r.stdout).strip().splitlines()
+        msg = erro[-1].replace("ERRO: ", "") if erro else "não deu certo."
+        if "ação desconhecida" in msg or "uso:" in msg:
+            msg = "atualize o Alba (Atualizar tudo) e tente de novo."
+        raise ErroApi(400, msg[:1].upper() + msg[1:])
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------- área de trabalho
@@ -818,6 +936,12 @@ def api_rede(_q, _c):
 
 def api_energia(_q, c):
     acao = c.get("acao")
+    if acao == "sair":
+        # A sessão (alba-sessao) vê o pedido, fecha o compositor e termina: volta a tela de entrada.
+        pasta = CASA / ".cache/alba"
+        pasta.mkdir(parents=True, exist_ok=True)
+        (pasta / "recarregar").write_text("sair")
+        return {"ok": True}
     if acao not in ("desligar", "reiniciar"):
         raise ErroApi(400, "Ação desconhecida.")
     cod, _, erro = rodar("systemctl", "poweroff" if acao == "desligar" else "reboot")
@@ -1198,6 +1322,8 @@ ROTAS = {
     ("POST", "/api/renomear"): api_renomear,
     ("POST", "/api/arquivo/novo"): api_arquivo_novo,
     ("GET", "/api/mesa"): api_mesa,
+    ("GET", "/api/contas"): api_contas,
+    ("POST", "/api/contas"): api_contas_acao,
     ("POST", "/api/mesa/atalho"): api_mesa_atalho,
     ("POST", "/api/lixeira"): api_lixeira_mover,
     ("GET", "/api/lixeira"): api_lixeira_listar,

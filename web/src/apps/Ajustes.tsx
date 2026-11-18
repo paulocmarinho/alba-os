@@ -5,13 +5,15 @@ import { creditoDoPapel, fotoDoPapel, PAPEIS } from "../papeis";
 import { FASES, faseDoDia } from "../horario";
 import { Deslizante, Interruptor } from "../componentes/Central";
 import { Icone, type NomeIcone } from "../componentes/Icone";
+import { AjustesContas } from "./AjustesContas";
 import { AjustesApps, AtualizarTudo } from "./AjustesApps";
 
-type Secao = "aparencia" | "apps" | "rede" | "som" | "teclado" | "sobre";
+type Secao = "aparencia" | "apps" | "contas" | "rede" | "som" | "teclado" | "sobre";
 
 const SECOES: { id: Secao; nome: string; icone: NomeIcone }[] = [
   { id: "aparencia", nome: "Aparência", icone: "palette" },
   { id: "apps", nome: "Apps", icone: "grid" },
+  { id: "contas", nome: "Contas", icone: "user" },
   { id: "rede", nome: "Rede", icone: "wifi" },
   { id: "som", nome: "Som", icone: "volume" },
   { id: "teclado", nome: "Teclado", icone: "keyboard" },
@@ -99,6 +101,7 @@ export function Ajustes({ secao: inicial, vez, app }: { secao?: Secao; vez?: num
 
       <div className="ajustes-conteudo">
         {secao === "apps" && <AjustesApps buscaInicial={app} />}
+        {secao === "contas" && <AjustesContas />}
         {secao === "aparencia" && (
           <>
             <h2>Aparência</h2>

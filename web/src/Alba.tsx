@@ -203,7 +203,7 @@ export function Alba() {
   }, []);
 
   const energia = useCallback(
-    async (acao: "desligar" | "reiniciar") => {
+    async (acao: "desligar" | "reiniciar" | "sair") => {
       const ok = await confirmar({
         titulo: acao === "desligar" ? "Desligar o computador?" : "Reiniciar o computador?",
         texto: "Salve o que estiver aberto antes de continuar.",

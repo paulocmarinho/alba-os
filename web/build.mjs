@@ -14,7 +14,7 @@ await build({
   sourcemap: dev,
   target: ["chrome110"],
   loader: { ".svg": "file", ".png": "file" },
-  external: ["./fonts/*"],
+  external: ["./fonts/*", "./papeis/*"],
   define: { "process.env.NODE_ENV": dev ? '"development"' : '"production"' },
   logLevel: "info",
 });

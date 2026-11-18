@@ -10,6 +10,26 @@ PACOTE="alba-atualizacao.tar.gz"
 
 falhar() { echo "ERRO: $*" >&2; exit 1; }
 
+# Tela de entrada (greetd): quem entra sozinho ao ligar o computador (vazio = ninguém).
+configurar_entrada() {
+  local auto="$1"
+  install -d /etc/greetd
+  {
+    echo "# Gerado pelo Alba OS (Ajustes › Contas)."
+    echo "[terminal]"
+    echo "vt = 1"
+    echo "[default_session]"
+    echo 'command = "/usr/bin/alba-entrada"'
+    echo 'user = "greeter"'
+    if [[ -n "$auto" ]]; then
+      echo "[initial_session]"
+      echo 'command = "/usr/bin/alba-sessao"'
+      echo "user = \"$auto\""
+    fi
+  } >/etc/greetd/config.toml.novo
+  mv /etc/greetd/config.toml.novo /etc/greetd/config.toml
+  echo "$auto" >/etc/alba/entrada-automatica
+}
 [[ $EUID -eq 0 ]] || falhar "precisa rodar como administrador."
 [[ ! -d /run/archiso ]] || falhar "a sessão de instalação não se atualiza; instale o Alba primeiro."
 
@@ -25,6 +45,21 @@ aplicar_ajustes() {
   fi
   # Tela de abertura (refaz a inicialização só na primeira vez; volta atrás se falhar)
   [[ -x /usr/local/bin/alba-abertura ]] && /usr/local/bin/alba-abertura || true
+  # Tela de entrada com as contas (greetd) no lugar do login automático pelo tty1. Vale a
+  # partir do próximo boot; quem entrava sozinho continua entrando sozinho. O tty2 continua
+  # com o login de texto, como saída de emergência (Ctrl+Alt+F2).
+  if [[ ! -e /etc/alba/entrada-greetd && -x /usr/bin/greetd && -x /usr/bin/alba-entrada && -x /usr/bin/cage ]] \
+     && getent passwd greeter >/dev/null; then
+    local auto=""
+    auto="$(sed -n 's/.*--autologin \([^ ]*\).*/\1/p' /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null | head -1)"
+    install -d /etc/alba
+    configurar_entrada "$auto"
+    usermod -a -G video,input greeter 2>/dev/null || true
+    rm -f /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    systemctl disable getty@tty1.service >/dev/null 2>&1 || true
+    systemctl enable greetd.service >/dev/null 2>&1 || true
+    touch /etc/alba/entrada-greetd
+  fi
 }
 
 # Programas que o Alba precisa para funcionar: não podem ser removidos pela interface.
@@ -64,6 +99,78 @@ if [[ "${1:-}" == "--remover" ]]; then
   fi
   pacman -Rns --noconfirm --noprogressbar "$pacote" || falhar "não consegui remover."
   echo "Pronto: removido."
+  exit 0
+fi
+
+# "alba-atualizar --conta AÇÃO ...": contas de usuário (criar, senha, nome, admin, remover,
+# entrar automaticamente). A primeira linha da entrada é a senha de quem pediu (conferida aqui,
+# como root): assim nenhum programa consegue mexer nas contas só por ter o sudo sem senha.
+# A segunda linha, quando há, é a senha nova.
+if [[ "${1:-}" == "--conta" ]]; then
+  acao="${2:-}"; alvo="${3:-}"
+  quem="${SUDO_USER:-}"
+  [[ -n "$quem" ]] || falhar "não sei quem pediu."
+  IFS= read -r senha_quem || true
+  IFS= read -r senha_nova || true
+  python3 -c 'import sys; sys.path.insert(0, "/usr/share/alba/servidor"); import pam; sys.exit(0 if pam.autenticar(sys.argv[1], sys.stdin.readline().rstrip("\n")) else 1)' \
+    "$quem" <<<"$senha_quem" || falhar "senha incorreta."
+  login_valido() { [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; }
+  e_pessoa() { local u; u="$(id -u "$1" 2>/dev/null)" || return 1; (( u >= 1000 && u < 60000 )); }
+  admins() { getent group wheel | cut -d: -f4 | tr ',' '\n' | grep -v '^$' || true; }
+  case "$acao" in
+    criar)
+      nome="${4:-}"; admin="${5:-0}"
+      login_valido "$alvo" || falhar "nome de usuário inválido: use letras minúsculas, números, - ou _ (começando por letra)."
+      id "$alvo" >/dev/null 2>&1 && falhar "já existe uma conta com esse nome de usuário."
+      [[ ${#senha_nova} -ge 1 ]] || falhar "escolha uma senha."
+      [[ "$nome" != *:* && "$nome" != *,* ]] || falhar "o nome não pode ter dois-pontos nem vírgula."
+      grupos="audio,video,input"; [[ "$admin" == 1 ]] && grupos="wheel,$grupos"
+      useradd -m -G "$grupos" -s /bin/bash -c "${nome:-$alvo}" "$alvo" || falhar "não consegui criar a conta."
+      printf '%s:%s\n' "$alvo" "$senha_nova" | chpasswd || { userdel -r "$alvo" 2>/dev/null; falhar "não consegui definir a senha."; }
+      # Mesmo teclado e visual de quem criou, para a conta nova já abrir bonita.
+      install -d -o "$alvo" -g "$alvo" "/home/$alvo/.config/alba"
+      for f in teclado; do [[ -f "/home/$quem/.config/alba/$f" ]] && install -o "$alvo" -g "$alvo" -m 644 "/home/$quem/.config/alba/$f" "/home/$alvo/.config/alba/$f"; done
+      echo "Pronto: conta criada." ;;
+    senha)
+      e_pessoa "$alvo" || falhar "conta inválida."
+      [[ ${#senha_nova} -ge 1 ]] || falhar "escolha uma senha."
+      printf '%s:%s\n' "$alvo" "$senha_nova" | chpasswd || falhar "não consegui trocar a senha."
+      echo "Pronto: senha trocada." ;;
+    nome)
+      e_pessoa "$alvo" || falhar "conta inválida."
+      nome="${4:-}"
+      [[ -n "$nome" && "$nome" != *:* && "$nome" != *,* ]] || falhar "nome inválido."
+      usermod -c "$nome" "$alvo" || falhar "não consegui trocar o nome."
+      echo "Pronto: nome trocado." ;;
+    admin)
+      e_pessoa "$alvo" || falhar "conta inválida."
+      if [[ "${4:-}" == 1 ]]; then
+        gpasswd -a "$alvo" wheel >/dev/null
+      else
+        [[ "$(admins | grep -vx "$alvo" | wc -l)" -ge 1 ]] || falhar "o computador precisa ter pelo menos um administrador."
+        gpasswd -d "$alvo" wheel >/dev/null
+      fi
+      echo "Pronto." ;;
+    remover)
+      e_pessoa "$alvo" || falhar "conta inválida."
+      [[ "$alvo" != "$quem" ]] || falhar "você não pode remover a própria conta enquanto está usando."
+      loginctl show-user "$alvo" >/dev/null 2>&1 && pgrep -u "$alvo" >/dev/null && falhar "essa conta está aberta agora; saia dela antes."
+      if [[ "${4:-0}" == 1 ]]; then userdel -r "$alvo" 2>/dev/null || userdel "$alvo"; else userdel "$alvo"; fi
+      [[ -f /etc/greetd/config.toml ]] && grep -q "user = \"$alvo\"" /etc/greetd/config.toml && /usr/local/bin/alba-atualizar --entrada-auto ""
+      echo "Pronto: conta removida." ;;
+    automatico)
+      # alvo vazio = sempre pedir a senha ao ligar
+      [[ -z "$alvo" ]] || e_pessoa "$alvo" || falhar "conta inválida."
+      exec /usr/local/bin/alba-atualizar --entrada-auto "$alvo" ;;
+    *) falhar "ação desconhecida." ;;
+  esac
+  exit 0
+fi
+
+if [[ "${1:-}" == "--entrada-auto" ]]; then
+  [[ $# -ge 2 ]] || falhar "uso: --entrada-auto USUARIO"
+  configurar_entrada "$2"
+  echo "Pronto."
   exit 0
 fi
 

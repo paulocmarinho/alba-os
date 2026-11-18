@@ -117,6 +117,12 @@ while true; do
     sleep 0.5
   done
   wait "$PID" 2>/dev/null
+  # "Encerrar sessão": a sessão termina e a tela de entrada volta (outra conta pode entrar).
+  if [[ "$(cat "$CACHE/recarregar" 2>/dev/null)" == "sair" ]]; then
+    rm -f "$CACHE/recarregar"
+    echo "Sessão encerrada pelo usuário."
+    exit 0
+  fi
   # Depois de uma atualização, a sessão inteira recomeça (servidor e script novos).
   if [[ "$(cat "$CACHE/recarregar" 2>/dev/null)" == "sessao" ]]; then
     rm -f "$CACHE/recarregar"

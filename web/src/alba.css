@@ -2803,19 +2803,26 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
 
 .mesa-grade {
   position: absolute;
-  top: 54px;
-  right: 18px;
-  bottom: 110px;
-  display: grid;
-  grid-auto-flow: column;
-  grid-template-rows: repeat(auto-fill, 112px);
-  grid-auto-columns: 100px;
-  gap: 4px 6px;
-  direction: rtl; /* colunas a partir da direita */
+  inset: 0;
+  pointer-events: none;
+}
+
+.mesa-grade > * { position: absolute; pointer-events: auto; }
+.mesa-item { transition: top 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), right 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.mesa-item.movendo { z-index: 5; opacity: 0.85; transition: none; cursor: grabbing; }
+.mesa-item.movendo .mesa-icone { filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.4)); }
+.mesa-grade.arrastando .mesa-item:not(.movendo) { pointer-events: none; }
+
+.mesa-alvo {
+  width: 100px;
+  height: 112px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px dashed rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  pointer-events: none !important;
 }
 
 .mesa-item {
-  position: relative;
   direction: ltr;
   display: flex;
   flex-direction: column;
@@ -2887,3 +2894,138 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
 
 .menu-mesa { position: absolute; }
 .menu-contexto-nota { display: block; padding: 6px 12px; color: var(--muted); font-size: 12px; }
+
+/* ================================================================ tela de entrada (contas) */
+.tela-entrada {
+  position: fixed;
+  background: #2b2730 url("./papeis/rio.jpg") center / cover no-repeat;
+}
+
+.tela-entrada::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 11, 30, 0.1), rgba(10, 11, 30, 0.35));
+  pointer-events: none;
+}
+
+.tela-entrada > * { position: relative; }
+
+.entrada-contas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 26px;
+  margin-top: auto;
+  margin-bottom: 18vh;
+  max-width: 80vw;
+}
+
+.entrada-conta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 132px;
+  padding: 16px 8px 12px;
+  color: #fff;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 18px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.entrada-conta:hover,
+.entrada-conta:focus-visible { background: rgba(255, 255, 255, 0.14); transform: translateY(-2px); outline: none; }
+.entrada-conta strong { font-size: 14px; font-weight: 600; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4); }
+
+.entrada-outra {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 12px;
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 0;
+  border-radius: 999px;
+}
+
+.entrada-outra:hover { background: rgba(255, 255, 255, 0.24); }
+
+/* ================================================================ Ajustes › Contas */
+.contas-lista { display: flex; flex-direction: column; gap: 0; padding: 4px 0; }
+
+.conta-linha {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 12px 14px;
+}
+
+.conta-linha + .conta-linha { border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); }
+
+.conta-avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 650;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--destaque) 70%, #fff), var(--destaque));
+  border-radius: 50%;
+}
+
+.conta-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.conta-info strong { font-size: 14px; font-weight: 650; }
+.conta-info small { color: var(--muted); font-size: 12px; }
+
+.conta-selo {
+  margin-left: 6px;
+  padding: 1px 7px;
+  color: var(--destaque);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--destaque) 12%, transparent);
+  border-radius: 999px;
+}
+
+.conta-acoes { display: flex; gap: 6px; }
+.botao-secundario.pequeno, .botao-perigo.pequeno { padding: 5px 10px; font-size: 11.5px; }
+
+.conta-opcoes {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  padding-top: 4px;
+}
+
+.conta-opcoes label { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; }
+
+.conta-nova { display: flex; flex-direction: column; gap: 10px; padding: 16px; margin-top: 12px; }
+.conta-nova h3 { margin: 0 0 4px; }
+.conta-nova > label:not(.conta-nova-admin) { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 12px; font-size: 13px; }
+
+.conta-nova input {
+  padding: 8px 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 8px;
+  outline: none;
+}
+
+.conta-nova input:focus { border-color: var(--destaque); }
+.conta-nova-admin { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
+.conta-nova-admin small { display: block; color: var(--muted); font-size: 11.5px; }
+.conta-erro { margin: 0; color: #c2410c; font-size: 12.5px; }
+.conta-nova-botoes { display: flex; justify-content: flex-end; gap: 8px; }
