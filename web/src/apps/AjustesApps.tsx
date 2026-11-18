@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { IconeAlba } from "../componentes/ArteApps";
 import {
   api,
   type AppAutoinicio,
@@ -12,7 +13,6 @@ import {
 } from "../api";
 import { Interruptor } from "../componentes/Central";
 import { Icone } from "../componentes/Icone";
-import { MarcaSleeve } from "../componentes/Barra";
 import { APPS, type IdApp, useAlba } from "../contexto";
 import { ouvirEventos, paraCasca } from "../ponte";
 
@@ -21,9 +21,7 @@ function IconeInstalado({ icone, nome, alba }: { icone?: string; nome: string; a
   const a = alba as IdApp | undefined;
   if (a && APPS[a])
     return (
-      <span className={`dock-icon ${APPS[a].classe} apps-icone`}>
-        {a === "musica" ? <MarcaSleeve /> : <Icone name={APPS[a].icone} size={17} />}
-      </span>
+      <IconeAlba id={a} className="apps-icone" />
     );
   if (icone && !falhou) return <img className="apps-icone" src={monitor.urlIcone(icone)} alt="" onError={() => setFalhou(true)} draggable={false} />;
   return <span className="apps-icone vazio">{nome.slice(0, 1).toUpperCase()}</span>;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { IconeAlba } from "../componentes/ArteApps";
 import { type AppLoja, type DetalheLoja, type InstaladoLoja, type TarefaLoja, type Vitrine, loja, tamanhoLegivel } from "../api";
 import { Icone } from "../componentes/Icone";
 import { useAlba } from "../contexto";
@@ -75,9 +76,7 @@ export function Loja({ abrirApp, vez }: { abrirApp?: string; vez?: number } = {}
     <div className="loja">
       <aside className="loja-lateral">
         <div className="loja-marca">
-          <span className="dock-icon store">
-            <Icone name="store" size={20} />
-          </span>
+          <IconeAlba id="loja" />
           <strong>Alba Store</strong>
         </div>
         <form className="loja-busca" onSubmit={pesquisar}>

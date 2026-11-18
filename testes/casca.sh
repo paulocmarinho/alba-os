@@ -131,6 +131,21 @@ grim saida/27-escuro.png
 curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "claro", "destaque_auto": false}' "$ALBA_URL/api/config" > /dev/null
 sleep 4
 cp ~/.local/share/themes/Alba/labwc/themerc saida/themerc-usuario.txt 2>/dev/null
+# ---- dock personalizado: nova ordem, Monitor fixo, Firefox fora; menu do clique direito
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"dock": ["ajustes", "monitor", "arquivos", "terminal", "musica", "notas", "loja"]}' "$ALBA_URL/api/config" > saida/config-dock.json
+sleep 4
+grim saida/28-dock-personalizado.png
+alba-enviar '{"tipo": "menuDock", "item": {"chave": "monitor", "tipo": "alba", "app": "monitor", "nome": "Monitor de Atividade", "fixar": "monitor", "janelas": [], "ativa": false, "fixo": true}, "x": 820}'
+sleep 3
+grim saida/29-menu-dock.png
+alba-enviar fecharSobre; sleep 1
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "escuro"}' "$ALBA_URL/api/config" > /dev/null
+alba-enviar launchpad
+sleep 4
+grim saida/30-launchpad-escuro.png
+wtype -k Escape; sleep 1
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "claro", "dock": null}' "$ALBA_URL/api/config" > /dev/null
+sleep 2
 alba-app monitor &
 sleep 2; alba-app arquivos &
 sleep 9

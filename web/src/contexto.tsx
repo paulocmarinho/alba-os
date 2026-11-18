@@ -76,3 +76,10 @@ export function iniciais(nome: string) {
   const partes = nome.trim().split(/\s+/).filter(Boolean);
   return ((partes[0]?.[0] || "") + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase() || "L";
 }
+
+/** Apps fixos no dock quando o usuário ainda não mexeu (igual a DOCK_PADRAO na casca). */
+export const DOCK_PADRAO = ["arquivos", "musica", "firefox.desktop", "terminal", "notas", "loja", "ajustes"];
+
+export function listaDock(config: Config | null | undefined): string[] {
+  return Array.isArray(config?.dock) ? config!.dock! : DOCK_PADRAO;
+}

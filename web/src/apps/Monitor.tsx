@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { IconeAlba } from "../componentes/ArteApps";
 import { type AmostraMonitor, type AppMonitor, monitor, tamanhoLegivel } from "../api";
-import { MarcaSleeve } from "../componentes/Barra";
 import { Icone } from "../componentes/Icone";
 import { APPS, type IdApp, useAlba } from "../contexto";
 
@@ -17,9 +17,7 @@ function IconeProcesso({ app }: { app: AppMonitor }) {
   const alba = app.alba as IdApp | null;
   if (alba && APPS[alba])
     return (
-      <span className={`dock-icon ${APPS[alba].classe} mon-icone`}>
-        {alba === "musica" ? <MarcaSleeve /> : <Icone name={APPS[alba].icone} size={15} />}
-      </span>
+      <IconeAlba id={alba} className="mon-icone" />
     );
   if (app.icone && !falhou)
     return <img className="mon-icone" src={monitor.urlIcone(app.icone)} alt="" onError={() => setFalhou(true)} draggable={false} />;

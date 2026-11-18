@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { IconeAlba } from "./ArteApps";
 import { APPS, type IdApp } from "../contexto";
 import { daCasca, paraCasca } from "../ponte";
-import { MarcaSleeve } from "./Barra";
 import { Icone } from "./Icone";
 
 export type JanelaAlt = {
@@ -17,9 +17,7 @@ export type JanelaAlt = {
 function IconeJanela({ j }: { j: JanelaAlt }) {
   if (j.tipo === "alba" && j.app && APPS[j.app])
     return (
-      <span className={`dock-icon ${APPS[j.app].classe}`}>
-        {j.app === "musica" ? <MarcaSleeve /> : <Icone name={APPS[j.app].icone} size={44} />}
-      </span>
+      <IconeAlba id={j.app} />
     );
   return (
     <span className="dock-icon externo">{j.icone ? <img src={j.icone} alt="" draggable={false} /> : <Icone name="grid" size={40} />}</span>

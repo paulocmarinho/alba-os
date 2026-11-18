@@ -31,6 +31,8 @@ export type Config = {
   vidro_horario?: boolean;
   /** A cor de destaque acompanha o horário. */
   destaque_auto?: boolean;
+  /** Apps fixos no dock, na ordem (null = a lista que vem com o Alba). */
+  dock?: string[] | null;
 };
 
 export type Teclado = { id: string; nome: string };

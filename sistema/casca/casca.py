@@ -36,15 +36,25 @@ ESCONDIDOS_LAUNCHPAD = {
     "uxterm", "xterm", "assistant", "designer", "linguist", "qdbusviewer", "stoken-gui", "stoken-gui-small",
 }
 # Durante a instalação, o computador mostra só o papel de parede e o instalador.
-FIXOS = [
-    {"chave": "arquivos", "tipo": "alba", "app": "arquivos"},
-    {"chave": "musica", "tipo": "alba", "app": "musica"},
-    {"chave": "firefox", "tipo": "externo", "desktop": "firefox.desktop"},
-    {"chave": "terminal", "tipo": "alba", "app": "terminal"},
-    {"chave": "notas", "tipo": "alba", "app": "notas"},
-    {"chave": "loja", "tipo": "alba", "app": "loja"},
-    {"chave": "ajustes", "tipo": "alba", "app": "ajustes"},
-]
+# Apps fixos no dock: o usuário muda a ordem arrastando e fixa/tira pelo clique direito
+# (config "dock"); sem escolha, vale esta lista.
+DOCK_PADRAO = ["arquivos", "musica", "firefox.desktop", "terminal", "notas", "loja", "ajustes"]
+
+
+def fixos() -> list[dict]:
+    from comum import ler_config
+    lista = ler_config().get("dock")
+    if not isinstance(lista, list):
+        lista = DOCK_PADRAO
+    saida = []
+    for ident in lista:
+        if not isinstance(ident, str):
+            continue
+        if ident in APPS and ident != "instalador":
+            saida.append({"chave": ident, "tipo": "alba", "app": ident, "fixar": ident})
+        elif ident.endswith(".desktop"):
+            saida.append({"chave": ident, "tipo": "externo", "desktop": ident, "fixar": ident})
+    return saida
 
 ALTURA_BARRA = 36
 ALTURA_DOCK = 124  # inclui o espaço das dicas acima dos ícones
@@ -274,7 +284,7 @@ class Casca(Gtk.Application):
         lista = self.janelas.todas() if self.janelas else []
         itens = []
         usadas = set()
-        for fixo in FIXOS:
+        for fixo in fixos():
             item = dict(fixo)
             if fixo["tipo"] == "alba":
                 app_id = f"org.alba.{fixo['app']}"
@@ -304,7 +314,7 @@ class Casca(Gtk.Application):
             chave = j["app"] or j["titulo"]
             if chave.startswith("org.alba."):
                 app = chave.removeprefix("org.alba.")
-                item = extras.setdefault(chave, {"chave": chave, "tipo": "alba", "app": app,
+                item = extras.setdefault(chave, {"chave": chave, "tipo": "alba", "app": app, "fixar": app if app in APPS else None,
                                                  "nome": APPS.get(app, {}).get("nome", app), "janelas": [], "ativa": False})
             else:
                 desktop = self._desktop_de(j["app"]) if j["app"] else None
@@ -314,7 +324,7 @@ class Casca(Gtk.Application):
                         nome = Gio.DesktopAppInfo.new(desktop).get_display_name()
                     except TypeError:
                         pass
-                item = extras.setdefault(chave, {"chave": chave, "tipo": "externo", "desktop": desktop, "nome": nome,
+                item = extras.setdefault(chave, {"chave": chave, "tipo": "externo", "desktop": desktop, "fixar": desktop, "nome": nome,
                                                  "icone": self.icone(desktop) if desktop else None, "janelas": [], "ativa": False})
             item["janelas"].append(j["id"])
             item["ativa"] = item["ativa"] or j["ativa"]
@@ -584,6 +594,11 @@ class Casca(Gtk.Application):
             for s in (self.fundo, self.barra, self.dock, self.sobre):
                 s.redimensionar()
             self.aplicar_tema_janelas()
+            self.janelas_mudaram()  # a lista do dock pode ter mudado
+        elif tipo == "menuDock":
+            # Clique direito num ícone do dock: o menu abre na camada de cima (o dock é baixinho).
+            self.sobre.pagina.enviar({"tipo": "menuDock", "item": m.get("item"), "x": m.get("x", 0)})
+            self.abrir_sobre("painel", "dock")
 
 
 def main():

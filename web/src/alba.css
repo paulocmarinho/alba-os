@@ -2702,3 +2702,94 @@ button.rede-linha:hover:not(:disabled) { background: rgba(60, 80, 140, 0.07); }
   border-radius: 50%;
   box-shadow: inset 0 -3px 0 var(--horizonte);
 }
+
+/* ================================================================ ícones dos apps (arte própria)
+   Formato e luz vêm de ArteApps.tsx; aqui ficam as cores de cada app no claro e no escuro. */
+.dock-icon.com-arte,
+.dock-icon.com-arte.trash {
+  padding: 0;
+  overflow: visible;
+  color: inherit;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 24% !important;
+  box-shadow: 0 4px 10px rgba(35, 42, 83, 0.2) !important;
+}
+
+.dock-icon.com-arte::after { display: none !important; }
+
+.arte-app { display: block; width: 100%; height: 100%; }
+.arte-app .g { fill: var(--ic-glifo); }
+.arte-app .gs { fill: none; stroke: var(--ic-glifo); }
+.arte-app .gs.suave { stroke-opacity: 0.72; }
+.arte-app .ac { fill: var(--ic-acento); }
+.arte-app .acs { fill: none; stroke: var(--ic-acento); }
+.arte-app .hz { fill: none; stroke: var(--ic-b); }
+.dark .arte-app .luz { opacity: 0.45; }
+.dark .dock-icon.com-arte { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06) !important; }
+
+.arte-apps { --ic-a: #a497f4; --ic-b: #5546c4; --ic-glifo: #fff; --ic-acento: #ffd08a; }
+.arte-arquivos { --ic-a: #7fcaf5; --ic-b: #3b68d4; --ic-glifo: #fff; --ic-acento: #ffad66; }
+.arte-musica { --ic-a: #b07af5; --ic-b: #6438dc; --ic-glifo: #fff; --ic-acento: #fff; }
+.arte-terminal { --ic-a: #323862; --ic-b: #0e1122; --ic-glifo: #fff; --ic-acento: #ffb070; }
+.arte-notas { --ic-a: #ffd98e; --ic-b: #ee8d4c; --ic-glifo: #fff9ef; --ic-acento: #e8894a; }
+.arte-loja { --ic-a: #ff9a6c; --ic-b: #d4436e; --ic-glifo: #fff; --ic-acento: #ff9a62; }
+.arte-ajustes { --ic-a: #c7cfdb; --ic-b: #5a6579; --ic-glifo: #fff; --ic-acento: #ffb26b; }
+.arte-monitor { --ic-a: #2aa49b; --ic-b: #0f4b5c; --ic-glifo: #fff; --ic-acento: #ffc27a; }
+.arte-visualizador { --ic-a: #f9bdd3; --ic-b: #c45692; --ic-glifo: #fff; --ic-acento: #fff3d6; }
+.arte-lixeira { --ic-a: #f7f8fb; --ic-b: #d7dce6; --ic-glifo: #6b7690; --ic-acento: #6b7690; }
+.arte-instalador { --ic-a: #ffb36b; --ic-b: #e0662f; --ic-glifo: #fff; --ic-acento: #fff4e4; }
+
+/* Escuro: fundo noturno no tom de cada app e o símbolo aceso na cor dele. */
+.dark .arte-apps { --ic-a: #332e66; --ic-b: #16142e; --ic-glifo: #b9adff; --ic-acento: #ffc074; }
+.dark .arte-arquivos { --ic-a: #1f3b62; --ic-b: #0e1a30; --ic-glifo: #8cc8ff; --ic-acento: #ffa45c; }
+.dark .arte-musica { --ic-a: #3a2566; --ic-b: #181030; --ic-glifo: #c9a3ff; --ic-acento: #c9a3ff; }
+.dark .arte-terminal { --ic-a: #1c2036; --ic-b: #0a0c17; --ic-glifo: #e6e9ff; --ic-acento: #ffb070; }
+.dark .arte-notas { --ic-a: #4d331b; --ic-b: #221509; --ic-glifo: #f6c98a; --ic-acento: #6b4520; }
+.dark .arte-loja { --ic-a: #55223a; --ic-b: #250f1a; --ic-glifo: #ffa58e; --ic-acento: #55223a; }
+.dark .arte-ajustes { --ic-a: #2f3542; --ic-b: #141820; --ic-glifo: #ccd5e3; --ic-acento: #ffb26b; }
+.dark .arte-monitor { --ic-a: #14403f; --ic-b: #091c20; --ic-glifo: #6fe0d0; --ic-acento: #ffc27a; }
+.dark .arte-visualizador { --ic-a: #4e1f3a; --ic-b: #210c19; --ic-glifo: #ff9cc8; --ic-acento: #ffe0a8; }
+.dark .arte-lixeira { --ic-a: #2b2f3e; --ic-b: #191c27; --ic-glifo: #aab3c8; --ic-acento: #aab3c8; }
+.dark .arte-instalador { --ic-a: #4d2614; --ic-b: #200f08; --ic-glifo: #ffb070; --ic-acento: #ffe2c2; }
+.dock-icon.com-arte > svg { filter: none; }
+.dock-icon.com-arte.pequeno,
+.dock-icon.com-arte.apps-icone,
+.dock-icon.com-arte.mon-icone { box-shadow: 0 1px 3px rgba(35, 42, 83, 0.22) !important; }
+
+/* ---------------------------------------------------------------- dock: arrastar e menu */
+.dock > button.arrastando {
+  z-index: 2;
+  transform: translateY(-10px) scale(1.12) !important;
+  transition: none;
+}
+
+.dock > button.arrastando .dock-icon { box-shadow: 0 10px 22px rgba(35, 42, 83, 0.35) !important; }
+.dock > button.saindo { opacity: 0.4; transform: translateY(-26px) scale(0.92) !important; }
+.dock > button.arrastando::before { opacity: 1; transform: translate(-50%, 0); }
+.dock.em-arraste > button:not(.arrastando) { transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.dock.em-arraste > button:not(.arrastando):hover { transform: none; }
+
+.menu-dock {
+  position: absolute;
+  top: auto;
+  right: auto;
+  bottom: 98px;
+  padding: 6px;
+  color: var(--ink);
+  border: 1px solid var(--vidro-borda);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(30, 34, 80, 0.22);
+}
+
+.menu-dock-titulo {
+  display: block;
+  padding: 6px 10px 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.menu-dock button { display: flex; align-items: center; gap: 9px; width: 100%; }
+.menu-dock .perigo { color: #c2410c; }
+.dark .menu-dock .perigo { color: #ff9a7a; }

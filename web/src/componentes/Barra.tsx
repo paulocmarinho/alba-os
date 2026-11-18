@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { IconeAlba } from "./ArteApps";
 import { api, type EstadoRede, notificacoes, rede as apiRede, type Som } from "../api";
 import { ouvirEventos } from "../ponte";
 import { APPS, type IdApp, type Janela, dataLonga, hora, useAlba } from "../contexto";
@@ -138,16 +139,12 @@ export function Dock({
     <nav className="dock" aria-label="Aplicativos">
       {ordem.map((app) => (
         <button key={app} className={aberto(app) ? "running" : ""} onClick={() => aoClicar(app)} data-label={APPS[app].nome}>
-          <span className={`dock-icon ${APPS[app].classe}`}>
-            {app === "musica" ? <MarcaSleeve /> : <Icone name={APPS[app].icone} size={27} />}
-          </span>
+          <IconeAlba id={app} />
         </button>
       ))}
       <span className="dock-divider" />
       <button data-label="Lixeira" onClick={() => aoClicar("lixeira")}>
-        <span className="dock-icon trash">
-          <Icone name="trash" size={26} />
-        </span>
+        <IconeAlba id="lixeira" />
       </button>
     </nav>
   );

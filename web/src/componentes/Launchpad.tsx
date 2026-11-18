@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { APPS, type IdApp } from "../contexto";
-import { MarcaSleeve } from "./Barra";
+import { IconeAlba } from "./ArteApps";
+import { APPS, type IdApp, listaDock, useAlba } from "../contexto";
 import { Icone } from "./Icone";
 import { paraCasca } from "../ponte";
 
@@ -19,9 +19,7 @@ const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLo
 export function IconeApp({ app, pequeno }: { app: AppLista; pequeno?: boolean }) {
   if (app.tipo === "alba" && app.app && APPS[app.app]) {
     return (
-      <span className={`dock-icon ${APPS[app.app].classe} ${pequeno ? "pequeno" : ""}`}>
-        {app.app === "musica" ? <MarcaSleeve /> : <Icone name={APPS[app.app].icone} size={pequeno ? 18 : 40} />}
-      </span>
+      <IconeAlba id={app.app} className={pequeno ? "pequeno" : ""} />
     );
   }
   if (pequeno)
@@ -40,6 +38,9 @@ export function Launchpad({ apps, abrir, fechar }: { apps: AppLista[]; abrir: (a
   const [busca, setBusca] = useState("");
   const [sel, setSel] = useState(0);
   const [menu, setMenu] = useState<{ app: AppLista; x: number; y: number } | null>(null);
+  const { config, mudarConfig } = useAlba();
+  const noDock = listaDock(config);
+  const idDock = (a: AppLista) => (a.tipo === "alba" ? a.app : a.desktop) || a.chave;
   const campo = useRef<HTMLInputElement>(null);
   const lista = useMemo(() => {
     const q = semAcento(busca.trim());
@@ -111,6 +112,17 @@ export function Launchpad({ apps, abrir, fechar }: { apps: AppLista[]; abrir: (a
             <button onClick={() => (setMenu(null), abrir(menu.app))}>
               <Icone name="chevron" size={15} /> Abrir
             </button>
+            {menu.app.app !== "instalador" && (
+              <button
+                onClick={() => {
+                  const id = idDock(menu.app);
+                  setMenu(null);
+                  mudarConfig({ dock: noDock.includes(id) ? noDock.filter((f) => f !== id) : [...noDock, id] });
+                }}
+              >
+                <Icone name="pin" size={15} /> {noDock.includes(idDock(menu.app)) ? "Tirar do dock" : "Manter no dock"}
+              </button>
+            )}
             {menu.app.tipo === "externo" ? (
               <button
                 className="perigo"
