@@ -1,0 +1,52 @@
+# Tema de janelas do Alba OS para o labwc.
+# Botões: três pontos à esquerda (fechar, minimizar, maximizar) que ganham cor no hover.
+# A barra de título muda de tom com a hora do dia (sistema/casca/tema_janelas.py).
+border.width: 1
+padding.height: 9
+padding.width: 10
+
+window.active.border.color: #ecdccf
+window.inactive.border.color: #ecdccf
+window.active.title.bg.color: #f7eee8
+window.inactive.title.bg.color: #f7eee8
+window.active.label.text.color: #15223e
+window.inactive.label.text.color: #8b93a7
+window.label.text.justify: center
+
+window.titlebar.padding.width: 12
+window.titlebar.padding.height: 0
+window.button.width: 25
+window.button.height: 32
+window.button.spacing: 2
+window.button.hover.bg.color: #00000000
+window.button.hover.bg.corner-radius: 12
+
+window.active.button.unpressed.image.color: #3a4660
+window.inactive.button.unpressed.image.color: #a3abbd
+
+window.active.shadow.size: 36
+window.inactive.shadow.size: 22
+window.active.shadow.color: #1c1a5a3a
+window.inactive.shadow.color: #1c1a5a22
+
+menu.border.width: 1
+menu.border.color: #d6dbea
+menu.items.bg.color: #f4f6fb
+menu.items.text.color: #15223e
+menu.items.active.bg.color: #e0662f
+menu.items.active.text.color: #ffffff
+menu.items.padding.x: 12
+menu.items.padding.y: 8
+menu.separator.color: #dde1ec
+menu.overlap.x: 0
+
+osd.bg.color: #f4f6fbf0
+osd.border.color: #d6dbea
+osd.border.width: 1
+osd.label.text.color: #15223e
+osd.window-switcher.width: 650
+osd.window-switcher.padding: 10
+osd.window-switcher.item.padding.x: 12
+osd.window-switcher.item.padding.y: 8
+osd.window-switcher.item.active.border.width: 2
+osd.window-switcher.preview.border.color: #5b6ee1

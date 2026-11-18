@@ -1,0 +1,3 @@
+sobre → {'tipo': 'dialogo', 'aberto': False}
+sobre → {'tipo': 'dialogo', 'aberto': False}
+sobre → {'tipo': 'dialogo', 'aberto': True}
