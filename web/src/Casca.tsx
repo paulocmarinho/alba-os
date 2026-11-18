@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { IconeAlba } from "./componentes/ArteApps";
+import { AreaDeTrabalho } from "./componentes/AreaDeTrabalho";
 import { api, type Config, type Notificacao, type Sistema } from "./api";
 import { coresDoHorario, faseDoDia } from "./horario";
 import { CaixaDialogo, Papel, type Dialogo } from "./Alba";
@@ -200,6 +201,7 @@ export function AlbaCasca() {
         data-fase={faseDoDia(agora)}
       >
         {superficie === "fundo" && <Papel />}
+        {superficie === "fundo" && !sistema?.live && <AreaDeTrabalho />}
         {superficie === "barra" && <Barra />}
         {superficie === "dock" && <DockCasca />}
         {superficie === "sobre" && <Sobre />}
@@ -283,37 +285,52 @@ function DockCasca() {
   }, [estado]);
 
   // Arrastar: muda a ordem dos fixos; um app aberto (não fixo) arrastado para junto deles fica
-  // fixo; um fixo arrastado para cima, para fora do dock, sai do dock.
-  type Arraste = { item: ItemDock; fixo: boolean; x0: number; y0: number; ativo: boolean; fora: boolean; alvo: number | null };
+  // fixo; um fixo arrastado para cima, para fora do dock, sai do dock. O ícone segue o mouse,
+  // os outros deslizam para abrir espaço, e a nova ordem aparece na hora (antes da casca confirmar).
+  type Arraste = { item: ItemDock; fixo: boolean; x0: number; y0: number; px: number; py: number; ativo: boolean; fora: boolean; alvo: number | null };
   const [arraste, setArraste] = useState<Arraste | null>(null);
+  const [pressionado, setPressionado] = useState<string | null>(null);
+  const [otimista, setOtimista] = useState<{ ids: string[]; ate: number } | null>(null);
   const arrasteRef = useRef<Arraste | null>(null);
   const acabouDeArrastar = useRef(false);
+  const posicoes = useRef(new Map<string, number>());
   const atualizar = (a: Arraste | null) => {
     arrasteRef.current = a;
     setArraste(a);
   };
 
-  const itens = estado?.itens ?? [];
-  const extras = estado?.extras ?? [];
-  const fixosIds = itens.map((i) => i.fixar || i.chave);
+  const todosItens = [...(estado?.itens ?? []), ...(estado?.extras ?? [])];
+  const idDe = (i: ItemDock) => i.fixar || i.chave;
+  let itens = estado?.itens ?? [];
+  let extras = estado?.extras ?? [];
+  // Ordem nova escolhida agora há pouco: vale até a casca mandar a lista atualizada.
+  if (otimista && Date.now() < otimista.ate) {
+    const porId = new Map(todosItens.map((i) => [idDe(i), i]));
+    itens = otimista.ids.map((id) => porId.get(id)).filter((i): i is ItemDock => !!i);
+    extras = todosItens.filter((i) => !itens.includes(i) && i.janelas.length > 0);
+  }
+  const fixosIds = itens.map(idDe);
+  useEffect(() => {
+    if (otimista && (estado?.itens ?? []).map(idDe).join("|") === otimista.ids.join("|")) setOtimista(null);
+  }, [estado, otimista]);
 
   function alvoNoDock(x: number, y: number, a: Arraste): number | null {
     const el = nav.current;
     if (!el) return null;
-    const outros = [...el.querySelectorAll<HTMLElement>("[data-fixo]")].filter((b) => b.dataset.fixo !== (a.item.fixar || a.item.chave));
-    const limite = outros.length ? outros[outros.length - 1].getBoundingClientRect().right + 34 : el.getBoundingClientRect().left + 120;
+    const outros = [...el.querySelectorAll<HTMLElement>("[data-fixo]")].filter((b) => b.dataset.fixo !== idDe(a.item));
+    const meio = (b: HTMLElement) => el.getBoundingClientRect().left + b.offsetLeft + b.offsetWidth / 2;
+    const limite = outros.length ? meio(outros[outros.length - 1]) + 60 : el.getBoundingClientRect().left + 120;
     if (!a.fixo && x > limite) return null; // ainda na parte dos apps abertos
     if (y < el.getBoundingClientRect().top - 40) return null;
-    return outros.filter((b) => {
-      const r = b.getBoundingClientRect();
-      return r.left + r.width / 2 < x;
-    }).length;
+    return outros.filter((b) => meio(b) < x).length;
   }
 
   function inicio(e: React.PointerEvent<HTMLButtonElement>, item: ItemDock, fixo: boolean) {
-    if (e.button !== 0 || (!fixo && !item.fixar)) return;
+    if (e.button !== 0) return;
+    setPressionado(item.chave);
+    if (!fixo && !item.fixar) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    atualizar({ item, fixo, x0: e.clientX, y0: e.clientY, ativo: false, fora: false, alvo: null });
+    atualizar({ item, fixo, x0: e.clientX, y0: e.clientY, px: e.clientX, py: e.clientY, ativo: false, fora: false, alvo: null });
   }
 
   function mover(e: React.PointerEvent<HTMLButtonElement>) {
@@ -321,24 +338,27 @@ function DockCasca() {
     if (!a) return;
     const dx = e.clientX - a.x0;
     const dy = e.clientY - a.y0;
-    if (!a.ativo && Math.hypot(dx, dy) < 7) return;
-    const fora = a.fixo && dy < -55;
-    atualizar({ ...a, ativo: true, fora, alvo: fora ? null : alvoNoDock(e.clientX, e.clientY, a) });
+    if (!a.ativo && Math.hypot(dx, dy) < 6) return;
+    setPressionado(null);
+    const fora = a.fixo && dy < -50;
+    atualizar({ ...a, px: e.clientX, py: e.clientY, ativo: true, fora, alvo: fora ? null : alvoNoDock(e.clientX, e.clientY, a) });
   }
 
   function soltar() {
+    setPressionado(null);
     const a = arrasteRef.current;
     atualizar(null);
     if (!a?.ativo) return;
     acabouDeArrastar.current = true;
     window.setTimeout(() => (acabouDeArrastar.current = false), 50);
-    const id = a.item.fixar || a.item.chave;
+    const id = idDe(a.item);
     const sem = fixosIds.filter((f) => f !== id);
-    if (a.fora) {
-      mudarConfig({ dock: sem });
-    } else if (a.alvo !== null) {
-      const nova = [...sem.slice(0, a.alvo), id, ...sem.slice(a.alvo)];
-      if (nova.join("|") !== fixosIds.join("|")) mudarConfig({ dock: nova });
+    let nova: string[] | null = null;
+    if (a.fora) nova = sem;
+    else if (a.alvo !== null) nova = [...sem.slice(0, a.alvo), id, ...sem.slice(a.alvo)];
+    if (nova && nova.join("|") !== fixosIds.join("|")) {
+      setOtimista({ ids: nova, ate: Date.now() + 4000 });
+      mudarConfig({ dock: nova });
     }
   }
 
@@ -354,6 +374,57 @@ function DockCasca() {
     }
   }
 
+  // Animação: o ícone arrastado segue o mouse; os outros deslizam até o lugar novo (FLIP).
+  const ordemVisivel = [...fixosVisiveis, ...extrasVisiveis].map((i) => i.chave).join("|");
+  useLayoutEffect(() => {
+    const el = nav.current;
+    if (!el) return;
+    const novas = new Map<string, number>();
+    el.querySelectorAll<HTMLElement>("[data-chave]").forEach((b) => {
+      const chave = b.dataset.chave!;
+      novas.set(chave, b.offsetLeft);
+      if (arraste?.ativo && chave === arraste.item.chave) return;
+      const antes = posicoes.current.get(chave);
+      if (antes !== undefined && antes !== b.offsetLeft) {
+        b.style.transition = "none";
+        b.style.transform = `translateX(${antes - b.offsetLeft}px)`;
+        void b.offsetWidth;
+        b.style.transition = "transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)";
+        b.style.transform = "";
+      } else if (antes === undefined && posicoes.current.size) {
+        b.animate([{ transform: "scale(0.4)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+      }
+    });
+    posicoes.current = novas;
+  }, [ordemVisivel]);
+
+  useLayoutEffect(() => {
+    const el = nav.current;
+    if (!el || !arraste?.ativo) return;
+    const b = el.querySelector<HTMLElement>(`[data-chave="${CSS.escape(arraste.item.chave)}"]`);
+    if (!b) return;
+    const centro = el.getBoundingClientRect().left + b.offsetLeft + b.offsetWidth / 2;
+    const dy = Math.max(-62, Math.min(6, arraste.py - arraste.y0));
+    b.style.transition = "none";
+    b.style.transform = `translate(${arraste.px - centro}px, ${dy - 10}px) scale(${arraste.fora ? 0.9 : 1.14})`;
+  }, [arraste]);
+
+  // Ao soltar, o ícone volta suave para o lugar dele.
+  const ultimoArrastado = useRef<string | null>(null);
+  useEffect(() => {
+    if (arraste?.ativo) {
+      ultimoArrastado.current = arraste.item.chave;
+      return;
+    }
+    const chave = ultimoArrastado.current;
+    ultimoArrastado.current = null;
+    const b = chave ? nav.current?.querySelector<HTMLElement>(`[data-chave="${CSS.escape(chave)}"]`) : null;
+    if (b) {
+      b.style.transition = "transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1)";
+      b.style.transform = "";
+    }
+  }, [arraste?.ativo]);
+
   function menu(e: React.MouseEvent<HTMLButtonElement>, item: ItemDock, fixo: boolean) {
     e.preventDefault();
     const r = e.currentTarget.getBoundingClientRect();
@@ -365,13 +436,14 @@ function DockCasca() {
     return (
       <button
         key={item.chave}
-        data-fixo={fixo ? item.fixar || item.chave : undefined}
-        className={`${item.janelas.length ? "running" : ""} ${item.ativa ? "ativo" : ""} ${meu ? "arrastando" : ""} ${meu && arraste?.fora ? "saindo" : ""}`}
-        data-label={meu && arraste?.fora ? "Tirar do dock" : item.nome}
+        data-chave={item.chave}
+        data-fixo={fixo ? idDe(item) : undefined}
+        className={`${item.janelas.length ? "running" : ""} ${item.ativa ? "ativo" : ""} ${meu ? "arrastando" : ""} ${meu && arraste?.fora ? "saindo" : ""} ${pressionado === item.chave ? "pressionado" : ""}`}
+        data-label={meu && arraste?.fora ? "Soltar para tirar do dock" : item.nome}
         onPointerDown={(e) => inicio(e, item, fixo)}
         onPointerMove={mover}
         onPointerUp={soltar}
-        onPointerCancel={() => atualizar(null)}
+        onPointerCancel={() => (setPressionado(null), atualizar(null))}
         onContextMenu={(e) => menu(e, item, fixo)}
         onClick={() => !acabouDeArrastar.current && paraCasca({ tipo: "item", chave: item.chave })}
       >

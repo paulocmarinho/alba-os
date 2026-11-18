@@ -297,12 +297,13 @@ def api_sistema(_q, _c):
 
 def api_locais(_q, _c):
     preparar_pastas()
-    locais = [{"nome": "Início", "caminho": str(CASA), "icone": "home"}]
+    locais = [{"nome": "Início", "caminho": str(CASA), "icone": "home"},
+              {"nome": "Área de Trabalho", "caminho": str(pasta_mesa()), "icone": "monitor"}]
     icones = {"Documentos": "file", "Downloads": "download", "Imagens": "image", "Músicas": "music", "Vídeos": "video"}
     for nome in PASTAS_PADRAO:
         if (CASA / nome).is_dir():
             locais.append({"nome": nome, "caminho": str(CASA / nome), "icone": icones[nome]})
-    locais.append({"nome": "Este computador", "caminho": "/", "icone": "monitor"})
+    locais.append({"nome": "Este computador", "caminho": "/", "icone": "disk"})
     return {"locais": locais}
 
 
@@ -373,6 +374,120 @@ def api_pasta_nova(_q, c):
         raise ErroApi(409, "Já existe um item com esse nome.")
     destino.mkdir()
     return {"ok": True, "caminho": str(destino)}
+
+
+def api_arquivo_novo(_q, c):
+    """Cria um arquivo vazio (ex.: "Novo documento de texto.txt")."""
+    pai = caminho_seguro(c.get("pai", "~"))
+    exigir_casa(pai)
+    destino = pai / nome_valido(c.get("nome"))
+    if destino.exists():
+        raise ErroApi(409, "Já existe um item com esse nome.")
+    destino.touch()
+    return {"ok": True, "caminho": str(destino)}
+
+
+# ---------------------------------------------------------------- área de trabalho
+def pasta_mesa() -> Path:
+    """A pasta da área de trabalho (xdg-user-dir DESKTOP; no Alba em português, "Área de Trabalho")."""
+    pasta = None
+    try:
+        r = subprocess.run(["xdg-user-dir", "DESKTOP"], capture_output=True, text=True, timeout=5)
+        texto = r.stdout.strip()
+        if r.returncode == 0 and texto and Path(texto) != CASA:
+            pasta = Path(texto)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    if pasta is None or not dentro_da_casa(pasta):
+        pasta = CASA / "Área de Trabalho"
+    pasta.mkdir(parents=True, exist_ok=True)
+    return pasta
+
+
+def _app_do_atalho(arq: Path) -> dict | None:
+    info = apps._ler_desktop(arq)
+    if not info:
+        return None
+    m = re.match(r"\s*alba-app\s+([a-z]+)", info["exec"])
+    icone = ""
+    if not m and info["icone"]:
+        icone = f"/api/icone?nome={urllib.parse.quote(info['icone'])}"
+    return {"nome": info["nome"], "alba": m.group(1) if m else None, "icone": icone}
+
+
+def api_mesa(_q, _c):
+    pasta = pasta_mesa()
+    itens = []
+    try:
+        entradas = sorted(os.scandir(pasta), key=lambda e: e.name.lower())
+    except OSError:
+        entradas = []
+    for e in entradas:
+        if e.name.startswith("."):
+            continue
+        p = Path(e.path)
+        item = {"nome": e.name, "caminho": str(p), "tipo": "pasta" if p.is_dir() else "arquivo",
+                "categoria": categoria(p) if p.exists() else "arquivo", "atalho": p.is_symlink(),
+                "tamanho": p.stat().st_size if p.exists() and p.is_file() else 0}
+        if p.suffix == ".desktop" and p.is_file():
+            app = _app_do_atalho(p)
+            if app:
+                item.update(tipo="app", nome=app["nome"], alba=app["alba"], icone=app["icone"])
+        itens.append(item)
+    return {"caminho": str(pasta), "itens": itens}
+
+
+def _nome_livre(pasta: Path, nome: str) -> Path:
+    destino = pasta / nome
+    base, ext = os.path.splitext(nome)
+    n = 2
+    while destino.exists() or destino.is_symlink():
+        destino = pasta / f"{base} {n}{ext}"
+        n += 1
+    return destino
+
+
+def _achar_desktop(ident: str) -> Path | None:
+    if not re.fullmatch(r"[\w.\-]+\.desktop", ident):
+        return None
+    dirs = [CASA / ".local/share/applications", CASA / ".local/share/flatpak/exports/share/applications",
+            Path("/var/lib/flatpak/exports/share/applications")]
+    dirs += [Path(d) / "applications" for d in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":") if d]
+    for d in dirs:
+        if (d / ident).is_file():
+            return d / ident
+    return None
+
+
+def api_mesa_atalho(_q, c):
+    """Põe um atalho na área de trabalho: de um arquivo/pasta, de um programa ou de um app do Alba."""
+    pasta = pasta_mesa()
+    if c.get("caminho"):
+        alvo = caminho_seguro(str(c["caminho"]))
+        destino = _nome_livre(pasta, alvo.name)
+        destino.symlink_to(alvo)
+    elif c.get("alba"):
+        app = str(c["alba"])
+        if app not in APPS_ALBA:
+            raise ErroApi(400, "App desconhecido.")
+        destino = _nome_livre(pasta, f"alba-{app}.desktop")
+        destino.write_text(f"[Desktop Entry]\nType=Application\nName={APPS_ALBA[app]}\nExec=alba-app {app}\nIcon=alba\n")
+        destino.chmod(0o755)
+    elif c.get("desktop"):
+        origem = _achar_desktop(str(c["desktop"]))
+        if not origem:
+            raise ErroApi(404, "Não encontrei esse programa.")
+        destino = _nome_livre(pasta, origem.name)
+        shutil.copyfile(origem, destino)
+        destino.chmod(0o755)
+    else:
+        raise ErroApi(400, "Nada para pôr na área de trabalho.")
+    publicar_de_fora({"tipo": "mesa"})
+    return {"ok": True, "caminho": str(destino)}
+
+
+APPS_ALBA = {"arquivos": "Arquivos", "terminal": "Terminal", "notas": "Notas", "ajustes": "Ajustes", "musica": "Sleeve",
+             "loja": "Alba Store", "monitor": "Monitor de Atividade"}
 
 
 def api_renomear(_q, c):
@@ -1081,6 +1196,9 @@ ROTAS = {
     ("POST", "/api/texto"): api_texto_gravar,
     ("POST", "/api/pasta"): api_pasta_nova,
     ("POST", "/api/renomear"): api_renomear,
+    ("POST", "/api/arquivo/novo"): api_arquivo_novo,
+    ("GET", "/api/mesa"): api_mesa,
+    ("POST", "/api/mesa/atalho"): api_mesa_atalho,
     ("POST", "/api/lixeira"): api_lixeira_mover,
     ("GET", "/api/lixeira"): api_lixeira_listar,
     ("POST", "/api/lixeira/restaurar"): api_lixeira_restaurar,

@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { alturaTela, emCss, larguraTela } from "../escala";
-import { api, arquivosExtra, type Item, type Local, tamanhoLegivel, type Unidade } from "../api";
+import { api, arquivosExtra, type Item, type Local, mesa, tamanhoLegivel, type Unidade } from "../api";
 import { ouvirEventos, publicarEvento } from "../ponte";
 import { iniciais, useAlba } from "../contexto";
 import { Icone, type NomeIcone } from "../componentes/Icone";
@@ -66,7 +66,7 @@ const COR_ARQUIVO: Record<string, string> = {
 };
 
 /** Pasta grande e colorida, desenhada pelo próprio Alba (com emblema das pastas do sistema). */
-function ArtePasta({ nome }: { nome: string }) {
+export function ArtePasta({ nome }: { nome: string }) {
   const cor = corPasta(nome);
   const emblema = iconePasta(nome);
   return (
@@ -85,7 +85,7 @@ function ArtePasta({ nome }: { nome: string }) {
 }
 
 /** Folha com dobra e etiqueta do tipo; imagens mostram a própria miniatura. */
-function ArteArquivo({ item }: { item: Item }) {
+export function ArteArquivo({ item }: { item: Item }) {
   const ext = item.nome.includes(".") ? item.nome.split(".").pop()!.slice(0, 5).toUpperCase() : "";
   const rotulo = ROTULO[item.categoria] || ext || "ARQ";
   if (item.categoria === "imagem" && item.tamanho < 25 * 1024 * 1024) {
@@ -109,7 +109,10 @@ function ArteArquivo({ item }: { item: Item }) {
 /** Área de transferência de arquivos, compartilhada entre as janelas do Arquivos (pelo servidor). */
 let areaArquivos: { itens: string[]; acao: "copiar" | "mover" } | null = null;
 const ouvintesArea = new Set<() => void>();
-function definirArea(a: typeof areaArquivos, avisarOutras = true) {
+export function areaAtual() {
+  return areaArquivos;
+}
+export function definirArea(a: typeof areaArquivos, avisarOutras = true) {
   areaArquivos = a;
   ouvintesArea.forEach((f) => f());
   if (avisarOutras) publicarEvento({ tipo: "arquivos-area", area: a });
@@ -133,7 +136,8 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
   const [area, setArea] = useState(areaArquivos);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [alvoArraste, setAlvoArraste] = useState<string | null>(null);
-  const [menu, setMenu] = useState<{ item: Item; x: number; y: number } | null>(null);
+  // item null = clique direito num espaço vazio da pasta
+  const [menu, setMenu] = useState<{ item: Item | null; x: number; y: number } | null>(null);
   const [erro, setErro] = useState("");
   const naLixeira = caminho === "lixeira";
 
@@ -362,6 +366,28 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
     }
   }
 
+  async function novoArquivo() {
+    const nome = await perguntar({ titulo: "Novo documento de texto", texto: "Nome do arquivo:", valor: "Novo documento.txt", ok: "Criar" });
+    if (!nome) return;
+    try {
+      const r = await arquivosExtra.novoArquivo(caminho, nome);
+      carregar();
+      avisarMudanca();
+      if (/\.(txt|md)$/i.test(nome)) abrir("notas", { caminho: r.caminho });
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
+  async function atalhoNaMesa(caminhos: string[]) {
+    try {
+      for (const c of caminhos) await mesa.atalho({ caminho: c });
+      aviso(caminhos.length === 1 ? "Atalho criado na área de trabalho." : `${caminhos.length} atalhos criados na área de trabalho.`);
+    } catch (e: any) {
+      aviso(e.message);
+    }
+  }
+
   async function renomear(item: Item) {
     const nome = await perguntar({ titulo: "Renomear", texto: `Novo nome para “${item.nome}”:`, valor: item.nome, ok: "Renomear" });
     if (!nome || nome === item.nome) return;
@@ -553,6 +579,12 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
         <section
           className="folder-section"
           onClick={(e) => (e.target as HTMLElement).closest(".folder-card") === null && setSelecao([])}
+          onContextMenu={(e) => {
+            if ((e.target as HTMLElement).closest(".folder-card") || naLixeira) return;
+            e.preventDefault();
+            setSelecao([]);
+            setMenu({ item: null, x: emCss(e.clientX), y: emCss(e.clientY) });
+          }}
           {...alvo(caminho, gravavel && !naLixeira)}
         >
           <div className="section-title">
@@ -612,8 +644,38 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
           style={{ left: Math.min(menu.x, larguraTela() - 250), top: Math.min(menu.y, alturaTela() - 300) }}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          {naLixeira ? (
-            <button onClick={() => (setMenu(null), restaurar(menu.item))}>
+          {!menu.item ? (
+            <>
+              {gravavel ? (
+                <>
+                  <button onClick={() => (setMenu(null), novaPasta())}>
+                    <Icone name="folder" size={16} /> Nova pasta
+                  </button>
+                  <button onClick={() => (setMenu(null), novoArquivo())}>
+                    <Icone name="file" size={16} /> Novo documento de texto
+                  </button>
+                  {area && (
+                    <button onClick={() => (setMenu(null), colar())}>
+                      <Icone name="paste" size={16} /> Colar {area.itens.length > 1 ? `${area.itens.length} itens` : ""}
+                    </button>
+                  )}
+                  <hr />
+                </>
+              ) : (
+                <span className="menu-contexto-nota">Só leitura: aqui não dá para criar itens.</span>
+              )}
+              <button onClick={() => (setMenu(null), setSelecao(visiveis.map((i) => i.caminho)))}>
+                <Icone name="check" size={16} /> Selecionar tudo
+              </button>
+              <button onClick={() => (setMenu(null), setVisao(visao === "grade" ? "lista" : "grade"))}>
+                <Icone name={visao === "grade" ? "list" : "grid"} size={16} /> {visao === "grade" ? "Ver como lista" : "Ver como grade"}
+              </button>
+              <button onClick={() => (setMenu(null), carregar())}>
+                <Icone name="restart" size={16} /> Atualizar
+              </button>
+            </>
+          ) : naLixeira ? (
+            <button onClick={() => (setMenu(null), restaurar(menu.item!))}>
               <Icone name="restore" size={16} /> Restaurar
             </button>
           ) : (
@@ -641,6 +703,9 @@ export function Arquivos({ inicial, idJanela }: { inicial?: string; idJanela: nu
                   <Icone name="cut" size={16} /> Recortar
                 </button>
               )}
+              <button onClick={() => (setMenu(null), atalhoNaMesa(selecao.length > 1 ? selecao : [menu.item!.caminho]))}>
+                <Icone name="monitor" size={16} /> Criar atalho na área de trabalho
+              </button>
               {area && menu.item.tipo === "pasta" && (
                 <button onClick={() => (setMenu(null), colarEm(menu.item.caminho, area.itens, area.acao))}>
                   <Icone name="paste" size={16} /> Colar nesta pasta

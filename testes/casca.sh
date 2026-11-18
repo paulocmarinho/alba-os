@@ -168,3 +168,17 @@ python3 -m pywayland.scanner --help > saida/scanner.txt 2>&1
 alba-enviar busca; sleep 2; wtype "Reiniciar"; sleep 2; wtype -k Return; sleep 3
 grim saida/22-confirmar-reiniciar.png
 grep -o "sobre → {[^}]*dialogo[^}]*}" saida/compositor.log > saida/dialogo.txt 2>/dev/null || true
+wtype -k Escape; sleep 1; alba-enviar fecharSobre; sleep 1
+# ---- área de trabalho: atalhos de app, pasta, arquivo e atalho de pasta
+for corpo in '{"alba": "notas"}' '{"desktop": "firefox.desktop"}' '{"caminho": "~/Documentos"}'; do
+  curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d "$corpo" "$ALBA_URL/api/mesa/atalho" >> saida/mesa.txt; echo >> saida/mesa.txt
+done
+MESA=$(curl -s "${H[@]}" "$ALBA_URL/api/mesa" | python3 -c 'import json,sys; print(json.load(sys.stdin)["caminho"])')
+mkdir -p "$MESA/Projetos" && echo oi > "$MESA/lista de compras.txt" && cp /usr/share/alba/web/papeis/rio-mini.jpg "$MESA/foto.jpg"
+curl -s "${H[@]}" "$ALBA_URL/api/mesa" >> saida/mesa.txt
+pkill -f /usr/share/alba/casca/app.py; pkill firefox
+sleep 6
+grim saida/31-mesa.png
+curl -s "${H[@]}" -X POST -H "Content-Type: application/json" -d '{"tema": "escuro"}' "$ALBA_URL/api/config" > /dev/null
+sleep 3
+grim saida/32-mesa-escuro.png

@@ -3,6 +3,7 @@ import { IconeAlba } from "./ArteApps";
 import { APPS, type IdApp, listaDock, useAlba } from "../contexto";
 import { Icone } from "./Icone";
 import { paraCasca } from "../ponte";
+import { mesa } from "../api";
 
 export type AppLista = {
   chave: string;
@@ -121,6 +122,20 @@ export function Launchpad({ apps, abrir, fechar }: { apps: AppLista[]; abrir: (a
                 }}
               >
                 <Icone name="pin" size={15} /> {noDock.includes(idDock(menu.app)) ? "Tirar do dock" : "Manter no dock"}
+              </button>
+            )}
+            {menu.app.app !== "instalador" && (
+              <button
+                onClick={() => {
+                  const a = menu.app;
+                  setMenu(null);
+                  mesa
+                    .atalho(a.tipo === "alba" ? { alba: a.app } : { desktop: a.desktop })
+                    .then(() => paraCasca({ tipo: "fecharSobre" }))
+                    .catch(() => {});
+                }}
+              >
+                <Icone name="monitor" size={15} /> Adicionar à área de trabalho
               </button>
             )}
             {menu.app.tipo === "externo" ? (

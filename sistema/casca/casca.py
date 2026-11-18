@@ -212,7 +212,9 @@ class Casca(Gtk.Application):
             if not self.recarregada:
                 GLib.timeout_add(2500, self.abrir_autoinicio)
         A = Camada.Edge
-        self.fundo = Superficie(self, "fundo", Camada.Layer.BACKGROUND, [A.TOP, A.BOTTOM, A.LEFT, A.RIGHT])
+        # A área de trabalho recebe o teclado quando clicada (renomear, Delete, Ctrl+V nos ícones).
+        self.fundo = Superficie(self, "fundo", Camada.Layer.BACKGROUND, [A.TOP, A.BOTTOM, A.LEFT, A.RIGHT],
+                                teclado=Camada.KeyboardMode.NONE if LIVE else Camada.KeyboardMode.ON_DEMAND)
         self.barra = Superficie(self, "barra", Camada.Layer.TOP, [A.TOP, A.LEFT, A.RIGHT], altura=ALTURA_BARRA, reserva=ALTURA_BARRA)
         self.dock = Superficie(self, "dock", Camada.Layer.TOP, [A.BOTTOM, A.LEFT, A.RIGHT], altura=ALTURA_DOCK, reserva=RESERVA_DOCK)
         self.sobre = Superficie(self, "sobre", Camada.Layer.OVERLAY, [A.TOP, A.BOTTOM, A.LEFT, A.RIGHT],

@@ -86,7 +86,8 @@ def abrir_app(app: str, props: dict | None = None) -> None:
 def lancar_desktop(id_desktop: str) -> bool:
     """Abre um programa instalado pelo arquivo .desktop dele (ex.: firefox.desktop)."""
     try:
-        info = Gio.DesktopAppInfo.new(id_desktop)
+        # Atalho da área de trabalho: caminho do arquivo .desktop em vez do nome.
+        info = Gio.DesktopAppInfo.new_from_filename(id_desktop) if id_desktop.startswith("/") else Gio.DesktopAppInfo.new(id_desktop)
     except TypeError:
         info = None
     if info is None:

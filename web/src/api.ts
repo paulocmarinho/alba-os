@@ -139,6 +139,22 @@ export const arquivosExtra = {
   ejetar: (dispositivo: string) => pedir("POST", "/api/unidade", { dispositivo, acao: "ejetar" }),
   abrirExterno: (caminho: string) => pedir("POST", "/api/abrir", { caminho }),
   buscar: (q: string) => pedir<{ arquivos: ArquivoAchado[] }>("GET", `/api/busca/arquivos?q=${encodeURIComponent(q)}`),
+  novoArquivo: (pai: string, nome: string) => pedir<{ caminho: string }>("POST", "/api/arquivo/novo", { pai, nome }),
+};
+
+export type ItemMesa = {
+  nome: string;
+  caminho: string;
+  tipo: "pasta" | "arquivo" | "app";
+  categoria: string;
+  atalho: boolean;
+  alba?: string | null;
+  icone?: string;
+};
+
+export const mesa = {
+  listar: () => pedir<{ caminho: string; itens: ItemMesa[] }>("GET", "/api/mesa"),
+  atalho: (alvo: { caminho?: string; desktop?: string; alba?: string }) => pedir<{ caminho: string }>("POST", "/api/mesa/atalho", alvo),
 };
 
 export type AppMonitor = {
