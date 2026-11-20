@@ -1,0 +1,112 @@
++ echo '== criar maria'
+== criar maria
++ printf 'segredo1\nsenhaMaria\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta criar maria 'Maria Souza' 0
+Pronto: conta criada.
++ echo saida=0
+saida=0
++ echo '== senha errada'
+== senha errada
++ printf 'errada\nx\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta criar joao João 0
+ERRO: senha incorreta.
++ echo saida=1
+saida=1
++ echo '== login inválido'
+== login inválido
++ printf 'segredo1\nx\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta criar 'Joao Silva' João 0
+ERRO: nome de usuário inválido: use letras minúsculas, números, - ou _ (começando por letra).
++ echo saida=1
+saida=1
++ echo '== maria vira admin'
+== maria vira admin
++ printf 'segredo1\n\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta admin maria 1
+Pronto.
++ echo saida=0
+saida=0
++ id maria
+uid=1001(maria) gid=1001(maria) groups=1001(maria),998(wheel),995(audio),992(input),983(video)
++ echo '== tirar admin do único outro'
+== tirar admin do único outro
++ printf 'segredo1\n\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta admin maria 0
+Pronto.
++ echo saida=0
+saida=0
++ id maria
+uid=1001(maria) gid=1001(maria) groups=1001(maria),995(audio),992(input),983(video)
++ echo '== remover a si mesmo'
+== remover a si mesmo
++ printf 'segredo1\n\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta remover paulo 1
+ERRO: você não pode remover a própria conta enquanto está usando.
++ echo saida=1
+saida=1
++ echo '== senha da maria funciona?'
+== senha da maria funciona?
++ python3 -c 'import sys; sys.path.insert(0,"/usr/share/alba/servidor"); import pam; print(pam.autenticar("maria","senhaMaria"))'
+True
++ echo '== entrada automática'
+== entrada automática
++ printf 'segredo1\n\n'
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --conta automatico maria
+Pronto.
++ echo saida=0
+saida=0
++ cat /etc/greetd/config.toml
+# Gerado pelo Alba OS (Ajustes › Contas).
+[terminal]
+vt = 1
+[default_session]
+command = "/usr/bin/alba-entrada"
+user = "greeter"
+[initial_session]
+command = "/bin/bash -l -c /usr/bin/alba-sessao"
+user = "maria"
++ echo '== voltar ao login antigo'
+== voltar ao login antigo
++ SUDO_USER=paulo
++ bash /usr/local/bin/alba-atualizar --entrada-antiga
+Pronto: no próximo boot o Alba entra direto na conta de paulo, como antes.
++ echo saida=0
+saida=0
++ cat /etc/systemd/system/getty@tty1.service.d/autologin.conf
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '-p -f -- \u' --noclear --autologin paulo %I $TERM
++ ls /etc/alba
+entrada-automatica
+entrada-desligada
++ echo '== tela de entrada de novo'
+== tela de entrada de novo
++ bash /usr/local/bin/alba-atualizar --entrada-nova
+/usr/local/bin/alba-atualizar: line 77: cmp: command not found
+Pronto: a tela de entrada volta no próximo boot.
++ echo saida=0
+saida=0
++ ls /etc/alba
+entrada-automatica
++ cat /etc/systemd/system/greetd.service.d/alba.conf
+[Unit]
+After=plymouth-quit-wait.service systemd-logind.service
+Wants=plymouth-quit-wait.service
+
+[Service]
+ExecStartPre=-/usr/bin/plymouth quit
+Restart=always
+RestartSec=2
++ echo '== diagnóstico'
+== diagnóstico
++ alba-diagnostico 5
+== Alba 0.9.0 · Fri Nov 20 13:29:53 UTC 2026
+== tela de entrada: not-found / 
+-- No entries --

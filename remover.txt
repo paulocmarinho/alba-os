@@ -1,0 +1,26 @@
++ /usr/local/bin/alba-atualizar --remover firefox
+ERRO: esse programa faz parte do Alba e não pode ser removido.
++ echo 'codigo 1'
+codigo 1
++ pacman -S --noconfirm --needed cowsay
++ /usr/local/bin/alba-atualizar --remover cowsay
+checking dependencies...
+
+Package (1)  Old Version  Net Change
+
+cowsay       3.8.4-1       -0.04 MiB
+
+Total Removed Size:  0.04 MiB
+
+:: Do you want to remove these packages? [Y/n] 
+:: Processing package changes...
+removing cowsay...
+:: Running post-transaction hooks...
+(1/1) Arming ConditionNeedsUpdate...
+Pronto: removido.
++ echo 'codigo 0'
+codigo 0
++ pacman -Qq cowsay
+error: package 'cowsay' was not found
++ echo 'ainda instalado? 1'
+ainda instalado? 1

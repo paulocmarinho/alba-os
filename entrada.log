@@ -1,0 +1,6 @@
+/usr/share/alba/casca/entrada.py:21: PyGIWarning: Gdk was imported without specifying a version first. Use gi.require_version('Gdk', '4.0') before import to ensure that the right version gets loaded.
+  from gi.repository import Gdk, GLib, Gtk, WebKit  # noqa: E402
+
+(process:4651): Gdk-WARNING **: 13:30:00.068: Cannot get portal org.freedesktop.portal.Settings version: GDBus.Error:org.freedesktop.DBus.Error.InvalidArgs: No such interface “org.freedesktop.portal.Settings”
+
+(python3:4651): Gdk-WARNING **: 13:30:00.075: Cannot get portal org.freedesktop.portal.Inhibit version: GDBus.Error:org.freedesktop.DBus.Error.InvalidArgs: No such interface “org.freedesktop.portal.Inhibit”

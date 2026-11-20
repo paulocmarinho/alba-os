@@ -1,0 +1,1 @@
+{"contas": [{"login": "maria", "nome": "Maria Souza", "admin": false, "eu": false, "automatico": true}, {"login": "paulo", "nome": "Paulo Teste", "admin": true, "eu": false, "automatico": false}], "souAdmin": false, "telaEntrada": false}

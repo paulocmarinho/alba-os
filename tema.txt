@@ -1,0 +1,29 @@
+/root/.config/labwc:
+total 24
+drwxr-xr-x 2 root root 4096 Nov 20 13:25 .
+drwxr-xr-x 6 root root 4096 Nov 20 13:27 ..
+-rw-r--r-- 1 root root  216 Nov 20 13:25 autostart
+-rw-r--r-- 1 root root  588 Nov 20 13:25 menu.xml
+-rw-r--r-- 1 root root 4787 Nov 20 13:25 rc.xml
+
+/root/.local/share/themes/Alba/labwc:
+total 76
+drwxr-xr-x 2 root root 4096 Nov 20 13:25 .
+drwxr-xr-x 3 root root 4096 Nov 20 13:25 ..
+-rw-r--r-- 1 root root  153 Nov 20 13:28 close-active.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 close-inactive.svg
+-rw-r--r-- 1 root root  248 Nov 20 13:25 close_hover-active.svg
+-rw-r--r-- 1 root root  248 Nov 20 13:25 close_hover-inactive.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 iconify-active.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 iconify-inactive.svg
+-rw-r--r-- 1 root root  224 Nov 20 13:25 iconify_hover-active.svg
+-rw-r--r-- 1 root root  224 Nov 20 13:25 iconify_hover-inactive.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 max-active.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 max-inactive.svg
+-rw-r--r-- 1 root root  274 Nov 20 13:25 max_hover-active.svg
+-rw-r--r-- 1 root root  274 Nov 20 13:25 max_hover-inactive.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 max_toggled-active.svg
+-rw-r--r-- 1 root root  153 Nov 20 13:28 max_toggled-inactive.svg
+-rw-r--r-- 1 root root  305 Nov 20 13:25 max_toggled_hover-active.svg
+-rw-r--r-- 1 root root  305 Nov 20 13:25 max_toggled_hover-inactive.svg
+-rw-r--r-- 1 root root 1631 Nov 20 13:28 themerc
