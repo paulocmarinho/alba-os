@@ -290,6 +290,14 @@ export const host = {
           emit({ type: 'artistPhoto', name: ar.name, url: r.url || null });
         }
         break;
+      case 'loudness':
+        for (const it of msg.items || []) {
+          let caminho = null;
+          try { caminho = new URL(it.url, location.origin).searchParams.get('caminho'); } catch { /* sem caminho */ }
+          const r = caminho ? await api('POST', '/api/musica/volume', { caminho }).catch(() => ({})) : {};
+          emit({ type: 'loudness', id: it.id, gain: Number.isFinite(r.gain) ? r.gain : null });
+        }
+        break;
       case 'repair':
         // No Alba o servidor já entrega o arquivo consertado; se ainda assim não abriu, não tem conserto
         emit({ type: 'repaired', id: msg.id, url: null });

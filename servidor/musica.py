@@ -158,9 +158,53 @@ def _capa_da_pasta(pasta: Path) -> Path | None:
     return imagens[0] if len(imagens) == 1 else None
 
 
+VERSAO_FAIXA = 2  # 2: passou a ler o ReplayGain
+
+
+def _db(valor) -> float | None:
+    """'-7.25 dB' -> -7.25"""
+    if isinstance(valor, list):
+        valor = valor[0] if valor else None
+    if isinstance(valor, bytes):
+        valor = valor.decode("latin-1", "replace")
+    m = re.search(r"[-+]?\d+(?:[.,]\d+)?", str(valor or ""))
+    return round(float(m.group(0).replace(",", ".")), 2) if m else None
+
+
+def _replaygain(caminho: Path) -> tuple[float | None, float | None]:
+    """Ganho ReplayGain da faixa e do álbum, em dB, das etiquetas (ID3, Vorbis/FLAC, MP4, APE)."""
+    try:
+        f = mutagen.File(caminho)
+    except Exception:  # noqa: BLE001
+        return None, None
+    tags = getattr(f, "tags", None)
+    if not tags:
+        return None, None
+    faixa = album = None
+    try:
+        if hasattr(tags, "getall"):  # ID3: TXXX:REPLAYGAIN_TRACK_GAIN
+            for q in tags.getall("TXXX"):
+                desc = (q.desc or "").lower()
+                if desc == "replaygain_track_gain":
+                    faixa = _db(q.text)
+                elif desc == "replaygain_album_gain":
+                    album = _db(q.text)
+        else:
+            for chave, valor in tags.items():
+                c = str(chave).lower()
+                if c.endswith("replaygain_track_gain"):
+                    faixa = _db(valor)
+                elif c.endswith("replaygain_album_gain"):
+                    album = _db(valor)
+    except Exception:  # noqa: BLE001
+        pass
+    return faixa, album
+
+
 def ler_faixa(caminho: Path) -> dict:
     """Tags de uma faixa (com plano B pelo nome do arquivo e das pastas)."""
-    info = {"titulo": "", "artista": "", "artista_album": "", "album": "", "numero": 0, "disco": 1, "ano": 0, "duracao": 0.0}
+    info = {"titulo": "", "artista": "", "artista_album": "", "album": "", "numero": 0, "disco": 1, "ano": 0, "duracao": 0.0,
+            "ganho": None, "ganho_album": None, "v": VERSAO_FAIXA}
     if mutagen is not None:
         try:
             f = mutagen.File(caminho, easy=True)
@@ -176,6 +220,7 @@ def ler_faixa(caminho: Path) -> dict:
             info["disco"] = _numero(_primeiro(tags, "discnumber")) or 1
             info["ano"] = _numero(_primeiro(tags, "date", "originaldate")[:4])
             info["duracao"] = float(getattr(getattr(f, "info", None), "length", 0) or 0)
+            info["ganho"], info["ganho_album"] = _replaygain(caminho)
     nome = caminho.stem
     if not info["titulo"]:
         partes = nome.split(" - ", 1)
@@ -264,7 +309,8 @@ def biblioteca(reler: bool = False) -> dict:
                     continue
                 chave = str(p)
                 velho = cache.get(chave)
-                if velho and velho.get("mtime") == st.st_mtime and velho.get("tamanho") == st.st_size:
+                if velho and velho.get("mtime") == st.st_mtime and velho.get("tamanho") == st.st_size \
+                        and velho.get("v", 1) >= VERSAO_FAIXA:
                     novo[chave] = velho
                 else:
                     novo[chave] = {"mtime": st.st_mtime, "tamanho": st.st_size, **ler_faixa(p)}
@@ -295,6 +341,7 @@ def biblioteca(reler: bool = False) -> dict:
                 a["tracks"].append({
                     "id": _id(caminho), "title": f["titulo"], "artist": f["artista"], "number": f["numero"] or 0,
                     "disc": f["disco"] or 1, "duration": round(f["duracao"], 2), "url": url_audio(p),
+                    "gain": f.get("ganho"), "albumGain": f.get("ganho_album"),
                 })
 
             lista = []
@@ -337,7 +384,7 @@ def faixas_abertas(caminhos: list[str]) -> list[dict]:
         capa = _salvar_capa(id_avulso, _imagem_embutida(p), _capa_da_pasta(p.parent))
         saida.append({
             "id": _id(str(p)), "title": f["titulo"], "artist": f["artista"], "album": f["album"], "cover": capa,
-            "color": None, "duration": round(f["duracao"], 2), "url": url_audio(p), "number": f["numero"] or 1,
+            "color": None, "duration": round(f["duracao"], 2), "url": url_audio(p), "number": f["numero"] or 1, "gain": f.get("ganho"), "albumGain": f.get("ganho_album"),
         })
     return saida
 
@@ -482,6 +529,51 @@ def arquivo_tocavel(caminho: Path) -> Path:
         resultado = caminho
     _tocaveis[chave] = resultado
     return resultado
+
+
+# ---------------------------------------------------------------- volume (para "volume igual entre músicas")
+VOLUMES = CACHE / "volume.json"
+_volumes: dict | None = None
+_trava_volume = threading.Lock()
+
+
+def ganho_medido(caminho: str) -> float | None:
+    """Mede o volume (EBU R128, com o ffmpeg) e devolve o ganho no padrão ReplayGain (alvo -18 LUFS)."""
+    global _volumes
+    p = Path(caminho)
+    if not permitido(p) or not shutil.which("ffmpeg"):
+        return None
+    try:
+        st = p.stat()
+    except OSError:
+        return None
+    chave = f"{p}|{st.st_size}|{st.st_mtime_ns}"
+    with _trava_volume:  # um arquivo por vez
+        if _volumes is None:
+            try:
+                _volumes = json.loads(VOLUMES.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                _volumes = {}
+        if chave in _volumes:
+            return _volumes[chave]
+        try:
+            r = subprocess.run(
+                ["nice", "-n", "15", "ffmpeg", "-nostats", "-hide_banner", "-i", str(p), "-map", "0:a:0",
+                 "-af", "ebur128=framelog=quiet", "-f", "null", "-"],
+                capture_output=True, text=True, timeout=180,
+            )
+            linhas = [l.strip() for l in r.stderr.splitlines() if l.strip().startswith("I:")]
+            m = re.search(r"-?\d+(?:\.\d+)?", linhas[-1]) if linhas else None
+            ganho = round(-18 - float(m.group(0)), 2) if m and float(m.group(0)) > -70 else None
+        except (OSError, subprocess.SubprocessError):
+            ganho = None
+        _volumes[chave] = ganho
+        try:
+            VOLUMES.parent.mkdir(parents=True, exist_ok=True)
+            VOLUMES.write_text(json.dumps(_volumes), encoding="utf-8")
+        except OSError:
+            pass
+        return ganho
 
 
 # ---------------------------------------------------------------- fotos de artistas

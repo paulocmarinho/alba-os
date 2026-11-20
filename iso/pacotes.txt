@@ -37,6 +37,7 @@ e2fsprogs
 grub
 efibootmgr
 python-mutagen
+ffmpeg
 playerctl
 curl
 # Compositor de janelas e casca do Alba (0.4)

@@ -1047,6 +1047,10 @@ def api_musica_foto_artista(_q, c):
     return {"url": f"/api/musica/artista?f={urllib.parse.quote(nome)}" if nome else None}
 
 
+def api_musica_volume(_q, c):
+    return {"gain": musica.ganho_medido(str(c.get("caminho") or ""))}
+
+
 def foto_de_artista(req):
     p = musica.arquivo_de_artista(req.query.get("f", ""))
     if not p:
@@ -1349,6 +1353,7 @@ ROTAS = {
     ("POST", "/api/musica/spotify"): api_musica_spotify_acao,
     ("POST", "/api/musica/letra"): api_musica_letra,
     ("POST", "/api/musica/foto-artista"): api_musica_foto_artista,
+    ("POST", "/api/musica/volume"): api_musica_volume,
     ("POST", "/api/musica/config"): api_musica_config,
     ("GET", "/api/som"): api_som_ler,
     ("POST", "/api/som"): api_som_gravar,
