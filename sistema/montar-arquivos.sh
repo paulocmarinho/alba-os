@@ -24,7 +24,7 @@ else
 fi
 
 install -Dm755 "$RAIZ/sistema/alba-sessao" "$D/usr/bin/alba-sessao"
-for prog in alba-casca alba-app alba-enviar alba-captura alba-entrada; do
+for prog in alba-casca alba-app alba-enviar alba-captura alba-entrada alba-diagnostico; do
   install -Dm755 "$RAIZ/sistema/$prog" "$D/usr/bin/$prog"
 done
 mkdir -p "$L/casca"

@@ -22,7 +22,8 @@ from gi.repository import Gdk, GLib, Gtk, WebKit  # noqa: E402
 
 WEB = Path(os.environ.get("ALBA_WEB", "/usr/share/alba/web"))
 ULTIMO = Path(os.environ.get("XDG_CACHE_HOME", "/tmp")) / "alba-entrada-ultimo"
-SESSAO = ["/usr/bin/alba-sessao"]
+# Por um shell de login, para a sessão ter o mesmo ambiente (PATH etc.) de quando entrava pelo tty1.
+SESSAO = ["/bin/bash", "-l", "-c", "exec /usr/bin/alba-sessao"]
 
 
 def contas() -> list[dict]:

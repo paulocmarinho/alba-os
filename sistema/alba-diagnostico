@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Mostra o que aconteceu na tela de entrada e na sessão (para mandar ao suporte / ao Claude).
+# Uso: alba-diagnostico        (as últimas linhas na tela)
+#      alba-diagnostico > ~/diagnostico.txt
+linhas="${1:-15}"
+echo "== Alba $(grep -o "\"versao\": \"[^\"]*" /usr/share/alba/compilacao.json 2>/dev/null | cut -d\" -f4) · $(date)"
+echo "== tela de entrada: $(systemctl is-enabled greetd 2>/dev/null) / $(systemctl is-active greetd 2>/dev/null)"
+journalctl -b -u greetd -n "$linhas" --no-pager 2>/dev/null
+for f in /tmp/alba-entrada-*/entrada.log; do [[ -f "$f" ]] && { echo "== $f"; tail -n "$linhas" "$f"; }; done
+for f in ~/.cache/alba/sessao.log ~/.cache/alba/compositor.log; do [[ -f "$f" ]] && { echo "== $f"; tail -n "$linhas" "$f"; }; done

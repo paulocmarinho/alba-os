@@ -197,6 +197,9 @@ useradd -m -G wheel -c "Paulo Teste" paulo && echo 'paulo:segredo1' | chpasswd
   echo "== remover a si mesmo"; printf 'segredo1\n\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta remover paulo 1; echo "saida=$?"
   echo "== senha da maria funciona?"; python3 -c 'import sys; sys.path.insert(0,"/usr/share/alba/servidor"); import pam; print(pam.autenticar("maria","senhaMaria"))'
   echo "== entrada automática"; printf 'segredo1\n\n' | SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --conta automatico maria; echo "saida=$?"; cat /etc/greetd/config.toml
+  echo "== voltar ao login antigo"; SUDO_USER=paulo bash /usr/local/bin/alba-atualizar --entrada-antiga; echo "saida=$?"; cat /etc/systemd/system/getty@tty1.service.d/autologin.conf; ls /etc/alba
+  echo "== tela de entrada de novo"; bash /usr/local/bin/alba-atualizar --entrada-nova; echo "saida=$?"; ls /etc/alba; cat /etc/systemd/system/greetd.service.d/alba.conf
+  echo "== diagnóstico"; alba-diagnostico 5
 } > saida/contas.txt 2>&1
 curl -s "${H[@]}" "$ALBA_URL/api/contas" > saida/contas.json
 alba-app ajustes '{"secao": "contas"}' &

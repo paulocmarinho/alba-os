@@ -10,6 +10,38 @@ PACOTE="alba-atualizacao.tar.gz"
 
 falhar() { echo "ERRO: $*" >&2; exit 1; }
 
+# O greetd só começa quando a animação de abertura (Plymouth) terminou e a placa de vídeo
+# está pronta; se ele cair, tenta de novo.
+entrada_servico() {
+  install -d /etc/systemd/system/greetd.service.d
+  cat >/etc/systemd/system/greetd.service.d/alba.conf <<'UNIT'
+[Unit]
+After=plymouth-quit-wait.service systemd-logind.service
+Wants=plymouth-quit-wait.service
+
+[Service]
+ExecStartPre=-/usr/bin/plymouth quit
+Restart=always
+RestartSec=2
+UNIT
+  systemctl daemon-reload >/dev/null 2>&1 || true
+}
+
+# Volta ao jeito antigo de entrar (login automático pelo tty1, sem tela de entrada).
+entrada_antiga() {
+  local usuario="$1"
+  install -d /etc/systemd/system/getty@tty1.service.d /etc/alba
+  cat >/etc/systemd/system/getty@tty1.service.d/autologin.conf <<UNIT
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '-p -f -- \\u' --noclear --autologin $usuario %I \$TERM
+UNIT
+  systemctl disable greetd.service >/dev/null 2>&1 || true
+  systemctl enable getty@tty1.service >/dev/null 2>&1 || true
+  rm -f /etc/alba/entrada-greetd
+  touch /etc/alba/entrada-desligada
+}
+
 # Tela de entrada (greetd): quem entra sozinho ao ligar o computador (vazio = ninguém).
 configurar_entrada() {
   local auto="$1"
@@ -23,10 +55,11 @@ configurar_entrada() {
     echo 'user = "greeter"'
     if [[ -n "$auto" ]]; then
       echo "[initial_session]"
-      echo 'command = "/usr/bin/alba-sessao"'
+      echo 'command = "/bin/bash -l -c /usr/bin/alba-sessao"'
       echo "user = \"$auto\""
     fi
   } >/etc/greetd/config.toml.novo
+  entrada_servico
   mv /etc/greetd/config.toml.novo /etc/greetd/config.toml
   echo "$auto" >/etc/alba/entrada-automatica
 }
@@ -48,7 +81,8 @@ aplicar_ajustes() {
   # Tela de entrada com as contas (greetd) no lugar do login automático pelo tty1. Vale a
   # partir do próximo boot; quem entrava sozinho continua entrando sozinho. O tty2 continua
   # com o login de texto, como saída de emergência (Ctrl+Alt+F2).
-  if [[ ! -e /etc/alba/entrada-greetd && -x /usr/bin/greetd && -x /usr/bin/alba-entrada && -x /usr/bin/cage ]] \
+  [[ -e /etc/alba/entrada-greetd && -x /usr/bin/greetd ]] && entrada_servico
+  if [[ ! -e /etc/alba/entrada-greetd && ! -e /etc/alba/entrada-desligada && -x /usr/bin/greetd && -x /usr/bin/alba-entrada && -x /usr/bin/cage ]] \
      && getent passwd greeter >/dev/null; then
     local auto=""
     auto="$(sed -n 's/.*--autologin \([^ ]*\).*/\1/p' /etc/systemd/system/getty@tty1.service.d/autologin.conf 2>/dev/null | head -1)"
@@ -167,6 +201,19 @@ if [[ "${1:-}" == "--conta" ]]; then
   exit 0
 fi
 
+if [[ "${1:-}" == "--entrada-antiga" ]]; then
+  usuario="${2:-${SUDO_USER:-}}"
+  [[ -n "$usuario" ]] && id "$usuario" >/dev/null 2>&1 || falhar "uso: --entrada-antiga USUARIO"
+  entrada_antiga "$usuario"
+  echo "Pronto: no próximo boot o Alba entra direto na conta de $usuario, como antes."
+  exit 0
+fi
+if [[ "${1:-}" == "--entrada-nova" ]]; then
+  rm -f /etc/alba/entrada-desligada /etc/alba/entrada-greetd
+  aplicar_ajustes
+  echo "Pronto: a tela de entrada volta no próximo boot."
+  exit 0
+fi
 if [[ "${1:-}" == "--entrada-auto" ]]; then
   [[ $# -ge 2 ]] || falhar "uso: --entrada-auto USUARIO"
   configurar_entrada "$2"

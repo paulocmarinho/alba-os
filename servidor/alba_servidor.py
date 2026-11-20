@@ -813,7 +813,8 @@ def ajustes_do_sistema():
                       and not Path("/etc/alba/abertura-1").exists())
     # Tela de entrada com as contas (greetd): passa a valer no próximo boot.
     falta = falta or (Path("/usr/bin/greetd").exists() and Path("/usr/bin/alba-entrada").exists()
-                      and not Path("/etc/alba/entrada-greetd").exists())
+                      and not Path("/etc/alba/entrada-greetd").exists() and not Path("/etc/alba/entrada-desligada").exists())
+    falta = falta or (Path("/etc/alba/entrada-greetd").exists() and not Path("/etc/systemd/system/greetd.service.d/alba.conf").exists())
     if falta and Path("/usr/local/bin/alba-atualizar").exists():
         subprocess.Popen(["sudo", "-n", "/usr/local/bin/alba-atualizar", "--ajustes"], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, start_new_session=True)

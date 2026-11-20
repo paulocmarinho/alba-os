@@ -20,13 +20,18 @@ fi
 FALHAS="$XDG_CACHE_HOME/falhas"
 if [[ "$(cat "$FALHAS" 2>/dev/null || echo 0)" -ge 2 ]]; then
   rm -f "$FALHAS"
-  exec agreety --cmd /usr/bin/alba-sessao
+  printf '\033c'
+  echo "Alba OS: a tela de entrada não abriu. Entre com seu usuário e senha."
+  exec agreety --cmd "/bin/bash -l -c /usr/bin/alba-sessao"
 fi
+# Espera a placa de vídeo aparecer (no boot ela pode chegar uns segundos depois).
+for _ in $(seq 1 30); do compgen -G "/dev/dri/card*" >/dev/null && break; sleep 0.5; done
 inicio=$(date +%s)
 dbus-run-session -- cage -s -- python3 /usr/share/alba/casca/entrada.py >"$XDG_CACHE_HOME/entrada.log" 2>&1
 codigo=$?
 if (( codigo != 0 && $(date +%s) - inicio < 8 )); then
   echo $(( $(cat "$FALHAS" 2>/dev/null || echo 0) + 1 )) >"$FALHAS"
+  sleep 2
 else
   rm -f "$FALHAS"
 fi
